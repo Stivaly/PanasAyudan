@@ -68,7 +68,19 @@ export function useRecogidasPendientes(token: string | null) {
     setError(null);
     try {
       const client = supabaseWithToken(token);
-      const base = await fetchPendientes(client);
+      const crudas = await fetchPendientes(client);
+
+      // Defensa de lectura: el cron que libera reservas vencidas
+      // (reserved_until < now()) puede tardar hasta ~5 min en correr.
+      // Mientras tanto, una recogida sigue 'pendiente' en la BD pero ya
+      // está vencida; la ocultamos aquí para no mostrarla como activa.
+      const ahora = Date.now();
+      const base = crudas.filter((r) => {
+        if (r.recogida.status !== "pendiente") return true;
+        if (!r.recogida.reserved_until) return true;
+        return new Date(r.recogida.reserved_until).getTime() > ahora;
+      });
+
       if (base.length === 0) {
         setRecogidas([]);
         return;
@@ -108,7 +120,20 @@ export function useRecogidasPendientes(token: string | null) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "recogidas" },
-        () => void cargar()
+        (payload) => {
+          // Cuando el cron (u otra acción) cancela una reserva vencida,
+          // quitamos esa recogida de la lista local de inmediato, sin
+          // recargar toda la query.
+          if (payload.eventType === "UPDATE") {
+            const nuevo = payload.new as Partial<Recogida> | null;
+            if (nuevo && nuevo.status === "cancelada" && nuevo.id) {
+              const id = nuevo.id;
+              setRecogidas((prev) => prev.filter((r) => r.recogida.id !== id));
+              return;
+            }
+          }
+          void cargar();
+        }
       )
       .subscribe();
 

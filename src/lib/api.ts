@@ -163,6 +163,11 @@ export async function crearAporte(
   contacto: ContactData,
   volunteerToken: string
 ): Promise<string> {
+  // Origen obligatorio: el aporte debe asociarse a un centro de acopio o a
+  // una zona de rescate (el constraint origen_requerido lo refuerza en la BD).
+  if (!location.centro_acopio_id && !location.zona_rescate_id) {
+    throw new Error("Debe indicar un centro de acopio o una zona de rescate de origen.");
+  }
   const { data, error } = await supabaseWithToken(volunteerToken).rpc("crear_aporte", {
     location_data: location,
     items_data: items,

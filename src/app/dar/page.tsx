@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EstadoCombobox from "@/components/EstadoCombobox";
-import PlacesAutocomplete from "@/components/PlacesAutocomplete";
-import MapaPicker from "@/components/MapaPicker";
 import ItemsForm, { ItemDraft, draftVacio, draftsValidos } from "@/components/ItemsForm";
 import {
   getCategorias,
@@ -15,22 +13,22 @@ import {
   getZonasRescatePorEstado,
 } from "@/lib/api";
 import { normalizarTelefonoVe } from "@/lib/telefono";
-import { resolverCentro, CARACAS } from "@/lib/geo";
 import { getVolunteerToken } from "@/lib/supabase";
 import {
   Category,
   Coords,
   EstadoVenezuela,
-  PlaceSeleccion,
   CentroAcopio,
   ZonaRescate,
 } from "@/lib/types";
+
+// Fallback temporal para orígenes aún sin geocodificar (centro de Venezuela).
+const VENEZUELA_CENTRO: Coords = { lat: 8.0, lng: -66.0 };
 
 export default function Dar() {
   const router = useRouter();
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
-  const [centro, setCentro] = useState<Coords>(CARACAS);
   const [volunteerToken, setVolunteerTokenState] = useState<string | null>(null);
   const [verificandoVoluntario, setVerificandoVoluntario] = useState(true);
 
@@ -40,9 +38,6 @@ export default function Dar() {
   const [centroAcopioId, setCentroAcopioId] = useState<string>("");
   const [zonas, setZonas] = useState<ZonaRescate[]>([]);
   const [zonaRescateId, setZonaRescateId] = useState<string>("");
-  const [place, setPlace] = useState<PlaceSeleccion | null>(null);
-  const [manual, setManual] = useState<Coords | null>(null);
-  const [usarMapa, setUsarMapa] = useState(false);
 
   const [items, setItems] = useState<ItemDraft[]>([]);
   const [telefono, setTelefono] = useState("");
@@ -66,7 +61,6 @@ export default function Dar() {
     getEstados()
       .then(setEstados)
       .catch(() => setError("No se pudieron cargar los estados."));
-    resolverCentro().then(setCentro);
   }, []);
 
   // Al cambiar de estado, cargar centros y zonas de ese estado en paralelo.
@@ -82,13 +76,19 @@ export default function Dar() {
     getZonasRescatePorEstado(estadoId).then(setZonas).catch(() => setZonas([]));
   }, [estadoId]);
 
-  const seleccionarPlace = (p: PlaceSeleccion) => {
-    setPlace(p);
-    setUsarMapa(false);
-    setManual(null);
-  };
+  // Origen seleccionado: centro de acopio o zona de rescate (excluyentes).
+  const centroSel = centros.find((c) => c.id === centroAcopioId) ?? null;
+  const zonaSel = zonas.find((z) => z.id === zonaRescateId) ?? null;
+  const origen = centroSel ?? zonaSel;
 
-  const coords: Coords | null = place ? { lat: place.lat, lng: place.lng } : manual;
+  // Coordenadas del origen; fallback al centro de Venezuela si no están geocodificadas.
+  const sinCoordsExactas =
+    !!origen && (origen.lat === null || origen.lng === null);
+  const coords: Coords | null = !origen
+    ? null
+    : sinCoordsExactas
+    ? VENEZUELA_CENTRO
+    : { lat: origen.lat as number, lng: origen.lng as number };
 
   const publicar = async () => {
     setError(null);
@@ -105,8 +105,8 @@ export default function Dar() {
       setError("Elige el estado donde se encuentra el aporte.");
       return;
     }
-    if (!coords) {
-      setError("Busca el lugar en Google o ubícalo en el mapa.");
+    if (!origen || !coords) {
+      setError("Debes indicar el origen del aporte (centro de acopio o zona de rescate).");
       return;
     }
     const itemsLimpios = draftsValidos(items);
@@ -131,14 +131,14 @@ export default function Dar() {
 
     setEnviando(true);
     try {
-      const placeId = place?.google_place_id ?? null;
+      const placeId = origen.google_place_id ?? null;
       await crearAporte(
         {
           google_place_id: placeId,
-          place_name: place?.place_name ?? descripcion.trim(),
+          place_name: origen.nombre,
           lat: coords.lat,
           lng: coords.lng,
-          address: place?.address ?? null,
+          address: centroSel?.direccion ?? null,
           descripcion_libre: descripcion.trim(),
           estado_id: estadoId,
           centro_acopio_id: centroAcopioId || null,
@@ -221,71 +221,47 @@ export default function Dar() {
       {estadoId && (
         <section className="flex flex-col gap-2">
           <label className="text-sm font-semibold text-muted">
-            ¿Desde qué centro de acopio coordinás este aporte?
+            Origen del aporte (centro de acopio o zona de rescate)
           </label>
-          <select
-            value={centroAcopioId}
-            onChange={(e) => setCentroAcopioId(e.target.value)}
-            className="field"
-          >
-            <option value="">Ninguno / No aplica</option>
-            {centros.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <select
+              value={centroAcopioId}
+              onChange={(e) => setCentroAcopioId(e.target.value)}
+              disabled={!!zonaRescateId}
+              className="field disabled:text-muted disabled:opacity-60"
+            >
+              <option value="" disabled>
+                {zonaRescateId ? "No aplica" : "Selecciona un centro"}
               </option>
-            ))}
-          </select>
-          <p className="text-xs text-muted">
-            Esto ayuda a quienes buscan a saber dónde recoger.
-          </p>
-        </section>
-      )}
-
-      {estadoId && zonas.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-muted">
-            ¿A qué zona de rescate va dirigido este aporte?
-          </label>
-          <select
-            value={zonaRescateId}
-            onChange={(e) => setZonaRescateId(e.target.value)}
-            className="field"
-          >
-            <option value="">Ninguna / No aplica</option>
-            {zonas.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.nombre}
+              {centros.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+            <select
+              value={zonaRescateId}
+              onChange={(e) => setZonaRescateId(e.target.value)}
+              disabled={!!centroAcopioId}
+              className="field disabled:text-muted disabled:opacity-60"
+            >
+              <option value="" disabled>
+                {centroAcopioId ? "No aplica" : "Selecciona una zona"}
               </option>
-            ))}
-          </select>
-        </section>
-      )}
-
-      <section className="flex flex-col gap-2">
-        <label className="text-sm font-semibold text-muted">Ubicación</label>
-        <PlacesAutocomplete onSelect={seleccionarPlace} />
-        {place && <p className="text-sm text-accent">{place.place_name}</p>}
-
-        {!usarMapa ? (
-          <button
-            type="button"
-            onClick={() => {
-              setUsarMapa(true);
-              setPlace(null);
-            }}
-            className="text-left text-sm font-semibold text-muted underline"
-          >
-            No encuentro mi lugar - ubicarlo en el mapa
-          </button>
-        ) : (
-          <>
-            <MapaPicker centro={centro} valor={manual} onChange={setManual} />
+              {zonas.map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+          {sinCoordsExactas && (
             <p className="text-xs text-muted">
-              Toca o arrastra el pin a la ubicación aproximada.
+              Ubicación aproximada, aún sin coordenadas exactas.
             </p>
-          </>
-        )}
-      </section>
+          )}
+        </section>
+      )}
 
       <section className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-muted">Insumos</label>

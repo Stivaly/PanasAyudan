@@ -113,6 +113,8 @@ export interface Recogida {
   reserved_until: string;
   confirmation_deadline: string | null;
   confirmada_at: string | null;
+  destino_centro_acopio_id?: string | null;
+  destino_zona_rescate_id?: string | null;
   created_at: string;
 }
 
@@ -154,6 +156,16 @@ export interface RecogidaConDetalle {
   reserved_until: string;
   recogedor_token: string | null;
   whatsapp: string | null;
+  destino_centro: {
+    nombre: string;
+    direccion: string;
+    horario: string | null;
+    contacto: string | null;
+  } | null;
+  destino_zona: {
+    nombre: string;
+    descripcion: string | null;
+  } | null;
   aporte_item: {
     descripcion: string;
     category_id: string;
@@ -232,6 +244,8 @@ export interface RecogidaData {
   placa_vehiculo: string | null;
   volunteer_id: string | null;
   recogedor_token: string | null;
+  destino_centro_acopio_id?: string | null;
+  destino_zona_rescate_id?: string | null;
 }
 
 // --- Vistas compuestas para UI ---

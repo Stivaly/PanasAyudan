@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { reservarItem, verificarCedulaBloqueada } from "@/lib/api";
+import {
+  reservarItem,
+  verificarCedulaBloqueada,
+  getEstados,
+  getCentrosAcopioPorEstado,
+  getZonasRescatePorEstado,
+} from "@/lib/api";
 import { getRecogedorLocal, getRecogedorToken, saveRecogedorLocal } from "@/lib/recogedor";
 import {
   validarCedula,
@@ -11,7 +17,12 @@ import {
   validarPlaca,
   formatearPlaca,
 } from "@/lib/validaciones";
-import { ItemConCategoria } from "@/lib/types";
+import {
+  ItemConCategoria,
+  EstadoVenezuela,
+  CentroAcopio,
+  ZonaRescate,
+} from "@/lib/types";
 
 interface Props {
   item: ItemConCategoria;
@@ -32,6 +43,14 @@ export default function ReservarItem({ item, onReservada }: Props) {
   const [enviando, setEnviando] = useState(false);
   const [bloqueada, setBloqueada] = useState(false);
 
+  // Destino del insumo (a dónde lo lleva el recogedor): centro de acopio o zona.
+  const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
+  const [estadoDestinoId, setEstadoDestinoId] = useState<string>("");
+  const [centrosDestino, setCentrosDestino] = useState<CentroAcopio[]>([]);
+  const [centroDestinoId, setCentroDestinoId] = useState<string>("");
+  const [zonasDestino, setZonasDestino] = useState<ZonaRescate[]>([]);
+  const [zonaDestinoId, setZonaDestinoId] = useState<string>("");
+
   // Pre-rellena con los datos guardados en este dispositivo, si existen.
   // Si la cédula guardada está bloqueada, no se permite reservar.
   useEffect(() => {
@@ -46,6 +65,27 @@ export default function ReservarItem({ item, onReservada }: Props) {
       verificarCedulaBloqueada(cedulaLimpia).then(setBloqueada).catch(() => {});
     }
   }, []);
+
+  // Carga los estados para el selector de destino al montar.
+  useEffect(() => {
+    getEstados().then(setEstados).catch(() => {});
+  }, []);
+
+  // Al cambiar el estado de destino, carga centros y zonas y resetea selección.
+  useEffect(() => {
+    setCentroDestinoId("");
+    setZonaDestinoId("");
+    if (!estadoDestinoId) {
+      setCentrosDestino([]);
+      setZonasDestino([]);
+      return;
+    }
+    getCentrosAcopioPorEstado(estadoDestinoId).then(setCentrosDestino).catch(() => setCentrosDestino([]));
+    getZonasRescatePorEstado(estadoDestinoId).then(setZonasDestino).catch(() => setZonasDestino([]));
+  }, [estadoDestinoId]);
+
+  const centroDestinoSel = centrosDestino.find((c) => c.id === centroDestinoId) ?? null;
+  const zonaDestinoSel = zonasDestino.find((z) => z.id === zonaDestinoId) ?? null;
 
   const confirmar = async () => {
     setError(null);
@@ -79,6 +119,11 @@ export default function ReservarItem({ item, onReservada }: Props) {
       return;
     }
 
+    if (!centroDestinoId && !zonaDestinoId) {
+      setError("Debes indicar a dónde llevarás el insumo.");
+      return;
+    }
+
     setEnviando(true);
     try {
       const cedulaLimpia = limpiarCedula(cedula);
@@ -93,6 +138,8 @@ export default function ReservarItem({ item, onReservada }: Props) {
         placa_vehiculo: placaLimpia,
         volunteer_id: null,
         recogedor_token: getRecogedorToken(),
+        destino_centro_acopio_id: centroDestinoId || null,
+        destino_zona_rescate_id: zonaDestinoId || null,
       });
       // Identidad persistente del recogedor en este navegador.
       saveRecogedorLocal({ ...datos, placa_vehiculo: placaLimpia });
@@ -179,6 +226,89 @@ export default function ReservarItem({ item, onReservada }: Props) {
         value={qty}
         onChange={(e) => setQty(e.target.value)}
       />
+
+      <div className="flex flex-col gap-2 border-t border-border pt-3">
+        <div>
+          <p className="font-semibold">¿A dónde lo vas a llevar?</p>
+          <p className="text-xs text-muted">Selecciona el destino del insumo.</p>
+        </div>
+
+        <select
+          className="field"
+          value={estadoDestinoId}
+          onChange={(e) => setEstadoDestinoId(e.target.value)}
+        >
+          <option value="" disabled>
+            Selecciona el estado de destino
+          </option>
+          {estados.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.nombre}
+            </option>
+          ))}
+        </select>
+
+        {estadoDestinoId && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <select
+              className="field disabled:text-muted disabled:opacity-60"
+              value={centroDestinoId}
+              onChange={(e) => setCentroDestinoId(e.target.value)}
+              disabled={!!zonaDestinoId}
+            >
+              <option value="" disabled>
+                {zonaDestinoId ? "No aplica" : "Selecciona un centro"}
+              </option>
+              {centrosDestino.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+            <select
+              className="field disabled:text-muted disabled:opacity-60"
+              value={zonaDestinoId}
+              onChange={(e) => setZonaDestinoId(e.target.value)}
+              disabled={!!centroDestinoId}
+            >
+              <option value="" disabled>
+                {centroDestinoId ? "No aplica" : "Selecciona una zona"}
+              </option>
+              {zonasDestino.map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {centroDestinoSel && (
+          <div className="rounded-xl border border-accent bg-surface p-3 text-white">
+            <p className="text-lg font-bold">{centroDestinoSel.nombre}</p>
+            <p className="mt-1 text-sm">{centroDestinoSel.direccion}</p>
+            {centroDestinoSel.horario && (
+              <p className="mt-1 text-sm">
+                <span className="text-muted">Horario:</span> {centroDestinoSel.horario}
+              </p>
+            )}
+            {centroDestinoSel.contacto && (
+              <p className="mt-1 text-sm">
+                <span className="text-muted">Contacto:</span> {centroDestinoSel.contacto}
+              </p>
+            )}
+          </div>
+        )}
+
+        {zonaDestinoSel && (
+          <div className="rounded-xl border border-accent bg-surface p-3 text-white">
+            <p className="text-lg font-bold">{zonaDestinoSel.nombre}</p>
+            {zonaDestinoSel.descripcion && (
+              <p className="mt-1 text-sm">{zonaDestinoSel.descripcion}</p>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="rounded-xl border border-danger bg-bg p-3 text-sm">
         <p className="font-semibold text-danger">⚠️ Compromiso al reservar</p>

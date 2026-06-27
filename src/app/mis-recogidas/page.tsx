@@ -44,6 +44,35 @@ function BotonWhatsapp({ href }: { href: string | null }) {
   );
 }
 
+// Destino de la recogida (a dónde la lleva el recogedor). Card con borde accent
+// para que sea lo primero que vea al revisar sus recogidas.
+function DestinoCard({ r }: { r: RecogidaConDetalle }) {
+  const c = r.destino_centro;
+  const z = r.destino_zona;
+  if (!c && !z) return null;
+  const nombre = c?.nombre ?? z?.nombre ?? "Destino";
+  const direccion = c?.direccion ?? z?.descripcion ?? null;
+  const horario = c?.horario ?? null;
+  const contacto = c?.contacto ?? null;
+  return (
+    <div className="rounded-xl border border-accent bg-surface p-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-accent">Destino</p>
+      <p className="mt-1 text-base font-bold">{nombre}</p>
+      {direccion && <p className="mt-0.5 text-sm text-muted">{direccion}</p>}
+      {horario && (
+        <p className="mt-1 text-sm">
+          <span className="text-muted">Horario:</span> {horario}
+        </p>
+      )}
+      {contacto && (
+        <p className="mt-1 text-sm">
+          <span className="text-muted">Contacto:</span> {contacto}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function PendienteCard({
   r,
   onCancelada,
@@ -122,6 +151,8 @@ function PendienteCard({
         venceProximo ? "border border-danger border-pulso" : ""
       }`}
     >
+      <DestinoCard r={r} />
+
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold">{r.aporte_item?.descripcion ?? "Insumo"}</p>
@@ -388,6 +419,8 @@ export default function MisRecogidas() {
                 key={r.id}
                 className={`card flex flex-col gap-2 ${cancelada ? "opacity-60" : ""}`}
               >
+                <DestinoCard r={r} />
+
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className={`font-semibold ${cancelada ? "text-muted" : ""}`}>
