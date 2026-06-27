@@ -34,17 +34,19 @@ Variables necesarias:
 - `NEXT_PUBLIC_GOOGLE_MAPS_KEY`
 - `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`
 
-Nota: el `README.md` menciona Next.js 14, pero `package.json` usa `next`
-`^16.2.9`. Si aparece algun problema de compatibilidad, revisar primero esa
-diferencia.
+Nota: la version real de Next esta en `package.json` (`next ^16.2.9`). Si
+aparece algun problema de compatibilidad, revisar primero esa version.
 
 ## Rutas
 
 - `/`: pantalla inicial con acceso a donar, buscar e ingresar al area de
   voluntarios.
-- `/dar`: formulario para publicar un aporte. Pide descripcion del lugar,
-  estado obligatorio, ubicacion por Google Places o mapa manual, items y
-  contacto. Publica usando la RPC `crear_aporte`.
+- `/dar`: formulario para publicar un aporte. Solo accesible para voluntarios
+  registrados: si no hay token en `localStorage`, muestra un aviso para
+  registrarse en `/voluntarios`. Pide descripcion del lugar, estado obligatorio,
+  ubicacion por Google Places o mapa manual, items y contacto (telefono y/o
+  Telegram, al menos uno). El telefono se normaliza con `normalizarTelefonoVe`.
+  Publica usando la RPC `crear_aporte` con el token del voluntario.
 - `/buscar`: vista publica de insumos disponibles. Carga categorias y
   estados, permite filtrar por ambos, muestra lista por defecto y carga el mapa
   solo cuando el usuario lo pide.
@@ -52,6 +54,9 @@ diferencia.
   por WhatsApp y reservar cantidades mediante `reservar_item`.
 - `/voluntarios`: registro/acceso por token y panel de recogidas pendientes.
   El token se guarda en `localStorage` y se muestra una sola vez al registrarse.
+- `/voluntarios/gestionar/[id]`: panel por lugar para el voluntario dueño de los
+  aportes. Lista sus insumos en ese lugar y las solicitudes pendientes agrupadas
+  por item, con acciones de completar o liberar cada reserva. Requiere token.
 
 ## Estructura de carpetas
 
@@ -61,11 +66,15 @@ diferencia.
   panel voluntario y registro del service worker.
 - `src/hooks`: lectura en tiempo real de inventario y recogidas pendientes.
 - `src/lib`: cliente Supabase, acciones de datos, carga de Google Maps,
-  geolocalizacion y tipos compartidos.
+  geolocalizacion, normalizacion de telefono (`telefono.ts`) y tipos
+  compartidos.
 - `src/types`: tipos auxiliares globales para Google Maps.
 - `public`: manifest PWA y service worker.
-- `supabase/migrations`: migraciones SQL disponibles en el repo, incluyendo
-  esquema base, RLS/RPC, voluntarios, recogidas, WhatsApp y filtros por estado.
+- `supabase/migrations`: migraciones SQL disponibles en el repo (hasta `0017`),
+  incluyendo esquema base, RLS/RPC, voluntarios, recogidas, WhatsApp y filtros
+  por estado.
+- `supabase/scripts`: scripts SQL de mantenimiento manual (no migraciones), p.
+  ej. `limpiar_recogidas_aportes.sql`.
 
 ## Modelo de datos esperado
 
@@ -87,10 +96,12 @@ Los tipos en `src/lib/types.ts` muestran el contrato usado por la UI:
 `src/lib/api.ts` es el punto de entrada para leer y escribir datos:
 
 - Lecturas publicas: `getCategorias`, `getEstados`, `getItemsActivos`,
-  `getItemsDeLugar`, `getLugar`.
-- Escrituras/RPC publicas: `crearAporte`, `reservarItem`,
-  `registrarVoluntario`, `liberarRecogida`.
-- RPC con token de voluntario: `obtenerContacto`, `completarRecogida`.
+  `getItemsDeLugar`, `getLugar`, `getReservasPendientesDeLugar`,
+  `getWhatsappVoluntarioItem`.
+- Escrituras/RPC publicas: `reservarItem`, `registrarVoluntario`,
+  `liberarRecogida`.
+- RPC con token de voluntario: `crearAporte`, `getAportesVoluntario`,
+  `obtenerContacto`, `completarRecogida`.
 
 `src/lib/supabase.ts` crea dos tipos de cliente:
 
@@ -105,12 +116,16 @@ salir solo por RPC protegida con token.
 
 Publicar aporte:
 
-1. `/dar` carga categorias, estados y centro aproximado.
-2. El usuario elige estado obligatorio y ubicacion por Places o pin manual.
-3. `ItemsForm` valida categoria, descripcion y cantidad.
-4. `crearAporte` manda `location_data` con `estado_id`, `items_data` y
-   `contact_data`.
-5. Despues se busca el `location.id` recien creado y se navega a `/lugar/[id]`.
+1. `/dar` exige token de voluntario; sin token muestra el aviso de registro y no
+   carga el formulario.
+2. Con token, carga categorias, estados y centro aproximado.
+3. El usuario elige estado obligatorio y ubicacion por Places o pin manual.
+4. `ItemsForm` valida categoria, descripcion y cantidad; el contacto exige
+   telefono valido (`normalizarTelefonoVe`) y/o Telegram, al menos uno.
+5. `crearAporte` manda `location_data` con `estado_id`, `items_data` y
+   `contact_data`, usando `supabaseWithToken` (RPC `crear_aporte` solo
+   voluntarios).
+6. Despues se busca el `location.id` recien creado y se navega a `/lugar/[id]`.
 
 Buscar insumos:
 
@@ -197,7 +212,10 @@ Voluntarios:
 - `src/app/buscar/page.tsx`: flujo de busqueda.
 - `src/app/lugar/[id]/page.tsx`: detalle y reservas.
 - `src/app/voluntarios/page.tsx`: acceso y registro de voluntarios.
+- `src/app/voluntarios/gestionar/[id]/page.tsx`: gestion por lugar de los
+  aportes propios y sus solicitudes pendientes.
 - `src/components/PanelVoluntario.tsx`: coordinacion de recogidas.
+- `src/lib/telefono.ts`: normalizacion/validacion de WhatsApp venezolano.
 - `src/hooks/useItemsRealtime.ts`: inventario publico en tiempo real.
 - `src/hooks/useRecogidasPendientes.ts`: panel voluntario ordenado por
   distancia.

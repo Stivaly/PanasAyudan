@@ -1,11 +1,12 @@
 # PanasAyudan
 
-App de emergencia para distribución de insumos en Venezuela. Quien tiene algo
-para dar lo publica en un mapa; los voluntarios reservan y coordinan la recogida.
+App de emergencia para distribución de insumos en Venezuela. Los voluntarios
+registrados publican en un mapa lo que hay para dar; cualquier persona busca,
+reserva una cantidad y coordina la recogida.
 
 ## Stack
 
-- Next.js 14 (App Router) + TypeScript + Tailwind CSS
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS
 - Supabase (PostgreSQL + Realtime + RLS + pg_cron)
 - Google Maps JS API (Places Autocomplete + MarkerClusterer + Distance Matrix)
 - PWA (manifest + service worker), modo oscuro forzado
@@ -41,8 +42,10 @@ para dar lo publica en un mapa; los voluntarios reservan y coordinan la recogida
    - `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`
 
 3. Ejecuta las migraciones SQL en tu proyecto de Supabase (SQL Editor),
-   en orden numérico: esquema, RLS, RPC, cron y la política de lectura de
-   recogidas. `pg_cron` debe estar habilitado en el proyecto.
+   en orden numérico (`supabase/migrations`, hasta `0017`): esquema, RLS, RPC,
+   cron, lectura de recogidas, voluntarios, WhatsApp y filtros por estado.
+   `pg_cron` debe estar habilitado en el proyecto. Los scripts de mantenimiento
+   manual viven en `supabase/scripts`.
 
 4. Levanta el entorno de desarrollo:
 
@@ -54,16 +57,21 @@ para dar lo publica en un mapa; los voluntarios reservan y coordinan la recogida
 
 ```
 src/
-  app/            Rutas (App Router): / · /buscar · /dar · /lugar/[id] · /voluntarios
+  app/            Rutas (App Router): / · /buscar · /dar · /lugar/[id]
+                  /voluntarios · /voluntarios/gestionar/[id]
   components/     Mapa, formularios, panel de voluntarios, utilidades de UI
   hooks/          Suscripciones Realtime y carga de recogidas
-  lib/            Cliente Supabase, tipos, geo, Google Maps y capa de datos
+  lib/            Cliente Supabase, tipos, geo, Google Maps, teléfono y datos
 public/           manifest.json y service worker
 ```
 
 ## Notas
 
 - Modo oscuro siempre activo; no hay toggle de tema.
+- Publicar en `/dar` requiere ser voluntario registrado (token); el público
+  solo busca y reserva. Cada voluntario gestiona sus aportes y solicitudes en
+  `/voluntarios/gestionar/[id]`.
+- El teléfono de contacto se normaliza a WhatsApp venezolano (`src/lib/telefono.ts`).
 - El contacto del aporte nunca se expone en lecturas públicas: solo los
   voluntarios lo ven, vía RPC, usando su token.
 - Las reservas expiran a las 4 horas y se liberan automáticamente (pg_cron).
