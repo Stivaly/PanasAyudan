@@ -7,11 +7,24 @@ import EstadoCombobox from "@/components/EstadoCombobox";
 import PlacesAutocomplete from "@/components/PlacesAutocomplete";
 import MapaPicker from "@/components/MapaPicker";
 import ItemsForm, { ItemDraft, draftVacio, draftsValidos } from "@/components/ItemsForm";
-import { getCategorias, getEstados, crearAporte } from "@/lib/api";
+import {
+  getCategorias,
+  getEstados,
+  crearAporte,
+  getCentrosAcopioPorEstado,
+  getZonasRescatePorEstado,
+} from "@/lib/api";
 import { normalizarTelefonoVe } from "@/lib/telefono";
 import { resolverCentro, CARACAS } from "@/lib/geo";
 import { getVolunteerToken } from "@/lib/supabase";
-import { Category, Coords, EstadoVenezuela, PlaceSeleccion } from "@/lib/types";
+import {
+  Category,
+  Coords,
+  EstadoVenezuela,
+  PlaceSeleccion,
+  CentroAcopio,
+  ZonaRescate,
+} from "@/lib/types";
 
 export default function Dar() {
   const router = useRouter();
@@ -23,6 +36,10 @@ export default function Dar() {
 
   const [descripcion, setDescripcion] = useState("");
   const [estadoId, setEstadoId] = useState<string | null>(null);
+  const [centros, setCentros] = useState<CentroAcopio[]>([]);
+  const [centroAcopioId, setCentroAcopioId] = useState<string>("");
+  const [zonas, setZonas] = useState<ZonaRescate[]>([]);
+  const [zonaRescateId, setZonaRescateId] = useState<string>("");
   const [place, setPlace] = useState<PlaceSeleccion | null>(null);
   const [manual, setManual] = useState<Coords | null>(null);
   const [usarMapa, setUsarMapa] = useState(false);
@@ -51,6 +68,19 @@ export default function Dar() {
       .catch(() => setError("No se pudieron cargar los estados."));
     resolverCentro().then(setCentro);
   }, []);
+
+  // Al cambiar de estado, cargar centros y zonas de ese estado en paralelo.
+  useEffect(() => {
+    setCentroAcopioId("");
+    setZonaRescateId("");
+    if (!estadoId) {
+      setCentros([]);
+      setZonas([]);
+      return;
+    }
+    getCentrosAcopioPorEstado(estadoId).then(setCentros).catch(() => setCentros([]));
+    getZonasRescatePorEstado(estadoId).then(setZonas).catch(() => setZonas([]));
+  }, [estadoId]);
 
   const seleccionarPlace = (p: PlaceSeleccion) => {
     setPlace(p);
@@ -111,6 +141,8 @@ export default function Dar() {
           address: place?.address ?? null,
           descripcion_libre: descripcion.trim(),
           estado_id: estadoId,
+          centro_acopio_id: centroAcopioId || null,
+          zona_rescate_id: zonaRescateId || null,
         },
         itemsLimpios,
         { contact_phone: phone, contact_telegram: tg, volunteer_id: null },
@@ -185,6 +217,49 @@ export default function Dar() {
           required
         />
       </section>
+
+      {estadoId && (
+        <section className="flex flex-col gap-2">
+          <label className="text-sm font-semibold text-muted">
+            ¿Desde qué centro de acopio coordinás este aporte?
+          </label>
+          <select
+            value={centroAcopioId}
+            onChange={(e) => setCentroAcopioId(e.target.value)}
+            className="field"
+          >
+            <option value="">Ninguno / No aplica</option>
+            {centros.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted">
+            Esto ayuda a quienes buscan a saber dónde recoger.
+          </p>
+        </section>
+      )}
+
+      {estadoId && zonas.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <label className="text-sm font-semibold text-muted">
+            ¿A qué zona de rescate va dirigido este aporte?
+          </label>
+          <select
+            value={zonaRescateId}
+            onChange={(e) => setZonaRescateId(e.target.value)}
+            className="field"
+          >
+            <option value="">Ninguna / No aplica</option>
+            {zonas.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.nombre}
+              </option>
+            ))}
+          </select>
+        </section>
+      )}
 
       <section className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-muted">Ubicación</label>

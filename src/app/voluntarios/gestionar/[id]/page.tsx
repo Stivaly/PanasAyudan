@@ -166,9 +166,9 @@ export default function GestionarLugar() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-semibold">{insumo.item_descripcion}</p>
-                <p className="text-xs text-muted">{insumo.category_name}</p>
+                <span className="badge mt-1 inline-block">{insumo.category_name}</span>
               </div>
-              <span className="shrink-0 rounded-full bg-bg px-2 py-1 text-xs text-muted">
+              <span className="badge shrink-0">
                 {insumo.qty_disponible}/{insumo.qty_approx} disp.
               </span>
             </div>

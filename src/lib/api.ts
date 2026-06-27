@@ -14,6 +14,8 @@ import {
   RecogidaConDetalle,
   EstadisticasImpacto,
   AporteVoluntario,
+  CentroAcopio,
+  ZonaRescate,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -28,10 +30,45 @@ export async function getEstados(): Promise<EstadoVenezuela[]> {
   return data as EstadoVenezuela[];
 }
 
+export async function getCentrosAcopioPorEstado(estadoId: string): Promise<CentroAcopio[]> {
+  const { data, error } = await supabase
+    .from("centros_acopio")
+    .select("*")
+    .eq("estado_id", estadoId)
+    .eq("activo", true)
+    .order("nombre");
+  if (error) throw error;
+  return data as CentroAcopio[];
+}
+
+export async function getZonasRescatePorEstado(estadoId: string): Promise<ZonaRescate[]> {
+  const { data, error } = await supabase
+    .from("zonas_rescate")
+    .select("*")
+    .eq("estado_id", estadoId)
+    .eq("activo", true)
+    .order("nombre");
+  if (error) throw error;
+  return data as ZonaRescate[];
+}
+
+// Para el selector de voluntarios sin filtro de estado previo.
+export async function getCentrosAcopioTodos(): Promise<CentroAcopio[]> {
+  const { data, error } = await supabase
+    .from("centros_acopio")
+    .select("*")
+    .eq("activo", true)
+    .order("nombre");
+  if (error) throw error;
+  return data as CentroAcopio[];
+}
+
 // Items activos (qty_disponible > 0) con su categoría y location, opcional filtro.
 export async function getItemsActivos(
   categorySlug?: string,
-  estadoId?: string
+  estadoId?: string,
+  centroAcopioId?: string,
+  zonaRescateId?: string
 ): Promise<{ item: ItemConCategoria; location: Location }[]> {
   let query = supabase
     .from("aporte_items")
@@ -47,6 +84,14 @@ export async function getItemsActivos(
 
   if (estadoId) {
     query = query.eq("aporte.location.estado_id", estadoId);
+  }
+
+  if (centroAcopioId) {
+    query = query.eq("aporte.location.centro_acopio_id", centroAcopioId);
+  }
+
+  if (zonaRescateId) {
+    query = query.eq("aporte.location.zona_rescate_id", zonaRescateId);
   }
 
   const { data, error } = await query;
@@ -90,7 +135,9 @@ export async function getItemsDeLugar(locationId: string): Promise<ItemConCatego
 export async function getLugar(locationId: string): Promise<Location | null> {
   const { data, error } = await supabase
     .from("locations")
-    .select("*, estado:estados(*)")
+    .select(
+      "*, estado:estados(*), centros_acopio(nombre, horario, contacto), zonas_rescate(nombre, descripcion)"
+    )
     .eq("id", locationId)
     .maybeSingle();
   if (error) throw error;
@@ -201,6 +248,7 @@ export async function registrarVoluntario(input: {
   telefono: string | null;
   telegram: string | null;
   zona_descripcion: string | null;
+  centro_acopio_id: string | null;
 }): Promise<{ id: string; token: string }> {
   const { data, error } = await supabase.rpc("registrar_voluntario", {
     p_nombre: input.nombre,
@@ -208,6 +256,7 @@ export async function registrarVoluntario(input: {
     p_telefono: input.telefono,
     p_telegram: input.telegram,
     p_zona: input.zona_descripcion,
+    p_centro_acopio_id: input.centro_acopio_id,
   });
   if (error) throw error;
   return (data as { id: string; token: string }[])[0];

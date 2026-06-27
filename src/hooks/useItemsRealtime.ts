@@ -45,7 +45,9 @@ function agrupar(filas: ItemConLugar[]): PuntoMapa[] {
 // frescos suscribiéndose a cambios en aporte_items vía Realtime.
 export function useItemsRealtime(
   categorySlug?: string,
-  estadoId?: string
+  estadoId?: string,
+  centroAcopioId?: string,
+  zonaRescateId?: string
 ): Estado & { refrescar: () => void } {
   const [puntos, setPuntos] = useState<PuntoMapa[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -54,7 +56,12 @@ export function useItemsRealtime(
 
   const cargar = useCallback(async () => {
     try {
-      const filas = await getItemsActivos(categorySlug, estadoId);
+      const filas = await getItemsActivos(
+        categorySlug,
+        estadoId,
+        centroAcopioId,
+        zonaRescateId
+      );
       setPuntos(agrupar(filas));
       setError(null);
     } catch (e) {
@@ -62,7 +69,7 @@ export function useItemsRealtime(
     } finally {
       setCargando(false);
     }
-  }, [categorySlug, estadoId]);
+  }, [categorySlug, estadoId, centroAcopioId, zonaRescateId]);
 
   const refrescar = useCallback(() => {
     if (debounce.current) clearTimeout(debounce.current);

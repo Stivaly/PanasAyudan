@@ -60,4 +60,11 @@ textarea {
   .card {
     @apply rounded-2xl border border-border bg-surface p-4;
   }
+  .badge {
+    background: #62A04D;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
 }

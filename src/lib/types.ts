@@ -20,6 +20,30 @@ export interface EstadoVenezuela {
   orden: number;
 }
 
+export interface CentroAcopio {
+  id: string;
+  estado_id: string;
+  nombre: string;
+  direccion: string;
+  google_place_id: string | null;
+  lat: number | null;
+  lng: number | null;
+  horario: string | null;
+  contacto: string | null;
+  activo: boolean;
+}
+
+export interface ZonaRescate {
+  id: string;
+  estado_id: string;
+  nombre: string;
+  descripcion: string | null;
+  google_place_id: string | null;
+  lat: number | null;
+  lng: number | null;
+  activo: boolean;
+}
+
 export interface Location {
   id: string;
   google_place_id: string | null;
@@ -30,6 +54,10 @@ export interface Location {
   descripcion_libre: string | null;
   estado_id: string | null;
   estado?: EstadoVenezuela | null;
+  centro_acopio_id?: string | null;
+  zona_rescate_id?: string | null;
+  centros_acopio?: { nombre: string; horario: string | null; contacto: string | null } | null;
+  zonas_rescate?: { nombre: string; descripcion: string | null } | null;
   created_at: string;
 }
 
@@ -40,6 +68,7 @@ export interface Volunteer {
   telefono: string | null;
   telegram: string | null;
   zona_descripcion: string | null;
+  centro_acopio_id?: string | null;
   token: string;
   activo: boolean;
   created_at: string;
@@ -180,6 +209,8 @@ export interface LocationData {
   address: string | null;
   descripcion_libre: string;
   estado_id: string;
+  centro_acopio_id?: string | null;
+  zona_rescate_id?: string | null;
 }
 
 export interface ItemData {

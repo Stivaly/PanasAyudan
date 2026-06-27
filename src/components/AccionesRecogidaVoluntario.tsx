@@ -49,9 +49,9 @@ export default function AccionesRecogidaVoluntario({
 
   if (recogida.confirmada_at) {
     return (
-      <p className="text-sm font-semibold text-green-400">
+      <span className="badge self-start">
         ✓ Entrega confirmada · {formatearFecha(recogida.confirmada_at)}
-      </p>
+      </span>
     );
   }
 

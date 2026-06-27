@@ -8,9 +8,20 @@ import FiltroCategorias from "@/components/FiltroCategorias";
 import ListaLugares from "@/components/ListaLugares";
 import MisReservasActivas from "@/components/MisReservasActivas";
 import { useItemsRealtime } from "@/hooks/useItemsRealtime";
-import { getCategorias, getEstados } from "@/lib/api";
+import {
+  getCategorias,
+  getEstados,
+  getCentrosAcopioPorEstado,
+  getZonasRescatePorEstado,
+} from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
-import { Category, Coords, EstadoVenezuela } from "@/lib/types";
+import {
+  Category,
+  CentroAcopio,
+  Coords,
+  EstadoVenezuela,
+  ZonaRescate,
+} from "@/lib/types";
 
 const MapaClusters = dynamic(() => import("@/components/MapaClusters"), { ssr: false });
 
@@ -19,9 +30,18 @@ export default function Buscar() {
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [activa, setActiva] = useState<string | null>(null);
   const [estadoActivo, setEstadoActivo] = useState<string | null>(null);
+  const [centros, setCentros] = useState<CentroAcopio[]>([]);
+  const [zonas, setZonas] = useState<ZonaRescate[]>([]);
+  const [centroActivo, setCentroActivo] = useState<string | null>(null);
+  const [zonaActiva, setZonaActiva] = useState<string | null>(null);
   const [verMapa, setVerMapa] = useState(false);
   const [centro, setCentro] = useState<Coords>(CARACAS);
-  const { puntos, cargando } = useItemsRealtime(activa ?? undefined, estadoActivo ?? undefined);
+  const { puntos, cargando } = useItemsRealtime(
+    activa ?? undefined,
+    estadoActivo ?? undefined,
+    centroActivo ?? undefined,
+    zonaActiva ?? undefined
+  );
 
   useEffect(() => {
     getCategorias()
@@ -32,12 +52,43 @@ export default function Buscar() {
       .catch(() => {});
   }, []);
 
+  // Al cambiar de estado: cargar centros/zonas de ese estado y resetear los
+  // selects de centro y zona a "Todos".
+  useEffect(() => {
+    setCentroActivo(null);
+    setZonaActiva(null);
+    if (!estadoActivo) {
+      setCentros([]);
+      setZonas([]);
+      return;
+    }
+    let activo = true;
+    Promise.all([
+      getCentrosAcopioPorEstado(estadoActivo),
+      getZonasRescatePorEstado(estadoActivo),
+    ])
+      .then(([cs, zs]) => {
+        if (!activo) return;
+        setCentros(cs);
+        setZonas(zs);
+      })
+      .catch(() => {
+        if (!activo) return;
+        setCentros([]);
+        setZonas([]);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [estadoActivo]);
+
   useEffect(() => {
     if (verMapa) resolverCentro().then(setCentro);
   }, [verMapa]);
 
   const filtros = (
     <>
+      <FiltroCategorias categorias={categorias} activa={activa} onChange={setActiva} />
       <EstadoCombobox
         estados={estados}
         estadoId={estadoActivo}
@@ -46,7 +97,40 @@ export default function Buscar() {
         label="Filtrar por estado"
         placeholder="Todos los estados"
       />
-      <FiltroCategorias categorias={categorias} activa={activa} onChange={setActiva} />
+      {estadoActivo && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-semibold text-muted">Centro de acopio</label>
+          <select
+            value={centroActivo ?? ""}
+            onChange={(e) => setCentroActivo(e.target.value || null)}
+            className="field"
+          >
+            <option value="">Todos los centros</option>
+            {centros.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {estadoActivo && zonas.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-semibold text-muted">Zona de rescate</label>
+          <select
+            value={zonaActiva ?? ""}
+            onChange={(e) => setZonaActiva(e.target.value || null)}
+            className="field"
+          >
+            <option value="">Todas las zonas</option>
+            {zonas.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </>
   );
 

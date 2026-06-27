@@ -191,12 +191,18 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
                     <p className="mt-1 text-xs text-muted">{grupo.descripcion_lugar}</p>
                   )}
                 </div>
-                <span className="shrink-0 rounded-full bg-bg px-2 py-1 text-xs text-muted">
+                <span className="badge shrink-0">
                   {grupo.totalDisponible} disp.
                 </span>
               </div>
 
-              <p className="text-sm text-accent">{categorias.join(" - ")}</p>
+              <div className="flex flex-wrap gap-1">
+                {categorias.map((c) => (
+                  <span key={c} className="badge">
+                    {c}
+                  </span>
+                ))}
+              </div>
 
               <div className="flex flex-col gap-2">
                 {grupo.items.map((item) => (
@@ -204,9 +210,9 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold">{item.item_descripcion}</p>
-                        <p className="text-xs text-muted">{item.category_name}</p>
+                        <span className="badge mt-1 inline-block">{item.category_name}</span>
                       </div>
-                      <span className="shrink-0 text-xs font-semibold text-muted">
+                      <span className="badge shrink-0">
                         {item.qty_disponible}/{item.qty_approx}
                       </span>
                     </div>

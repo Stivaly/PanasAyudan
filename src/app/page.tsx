@@ -27,14 +27,14 @@ export default function Home() {
           </p>
           <h1 className="text-3xl font-bold text-white">Panas Ayudan</h1>
           <p className="mt-2 text-base text-muted">
-            Mueve insumos desde donde sobran hacia donde hacen falta.
+            Coordina la búsqueda y traslado de insumos entre centros de acopio y zonas de rescate.
           </p>
         </header>
 
         <div className="card border-accent bg-surface/80">
           <p className="text-lg font-bold text-white">En una emergencia, la ayuda cerca vale doble.</p>
           <p className="mt-2 text-sm text-muted">
-            Publica lo que tienes para dar, o búscalo en el mapa y ve a buscarlo.
+            Facilita que centros de acopio o equipos de rescate encuentren insumos disponibles y los movilicen a zonas con necesidad.
           </p>
         </div>
 

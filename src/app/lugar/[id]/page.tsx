@@ -113,6 +113,17 @@ export default function LugarDetalle() {
         <h1 className="text-lg font-bold">{lugar.place_name}</h1>
       </div>
       {lugar.address && <p className="-mt-3 text-sm text-muted">{lugar.address}</p>}
+      {lugar.centro_acopio_id && lugar.centros_acopio && (
+        <div className="-mt-2 rounded-xl bg-surface p-3 text-sm">
+          <p className="font-semibold">📍 Centro de acopio: {lugar.centros_acopio.nombre}</p>
+          {lugar.centros_acopio.horario && (
+            <p className="text-muted">{lugar.centros_acopio.horario}</p>
+          )}
+          {lugar.centros_acopio.contacto && (
+            <p className="text-muted">{lugar.centros_acopio.contacto}</p>
+          )}
+        </div>
+      )}
       {lugar.descripcion_libre && lugar.descripcion_libre !== lugar.place_name && (
         <p className="-mt-2 rounded-xl bg-surface p-3 text-sm">{lugar.descripcion_libre}</p>
       )}
@@ -134,7 +145,7 @@ export default function LugarDetalle() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold">{mia.descripcion}</p>
-                    <p className="text-xs text-muted">{mia.category_name}</p>
+                    <span className="badge mt-1 inline-block">{mia.category_name}</span>
                   </div>
                   <span className="shrink-0 text-sm font-semibold text-muted">
                     {mia.qty_a_buscar} {mia.qty_a_buscar === 1 ? "objeto" : "objetos"}
@@ -172,7 +183,7 @@ export default function LugarDetalle() {
               <div key={it.id} className="card flex flex-col gap-3">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold">{it.descripcion}</span>
-                  <span className="shrink-0 text-sm text-muted">{it.qty_disponible} disp.</span>
+                  <span className="badge shrink-0">{it.qty_disponible} disp.</span>
                 </div>
 
                 <ReservarItem

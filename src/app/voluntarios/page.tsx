@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { registrarVoluntario } from "@/lib/api";
+import { registrarVoluntario, getCentrosAcopioTodos, getEstados } from "@/lib/api";
 import { getVolunteerToken, setVolunteerToken } from "@/lib/supabase";
 import PanelVoluntario from "@/components/PanelVoluntario";
+import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
 
 type Vista = "menu" | "registro" | "acceso" | "panel";
 
@@ -17,6 +18,9 @@ export default function Voluntarios() {
   const [telefono, setTelefono] = useState("");
   const [telegram, setTelegram] = useState("");
   const [zona, setZona] = useState("");
+  const [centroAcopioId, setCentroAcopioId] = useState("");
+  const [centros, setCentros] = useState<CentroAcopio[]>([]);
+  const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [tokenNuevo, setTokenNuevo] = useState<string | null>(null);
 
   const [tokenInput, setTokenInput] = useState("");
@@ -30,6 +34,13 @@ export default function Voluntarios() {
       setVista("panel");
     }
   }, []);
+
+  // Al abrir el formulario de registro, cargar centros y estados (para agrupar).
+  useEffect(() => {
+    if (vista !== "registro" || centros.length > 0) return;
+    getCentrosAcopioTodos().then(setCentros).catch(() => setCentros([]));
+    getEstados().then(setEstados).catch(() => setEstados([]));
+  }, [vista, centros.length]);
 
   const normalizarTelefonoVe = (valor: string): string | null => {
     let digits = valor.replace(/\D/g, "");
@@ -59,6 +70,7 @@ export default function Voluntarios() {
         telefono: telefonoNormalizado,
         telegram: telegram.trim() || null,
         zona_descripcion: zona.trim() || null,
+        centro_acopio_id: centroAcopioId || null,
       });
       setTokenNuevo(v.token);
     } catch (e) {
@@ -191,6 +203,30 @@ export default function Voluntarios() {
             value={zona}
             onChange={(e) => setZona(e.target.value)}
           />
+          <label className="text-sm font-semibold text-muted">Centro de acopio</label>
+          <select
+            className="field"
+            value={centroAcopioId}
+            onChange={(e) => setCentroAcopioId(e.target.value)}
+          >
+            <option value="">Seleccionar centro (opcional)</option>
+            {estados.map((est) => {
+              const delEstado = centros.filter((c) => c.estado_id === est.id);
+              if (delEstado.length === 0) return null;
+              return (
+                <optgroup key={est.id} label={est.nombre}>
+                  {delEstado.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+          <p className="text-xs text-muted">
+            No eres el centro, solo un voluntario que ayuda desde ahí.
+          </p>
           {error && <p className="text-sm font-semibold text-danger">{error}</p>}
           <button onClick={registrar} disabled={enviando} className="btn-primary w-full disabled:opacity-50">
             {enviando ? "Registrando..." : "Registrarme"}

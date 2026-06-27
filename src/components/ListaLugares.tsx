@@ -23,13 +23,19 @@ export default function ListaLugares({ puntos }: Props) {
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold">{p.location.place_name}</span>
-                <span className="shrink-0 rounded-full bg-bg px-2 py-1 text-xs text-muted">
+                <span className="badge shrink-0">
                   {totalItems} {totalItems === 1 ? "item" : "items"}
                 </span>
               </div>
-              <span className="text-sm text-accent">{categorias.join(" - ")}</span>
+              <div className="flex flex-wrap gap-1">
+                {categorias.map((c) => (
+                  <span key={c} className="badge">
+                    {c}
+                  </span>
+                ))}
+              </div>
               {p.location.estado && (
-                <span className="text-xs font-semibold text-muted">{p.location.estado.nombre}</span>
+                <span className="badge self-start">{p.location.estado.nombre}</span>
               )}
               {p.location.address && (
                 <span className="text-xs text-muted">{p.location.address}</span>

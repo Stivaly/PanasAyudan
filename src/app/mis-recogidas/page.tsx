@@ -126,7 +126,7 @@ function PendienteCard({
         <div>
           <p className="font-semibold">{r.aporte_item?.descripcion ?? "Insumo"}</p>
           <p className="text-xs text-muted">{lugar?.place_name ?? "Lugar"}</p>
-          {lugar?.estado && <p className="text-xs text-muted">{lugar.estado}</p>}
+          {lugar?.estado && <span className="badge mt-1 inline-block">{lugar.estado}</span>}
           {lugar?.descripcion_libre && (
             <p className="mt-1 text-sm">{lugar.descripcion_libre}</p>
           )}
@@ -394,7 +394,7 @@ export default function MisRecogidas() {
                       {r.aporte_item?.descripcion ?? "Insumo"}
                     </p>
                     <p className="text-xs text-muted">{lugar?.place_name ?? "Lugar"}</p>
-                    {lugar?.estado && <p className="text-xs text-muted">{lugar.estado}</p>}
+                    {lugar?.estado && <span className="badge mt-1 inline-block">{lugar.estado}</span>}
                     {lugar?.descripcion_libre && (
                       <p className="mt-1 text-sm">{lugar.descripcion_libre}</p>
                     )}
@@ -405,13 +405,13 @@ export default function MisRecogidas() {
                 </div>
 
                 {cancelada ? (
-                  <p className="text-sm font-semibold text-muted">Cancelada</p>
+                  <span className="badge self-start">Cancelada</span>
                 ) : r.confirmada_at ? (
-                  <p className="text-sm font-semibold text-green-400">
+                  <span className="badge self-start">
                     ✓ Entrega confirmada el {formatearFecha(r.confirmada_at)}
-                  </p>
+                  </span>
                 ) : (
-                  <p className="text-sm text-muted">⏳ Esperando confirmación del voluntario</p>
+                  <span className="badge self-start">⏳ Esperando confirmación del voluntario</span>
                 )}
 
                 {!cancelada && !r.confirmada_at && (
