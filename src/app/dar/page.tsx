@@ -8,6 +8,7 @@ import PlacesAutocomplete from "@/components/PlacesAutocomplete";
 import MapaPicker from "@/components/MapaPicker";
 import ItemsForm, { ItemDraft, draftVacio, draftsValidos } from "@/components/ItemsForm";
 import { getCategorias, getEstados, crearAporte } from "@/lib/api";
+import { normalizarTelefonoVe } from "@/lib/telefono";
 import { resolverCentro, CARACAS } from "@/lib/geo";
 import { getVolunteerToken } from "@/lib/supabase";
 import { Category, Coords, EstadoVenezuela, PlaceSeleccion } from "@/lib/types";
@@ -83,7 +84,15 @@ export default function Dar() {
       setError("Completa categoría, descripción y cantidad (mayor a 0) en cada item.");
       return;
     }
-    const phone = telefono.trim() || null;
+    const telefonoIngresado = telefono.trim();
+    let phone: string | null = null;
+    if (telefonoIngresado) {
+      phone = normalizarTelefonoVe(telefonoIngresado);
+      if (!phone) {
+        setError("Ingresa un WhatsApp venezolano válido. Ej: 0412-1234567 o +58 412 1234567.");
+        return;
+      }
+    }
     const tg = telegram.trim() || null;
     if (!phone && !tg) {
       setError("Indica al menos un contacto: teléfono o Telegram.");
