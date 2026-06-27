@@ -179,7 +179,7 @@ export default function Voluntarios() {
             inputMode="tel"
             placeholder="WhatsApp venezolano (ej: 0412-1234567)"
             value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
+            onChange={(e) => setTelefono(e.target.value.replace(/[a-zA-Z]/g, ""))}
           />
           <p className="text-xs text-muted">
             Este número se compartirá por WhatsApp cuando alguien solicite uno de tus aportes.

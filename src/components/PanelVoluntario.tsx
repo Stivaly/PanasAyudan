@@ -232,6 +232,22 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
 
       <section className="flex flex-col gap-3">
         <h3 className="text-lg font-bold">Recogidas pendientes</h3>
+
+        <div className="rounded-xl border border-danger bg-bg p-3 text-sm">
+          <p className="font-semibold text-danger">⚠️ Confirma la entrega solo con pruebas</p>
+          <p className="mt-1 text-muted">
+            Cuando marques que el recogedor <strong>recogió</strong> el insumo, él tiene{" "}
+            <strong>24 horas</strong> para entregarlo en su destino y enviarte por{" "}
+            <strong>WhatsApp una foto</strong> donde se le vea claramente entregando.
+          </p>
+          <p className="mt-1 text-muted">
+            Confirma la entrega en el sistema <strong>únicamente</strong> cuando hayas recibido
+            esa prueba. Si el recogedor <strong>no entrega ni envía la foto</strong> dentro de
+            las 24 horas, no la confirmes: su cédula será{" "}
+            <strong>bloqueada del sistema</strong> y no podrá volver a solicitar nada.
+          </p>
+        </div>
+
         {cargando && <p className="text-muted">Cargando y ordenando por cercanía...</p>}
         {error && recogidas.length > 0 && <p className="text-sm font-semibold text-danger">{error}</p>}
         {!cargando && recogidas.length === 0 && (

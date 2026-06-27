@@ -6,6 +6,7 @@ export interface RecogedorLocal {
   nombre: string;
   apellido: string;
   cedula: string;
+  placa_vehiculo: string;
 }
 
 const DATA_KEY = "panas_recogedor";
@@ -23,7 +24,12 @@ export function getRecogedorLocal(): RecogedorLocal | null {
       typeof parsed?.apellido === "string" &&
       typeof parsed?.cedula === "string"
     ) {
-      return { nombre: parsed.nombre, apellido: parsed.apellido, cedula: parsed.cedula };
+      return {
+        nombre: parsed.nombre,
+        apellido: parsed.apellido,
+        cedula: parsed.cedula,
+        placa_vehiculo: typeof parsed.placa_vehiculo === "string" ? parsed.placa_vehiculo : "",
+      };
     }
     return null;
   } catch {

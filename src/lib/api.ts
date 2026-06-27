@@ -154,6 +154,17 @@ export async function reservarItem(
   return data as string;
 }
 
+// Verifica si una cédula está bloqueada por no haber ido a buscar una reserva.
+// Recibe la cédula ya limpia (sin puntos). Falla en silencio devolviendo false.
+export async function verificarCedulaBloqueada(cedula: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from("cedulas_bloqueadas")
+    .select("id", { count: "exact", head: true })
+    .eq("cedula", cedula);
+  if (error) return false;
+  return (count ?? 0) > 0;
+}
+
 // El voluntario confirma que la entrega fue recibida (con su volunteer-token).
 export async function confirmarEntrega(
   recogidaId: string,
