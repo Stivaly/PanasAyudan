@@ -127,6 +127,7 @@ export interface RecogidaConDetalle {
   aporte_item: {
     descripcion: string;
     category_id: string;
+    qty_disponible: number;
     aporte: {
       location_id: string;
       location: {

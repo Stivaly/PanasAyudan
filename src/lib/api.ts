@@ -228,3 +228,41 @@ export async function liberarRecogida(recogidaId: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+// El recogedor cancela su propia reserva pendiente (libera el stock).
+export async function cancelarRecogidaPropia(
+  recogidaId: string,
+  recogedorToken: string
+): Promise<void> {
+  const { error } = await supabase.rpc("cancelar_recogida_propia", {
+    p_recogida_id: recogidaId,
+    p_recogedor_token: recogedorToken,
+  });
+  if (error) {
+    if (error.message.includes("ya_completada")) {
+      throw new Error(
+        "El voluntario ya marcó esta recogida como completada, no se puede cancelar."
+      );
+    }
+    throw error;
+  }
+}
+
+// El recogedor cambia la cantidad de su reserva pendiente (sube o baja, ajustando el stock).
+export async function modificarQtyRecogida(
+  recogidaId: string,
+  nuevaQty: number,
+  recogedorToken: string
+): Promise<void> {
+  const { error } = await supabase.rpc("modificar_qty_recogida", {
+    p_recogida_id: recogidaId,
+    p_nueva_qty: nuevaQty,
+    p_recogedor_token: recogedorToken,
+  });
+  if (error) {
+    if (error.message.includes("stock_insuficiente")) {
+      throw new Error("No hay suficientes insumos disponibles para esa cantidad.");
+    }
+    throw error;
+  }
+}
