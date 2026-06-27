@@ -31,10 +31,10 @@ export default function Home() {
           </p>
         </header>
 
-        <div className="card border-accent bg-surface/80 text-sm">
-          <p className="font-semibold text-white">En una emergencia, la ayuda cerca vale doble.</p>
-          <p className="mt-2 text-muted">
-            Si puedes trasladar agua, comida, medicinas o herramientas, regístrate y coordina recogidas en tu zona.
+        <div className="card border-accent bg-surface/80">
+          <p className="text-lg font-bold text-white">En una emergencia, la ayuda cerca vale doble.</p>
+          <p className="mt-2 text-sm text-muted">
+            Publica lo que tienes para dar, o búscalo en el mapa y ve a buscarlo.
           </p>
         </div>
 
@@ -50,9 +50,12 @@ export default function Home() {
         <Link href="/buscar" className="btn-ghost w-full shadow-lg">
           Necesito buscar algo
         </Link>
-        <Link href="/voluntarios" className="btn-ghost w-full border-accent text-accent shadow-lg">
-          {tieneToken ? "Ver panel de voluntario" : "Quiero ayudar como voluntario"}
-        </Link>
+        <p className="mt-1 text-center text-xs text-muted">
+          ¿Coordinas recogidas en tu zona?{" "}
+          <Link href="/voluntarios" className="font-semibold text-accent underline">
+            Entra como voluntario
+          </Link>
+        </p>
       </div>
 
       <SeccionImpacto />

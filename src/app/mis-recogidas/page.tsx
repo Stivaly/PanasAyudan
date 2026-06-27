@@ -66,6 +66,10 @@ function PendienteCard({
   const [guardandoQty, setGuardandoQty] = useState(false);
   const [errorQty, setErrorQty] = useState<string | null>(null);
 
+  // La reserva vence dentro de las próximas 2 horas (y aún no ha vencido).
+  const msHastaVencer = new Date(r.reserved_until).getTime() - Date.now();
+  const venceProximo = msHastaVencer > 0 && msHastaVencer <= 2 * 60 * 60 * 1000;
+
   const qtyParsed = Number(qtyInput);
   const qtyValida =
     qtyInput.trim() !== "" &&
@@ -113,7 +117,11 @@ function PendienteCard({
   };
 
   return (
-    <div className="card flex flex-col gap-3">
+    <div
+      className={`card flex flex-col gap-3 ${
+        venceProximo ? "border border-danger border-pulso" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold">{r.aporte_item?.descripcion ?? "Insumo"}</p>
@@ -134,6 +142,12 @@ function PendienteCard({
           <Countdown hasta={r.reserved_until} vencidoTexto="Liberada" />
         </span>
       </div>
+
+      {venceProximo && (
+        <p className="text-sm font-semibold text-danger">
+          ⚠ Tu reserva vence pronto. Ve a buscar el insumo.
+        </p>
+      )}
 
       <BotonWhatsapp
         href={whatsappHref(r.whatsapp, r.aporte_item?.descripcion ?? "un insumo")}

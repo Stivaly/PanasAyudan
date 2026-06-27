@@ -27,6 +27,20 @@ textarea {
   font-size: 16px; /* evita zoom automático en iOS */
 }
 
+@keyframes pulso-borde {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.border-pulso {
+  animation: pulso-borde 2s ease-in-out infinite;
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-xl px-5 py-4 text-lg font-semibold transition-colors;
