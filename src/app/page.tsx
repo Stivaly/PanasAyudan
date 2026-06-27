@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getVolunteerToken } from "@/lib/supabase";
+import SeccionImpacto from "@/components/SeccionImpacto";
 
 export default function Home() {
   const [tieneToken, setTieneToken] = useState(false);
@@ -53,6 +54,8 @@ export default function Home() {
           {tieneToken ? "Ver panel de voluntario" : "Quiero ayudar como voluntario"}
         </Link>
       </div>
+
+      <SeccionImpacto />
     </main>
   );
 }

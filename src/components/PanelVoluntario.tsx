@@ -7,11 +7,13 @@ import {
   obtenerContacto,
   completarRecogida,
   liberarRecogida,
+  confirmarEntrega,
   getAportesVoluntario,
 } from "@/lib/api";
 import { clearVolunteerToken, supabase } from "@/lib/supabase";
 import { AporteConContacto, AporteVoluntario } from "@/lib/types";
 import Countdown from "@/components/Countdown";
+import AccionesRecogidaVoluntario from "@/components/AccionesRecogidaVoluntario";
 
 interface Props {
   token: string;
@@ -39,6 +41,7 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
   const [errorAportes, setErrorAportes] = useState<string | null>(null);
   const [contactos, setContactos] = useState<Record<string, AporteConContacto>>({});
   const [aviso, setAviso] = useState<string | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   const cargarAportes = useCallback(async () => {
     setCargandoAportes(true);
@@ -123,6 +126,24 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
       await Promise.all([recargar(), cargarAportes()]);
     } catch (e) {
       setAviso(e instanceof Error ? e.message : "No se pudo liberar.");
+    }
+  };
+
+  const confirmar = async (id: string) => {
+    setAviso(null);
+    setConfirmandoId(id);
+    try {
+      await confirmarEntrega(id, token);
+      await Promise.all([recargar(), cargarAportes()]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      setAviso(
+        msg.includes("plazo_vencido")
+          ? "El plazo para confirmar esta entrega ya venció."
+          : "No se pudo confirmar la entrega."
+      );
+    } finally {
+      setConfirmandoId(null);
     }
   };
 
@@ -250,9 +271,11 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
                 <p>
                   <span className="text-muted">Cantidad:</span> {r.recogida.qty_a_buscar}
                 </p>
-                <p>
-                  <span className="text-muted">Tiempo para que lo busquen:</span> <Countdown hasta={r.recogida.reserved_until} />
-                </p>
+                {r.recogida.status === "pendiente" && (
+                  <p>
+                    <span className="text-muted">Tiempo para que lo busquen:</span> <Countdown hasta={r.recogida.reserved_until} />
+                  </p>
+                )}
               </div>
 
               {contacto ? (
@@ -272,14 +295,13 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
                 </button>
               )}
 
-              <div className="flex gap-2">
-                <button onClick={() => completar(r.recogida.id)} className="btn-primary flex-1">
-                  Marcar como recogido
-                </button>
-                <button onClick={() => liberar(r.recogida.id)} className="btn-danger flex-1">
-                  Liberar reserva
-                </button>
-              </div>
+              <AccionesRecogidaVoluntario
+                recogida={r.recogida}
+                onCompletar={completar}
+                onLiberar={liberar}
+                onConfirmar={confirmar}
+                confirmando={confirmandoId === r.recogida.id}
+              />
             </div>
           );
         })}

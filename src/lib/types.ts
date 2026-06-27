@@ -82,6 +82,8 @@ export interface Recogida {
   qty_a_buscar: number;
   status: RecogidaStatus;
   reserved_until: string;
+  confirmation_deadline: string | null;
+  confirmada_at: string | null;
   created_at: string;
 }
 
@@ -92,6 +94,56 @@ export interface ReservaPublica {
   descripcion: string;
   qty_a_buscar: number;
   reserved_until: string;
+}
+
+// Reserva propia del dispositivo actual, identificada por recogedor_token.
+// Incluye datos personales porque son del propio usuario.
+export interface ReservaRecogedor {
+  id: string;
+  aporte_item_id: string;
+  location_id: string;
+  place_name: string;
+  category_name: string;
+  descripcion: string;
+  nombre: string;
+  apellido: string;
+  cedula: string;
+  placa_vehiculo: string | null;
+  qty_a_buscar: number;
+  reserved_until: string;
+  status: RecogidaStatus;
+}
+
+// Recogida del dispositivo actual con el detalle del item y lugar anidado,
+// tal como la devuelve la RPC listar_recogidas_recogedor.
+export interface RecogidaConDetalle {
+  id: string;
+  status: RecogidaStatus;
+  qty_a_buscar: number;
+  confirmada_at: string | null;
+  confirmation_deadline: string | null;
+  reserved_until: string;
+  recogedor_token: string | null;
+  aporte_item: {
+    descripcion: string;
+    category_id: string;
+    aporte: {
+      location_id: string;
+      location: {
+        place_name: string;
+        descripcion_libre: string | null;
+        estado: string | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
+export interface EstadisticasImpacto {
+  total_recogidas_completadas: number;
+  total_recogidas_confirmadas: number;
+  total_qty_coordinada: number;
+  total_aportes_activos: number;
+  lugares_activos: number;
 }
 
 export interface AporteVoluntario {
@@ -146,6 +198,7 @@ export interface RecogidaData {
   cedula: string;
   placa_vehiculo: string | null;
   volunteer_id: string | null;
+  recogedor_token: string | null;
 }
 
 // --- Vistas compuestas para UI ---

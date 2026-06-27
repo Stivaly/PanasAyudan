@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import FiltroCategorias from "@/components/FiltroCategorias";
 import ListaLugares from "@/components/ListaLugares";
+import MisReservasActivas from "@/components/MisReservasActivas";
 import { useItemsRealtime } from "@/hooks/useItemsRealtime";
 import { getCategorias, getEstados } from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
@@ -83,6 +84,8 @@ export default function Buscar() {
       <button onClick={() => setVerMapa(true)} className="btn-ghost w-full">
         Ver en mapa
       </button>
+
+      <MisReservasActivas />
 
       {cargando && <p className="text-muted">Cargando...</p>}
 

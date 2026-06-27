@@ -4,10 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useRecogidasPendientes, RecogidaDetallada } from "@/hooks/useRecogidasPendientes";
-import { getAportesVoluntario, completarRecogida, liberarRecogida } from "@/lib/api";
+import {
+  getAportesVoluntario,
+  completarRecogida,
+  liberarRecogida,
+  confirmarEntrega,
+} from "@/lib/api";
 import { getVolunteerToken } from "@/lib/supabase";
 import { AporteVoluntario } from "@/lib/types";
 import Countdown from "@/components/Countdown";
+import AccionesRecogidaVoluntario from "@/components/AccionesRecogidaVoluntario";
 
 export default function GestionarLugar() {
   const params = useParams<{ id: string }>();
@@ -19,6 +25,7 @@ export default function GestionarLugar() {
   const [cargandoAportes, setCargandoAportes] = useState(true);
   const [errorAportes, setErrorAportes] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   const { recogidas, error, recargar } = useRecogidasPendientes(token);
 
@@ -77,6 +84,25 @@ export default function GestionarLugar() {
       await Promise.all([recargar(), cargarAportes()]);
     } catch (e) {
       setAviso(e instanceof Error ? e.message : "No se pudo liberar.");
+    }
+  };
+
+  const confirmar = async (id: string) => {
+    if (!token) return;
+    setAviso(null);
+    setConfirmandoId(id);
+    try {
+      await confirmarEntrega(id, token);
+      await Promise.all([recargar(), cargarAportes()]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      setAviso(
+        msg.includes("plazo_vencido")
+          ? "El plazo para confirmar esta entrega ya venció."
+          : "No se pudo confirmar la entrega."
+      );
+    } finally {
+      setConfirmandoId(null);
     }
   };
 
@@ -154,7 +180,7 @@ export default function GestionarLugar() {
             ) : (
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-bold uppercase tracking-wide text-accent">
-                  {solicitudes.length} {solicitudes.length === 1 ? "solicitud pendiente" : "solicitudes pendientes"}
+                  {solicitudes.length} {solicitudes.length === 1 ? "solicitud" : "solicitudes"}
                 </p>
                 {solicitudes.map((r) => {
                   return (
@@ -175,20 +201,21 @@ export default function GestionarLugar() {
                         <p>
                           <span className="text-muted">Cantidad:</span> {r.recogida.qty_a_buscar}
                         </p>
-                        <p>
-                          <span className="text-muted">Tiempo para que lo busquen:</span>{" "}
-                          <Countdown hasta={r.recogida.reserved_until} />
-                        </p>
+                        {r.recogida.status === "pendiente" && (
+                          <p>
+                            <span className="text-muted">Tiempo para que lo busquen:</span>{" "}
+                            <Countdown hasta={r.recogida.reserved_until} />
+                          </p>
+                        )}
                       </div>
 
-                      <div className="flex gap-2">
-                        <button onClick={() => completar(r.recogida.id)} className="btn-primary flex-1">
-                          Marcar como recogido
-                        </button>
-                        <button onClick={() => liberar(r.recogida.id)} className="btn-danger flex-1">
-                          Liberar reserva
-                        </button>
-                      </div>
+                      <AccionesRecogidaVoluntario
+                        recogida={r.recogida}
+                        onCompletar={completar}
+                        onLiberar={liberar}
+                        onConfirmar={confirmar}
+                        confirmando={confirmandoId === r.recogida.id}
+                      />
                     </div>
                   );
                 })}

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { getItemsDeLugar, getLugar, getReservasPendientesDeLugar } from "@/lib/api";
-import { ItemConCategoria, Location, ReservaPublica } from "@/lib/types";
+import { getItemsDeLugar, getLugar, getReservasDeRecogedor } from "@/lib/api";
+import { getRecogedorToken } from "@/lib/recogedor";
+import { ItemConCategoria, Location, ReservaRecogedor } from "@/lib/types";
 import Countdown from "@/components/Countdown";
 import ReservarItem, { ReservaConfirmadaInfo } from "@/components/ReservarItem";
 
@@ -15,45 +16,48 @@ export default function LugarDetalle() {
 
   const [lugar, setLugar] = useState<Location | null>(null);
   const [items, setItems] = useState<ItemConCategoria[]>([]);
-  const [reservas, setReservas] = useState<ReservaPublica[]>([]);
+  const [misReservas, setMisReservas] = useState<ReservaRecogedor[]>([]);
   const [cargando, setCargando] = useState(true);
   const [errorReservas, setErrorReservas] = useState<string | null>(null);
   const [reservaConfirmada, setReservaConfirmada] = useState<ReservaConfirmadaInfo | null>(null);
 
-  const recargarReservas = useCallback(async () => {
+  // Reservas del dispositivo actual, filtradas por su token local en Supabase.
+  // El token solo existe en este navegador; otro dispositivo no ve estas
+  // reservas. En SSR no hay token (null): no consultamos.
+  const recargarMisReservas = useCallback(async () => {
+    const token = getRecogedorToken();
+    if (!token) {
+      setMisReservas([]);
+      return;
+    }
     try {
-      const data = await getReservasPendientesDeLugar(locationId);
-      setReservas(data);
-      setErrorReservas(null);
+      const data = await getReservasDeRecogedor(locationId, token);
+      setMisReservas(data);
     } catch {
-      setReservas([]);
-      setErrorReservas("No se pudo cargar el contador publico de solicitudes.");
+      setMisReservas([]);
     }
   }, [locationId]);
 
   const recargarDatos = useCallback(async () => {
     await Promise.all([
       getItemsDeLugar(locationId).then(setItems),
-      recargarReservas(),
+      recargarMisReservas(),
     ]);
-  }, [locationId, recargarReservas]);
+  }, [locationId, recargarMisReservas]);
 
   useEffect(() => {
     let activo = true;
-    Promise.all([
-      getLugar(locationId),
-      getItemsDeLugar(locationId),
-      getReservasPendientesDeLugar(locationId).catch(() => [] as ReservaPublica[]),
-    ])
-      .then(([l, its, res]) => {
+    Promise.all([getLugar(locationId), getItemsDeLugar(locationId)])
+      .then(([l, its]) => {
         if (!activo) return;
         setLugar(l);
         setItems(its);
-        setReservas(res);
         setErrorReservas(null);
       })
-      .catch(() => setErrorReservas("No se pudo cargar el contador publico de solicitudes."))
+      .catch(() => setErrorReservas("No se pudieron cargar los insumos de este lugar."))
       .finally(() => activo && setCargando(false));
+
+    void recargarMisReservas();
 
     const canal = supabase
       .channel(`lugar_${locationId}`)
@@ -68,7 +72,7 @@ export default function LugarDetalle() {
       activo = false;
       void supabase.removeChannel(canal);
     };
-  }, [locationId, recargarDatos]);
+  }, [locationId, recargarDatos, recargarMisReservas]);
 
   const porCategoria = useMemo(() => {
     const grupos = new Map<string, { nombre: string; items: ItemConCategoria[] }>();
@@ -155,6 +159,43 @@ export default function LugarDetalle() {
         </section>
       )}
 
+      {misReservas.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-accent">
+            Mis solicitudes en este dispositivo
+          </h2>
+          <div className="card flex flex-col gap-3 border-accent">
+            {misReservas.map((mia) => (
+              <div key={mia.id} className="flex flex-col gap-2 rounded-xl bg-bg p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{mia.descripcion}</p>
+                    <p className="text-xs text-muted">{mia.category_name}</p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold text-muted">
+                    {mia.qty_a_buscar} {mia.qty_a_buscar === 1 ? "objeto" : "objetos"}
+                  </span>
+                </div>
+                <p className="text-sm">
+                  <span className="text-muted">A nombre de:</span> {mia.nombre} {mia.apellido}
+                  {"  "}·{"  "}
+                  <span className="text-muted">CI:</span> {mia.cedula}
+                </p>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-muted">Tiempo para ir a buscar</span>
+                  <span className="text-lg font-bold">
+                    <Countdown hasta={mia.reserved_until} />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted">
+            Solo tú ves esto, en este navegador. Si entras desde otro dispositivo no aparecerá.
+          </p>
+        </section>
+      )}
+
       {porCategoria.length === 0 && (
         <p className="text-muted">Ya no hay insumos disponibles en este lugar.</p>
       )}
@@ -183,36 +224,6 @@ export default function LugarDetalle() {
           })}
         </section>
       ))}
-
-      {reservas.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-accent">Solicitudes activas</h2>
-          <div className="card flex flex-col gap-3 border-accent">
-            {reservas.map((solicitud) => (
-              <div
-                key={solicitud.aporte_item_id + "-" + solicitud.reserved_until}
-                className="flex flex-col gap-2 rounded-xl bg-bg p-3"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold">{solicitud.descripcion}</p>
-                    <p className="text-xs text-muted">{solicitud.category_name}</p>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold text-muted">
-                    {solicitud.qty_a_buscar} {solicitud.qty_a_buscar === 1 ? "objeto" : "objetos"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-muted">Tiempo para ir a buscar</span>
-                  <span className="text-lg font-bold">
-                    <Countdown hasta={solicitud.reserved_until} />
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </main>
   );
 }

@@ -1,4 +1,5 @@
 import { supabase, supabaseWithToken } from "./supabase";
+import { getRecogedorToken } from "./recogedor";
 import {
   Category,
   EstadoVenezuela,
@@ -9,7 +10,9 @@ import {
   AporteConContacto,
   ItemConCategoria,
   Location,
-  ReservaPublica,
+  ReservaRecogedor,
+  RecogidaConDetalle,
+  EstadisticasImpacto,
   AporteVoluntario,
 } from "./types";
 
@@ -94,14 +97,17 @@ export async function getLugar(locationId: string): Promise<Location | null> {
   return data as Location | null;
 }
 
-export async function getReservasPendientesDeLugar(
-  locationId: string
-): Promise<ReservaPublica[]> {
-  const { data, error } = await supabase.rpc("listar_recogidas_pendientes_lugar", {
+// Reservas pendientes del dispositivo actual (por su token local) en un lugar.
+export async function getReservasDeRecogedor(
+  locationId: string,
+  recogedorToken: string
+): Promise<ReservaRecogedor[]> {
+  const { data, error } = await supabase.rpc("listar_recogidas_por_token", {
+    p_recogedor_token: recogedorToken,
     p_location_id: locationId,
   });
   if (error) throw error;
-  return data as ReservaPublica[];
+  return data as ReservaRecogedor[];
 }
 
 export async function crearAporte(
@@ -142,9 +148,40 @@ export async function reservarItem(
     p_aporte_item_id: aporteItemId,
     p_qty: qty,
     recogida_data: recogida,
+    p_recogedor_token: getRecogedorToken(),
   });
   if (error) throw error;
   return data as string;
+}
+
+// El voluntario confirma que la entrega fue recibida (con su volunteer-token).
+export async function confirmarEntrega(
+  recogidaId: string,
+  volunteerToken: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(volunteerToken).rpc("confirmar_entrega", {
+    p_recogida_id: recogidaId,
+    p_volunteer_token: volunteerToken,
+  });
+  if (error) throw error;
+}
+
+// Estadísticas agregadas de impacto (públicas, sin datos personales).
+export async function getEstadisticasImpacto(): Promise<EstadisticasImpacto> {
+  const { data, error } = await supabase.rpc("get_estadisticas_impacto");
+  if (error) throw error;
+  return data as EstadisticasImpacto;
+}
+
+// Todas las recogidas del dispositivo actual (cualquier status) por token local.
+export async function getRecogidasDeRecogedor(
+  recogedorToken: string
+): Promise<RecogidaConDetalle[]> {
+  const { data, error } = await supabase.rpc("listar_recogidas_recogedor", {
+    p_recogedor_token: recogedorToken,
+  });
+  if (error) throw error;
+  return (data ?? []) as RecogidaConDetalle[];
 }
 
 export async function registrarVoluntario(input: {

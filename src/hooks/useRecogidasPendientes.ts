@@ -43,6 +43,8 @@ async function fetchPendientes(
       qty_a_buscar: row.qty_a_buscar,
       status: row.status,
       reserved_until: row.reserved_until,
+      confirmation_deadline: row.confirmation_deadline ?? null,
+      confirmada_at: row.confirmada_at ?? null,
       created_at: row.created_at,
     },
     descripcion: row.descripcion,

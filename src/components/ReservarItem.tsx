@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getWhatsappVoluntarioItem, reservarItem } from "@/lib/api";
-import { getVolunteerToken } from "@/lib/supabase";
+import { getRecogedorLocal, getRecogedorToken, saveRecogedorLocal } from "@/lib/recogedor";
 import { ItemConCategoria } from "@/lib/types";
 
 export interface ReservaConfirmadaInfo {
@@ -27,6 +27,16 @@ export default function ReservarItem({ item, onReservada }: Props) {
   const [enviando, setEnviando] = useState(false);
   const [confirmada, setConfirmada] = useState(false);
 
+  // Pre-rellena con los datos guardados en este dispositivo, si existen.
+  useEffect(() => {
+    const guardado = getRecogedorLocal();
+    if (guardado) {
+      setNombre(guardado.nombre);
+      setApellido(guardado.apellido);
+      setCedula(guardado.cedula);
+    }
+  }, []);
+
   const confirmar = async () => {
     setError(null);
     const cantidad = parseInt(qty, 10);
@@ -46,13 +56,19 @@ export default function ReservarItem({ item, onReservada }: Props) {
 
     setEnviando(true);
     try {
-      await reservarItem(item.id, cantidad, {
+      const datos = {
         nombre: nombre.trim(),
         apellido: apellido.trim(),
         cedula: cedula.trim(),
+      };
+      await reservarItem(item.id, cantidad, {
+        ...datos,
         placa_vehiculo: placa.trim() || null,
-        volunteer_id: getVolunteerToken() ? null : null,
+        volunteer_id: null,
+        recogedor_token: getRecogedorToken(),
       });
+      // Identidad persistente del recogedor en este navegador.
+      saveRecogedorLocal(datos);
       const whatsapp = await getWhatsappVoluntarioItem(item.id).catch(() => null);
       setConfirmada(true);
       setAbierto(false);
