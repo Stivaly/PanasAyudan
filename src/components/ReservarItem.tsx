@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getWhatsappVoluntarioItem, reservarItem, verificarCedulaBloqueada } from "@/lib/api";
+import { reservarItem, verificarCedulaBloqueada } from "@/lib/api";
 import { getRecogedorLocal, getRecogedorToken, saveRecogedorLocal } from "@/lib/recogedor";
 import {
   validarCedula,
@@ -13,15 +13,10 @@ import {
 } from "@/lib/validaciones";
 import { ItemConCategoria } from "@/lib/types";
 
-export interface ReservaConfirmadaInfo {
-  itemDescripcion: string;
-  cantidad: number;
-  whatsapp: string | null;
-}
-
 interface Props {
   item: ItemConCategoria;
-  onReservada?: (info: ReservaConfirmadaInfo) => void | Promise<void>;
+  // Se llama tras una reserva exitosa; el padre decide a dónde navegar.
+  onReservada?: () => void | Promise<void>;
 }
 
 export default function ReservarItem({ item, onReservada }: Props) {
@@ -35,7 +30,6 @@ export default function ReservarItem({ item, onReservada }: Props) {
   const [errorCedula, setErrorCedula] = useState<string | null>(null);
   const [errorPlaca, setErrorPlaca] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [confirmada, setConfirmada] = useState(false);
   const [bloqueada, setBloqueada] = useState(false);
 
   // Pre-rellena con los datos guardados en este dispositivo, si existen.
@@ -102,21 +96,18 @@ export default function ReservarItem({ item, onReservada }: Props) {
       });
       // Identidad persistente del recogedor en este navegador.
       saveRecogedorLocal({ ...datos, placa_vehiculo: placaLimpia });
-      const whatsapp = await getWhatsappVoluntarioItem(item.id).catch(() => null);
-      setConfirmada(true);
       setAbierto(false);
-      await onReservada?.({
-        itemDescripcion: item.descripcion,
-        cantidad,
-        whatsapp,
-      });
+      // El padre redirige (a /mis-recogidas); no mostramos pantalla intermedia.
+      await onReservada?.();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "No se pudo reservar.";
+      const msg = e instanceof Error ? e.message : "";
       if (msg.includes("cedula_bloqueada")) {
         setBloqueada(true);
         setAbierto(false);
+      } else if (msg.includes("Stock insuficiente") || msg.includes("stock")) {
+        setError("No se pudo guardar tu reserva porque otra persona la solicitó primero.");
       } else {
-        setError(msg);
+        setError(msg || "No se pudo guardar tu reserva. Intenta de nuevo.");
       }
     } finally {
       setEnviando(false);
@@ -133,15 +124,6 @@ export default function ReservarItem({ item, onReservada }: Props) {
           </Link>{" "}
           para ver el detalle.
         </p>
-      </div>
-    );
-  }
-
-  if (confirmada) {
-    return (
-      <div className="rounded-xl border border-accent bg-bg p-3 text-sm">
-        <p className="font-semibold text-accent">Solicitud registrada</p>
-        <p className="mt-1 text-muted">Revisa arriba el contacto del voluntario y el tiempo disponible.</p>
       </div>
     );
   }

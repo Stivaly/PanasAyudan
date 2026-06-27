@@ -23,6 +23,27 @@ function formatearFecha(iso: string): string {
   });
 }
 
+// Enlace de WhatsApp al voluntario dueño del aporte, o null si no hay teléfono.
+function whatsappHref(telefono: string | null, descripcion: string): string | null {
+  if (!telefono) return null;
+  const texto = `Hola, solicité ${descripcion} en Panas Ayudan. Quiero coordinar la recogida y la entrega.`;
+  return `https://wa.me/${telefono}?text=${encodeURIComponent(texto)}`;
+}
+
+function BotonWhatsapp({ href }: { href: string | null }) {
+  if (!href) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="btn-primary w-full text-center"
+    >
+      Escribir al voluntario por WhatsApp
+    </a>
+  );
+}
+
 function PendienteCard({
   r,
   onCancelada,
@@ -113,6 +134,10 @@ function PendienteCard({
           <Countdown hasta={r.reserved_until} vencidoTexto="Liberada" />
         </span>
       </div>
+
+      <BotonWhatsapp
+        href={whatsappHref(r.whatsapp, r.aporte_item?.descripcion ?? "un insumo")}
+      />
 
       {/* Cambiar cantidad (solo si hay margen para subir o bajar). */}
       {maxQty > 1 && (
@@ -373,6 +398,12 @@ export default function MisRecogidas() {
                   </p>
                 ) : (
                   <p className="text-sm text-muted">⏳ Esperando confirmación del voluntario</p>
+                )}
+
+                {!cancelada && !r.confirmada_at && (
+                  <BotonWhatsapp
+                    href={whatsappHref(r.whatsapp, r.aporte_item?.descripcion ?? "un insumo")}
+                  />
                 )}
               </div>
             );

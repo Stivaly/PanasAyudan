@@ -124,6 +124,7 @@ export interface RecogidaConDetalle {
   confirmation_deadline: string | null;
   reserved_until: string;
   recogedor_token: string | null;
+  whatsapp: string | null;
   aporte_item: {
     descripcion: string;
     category_id: string;

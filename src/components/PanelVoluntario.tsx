@@ -2,16 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRecogidasPendientes, RecogidaDetallada } from "@/hooks/useRecogidasPendientes";
+import { useRecogidasPendientes } from "@/hooks/useRecogidasPendientes";
 import {
-  obtenerContacto,
   completarRecogida,
   liberarRecogida,
   confirmarEntrega,
   getAportesVoluntario,
 } from "@/lib/api";
 import { clearVolunteerToken, supabase } from "@/lib/supabase";
-import { AporteConContacto, AporteVoluntario } from "@/lib/types";
+import { AporteVoluntario } from "@/lib/types";
 import Countdown from "@/components/Countdown";
 import AccionesRecogidaVoluntario from "@/components/AccionesRecogidaVoluntario";
 
@@ -39,7 +38,6 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
   const [aportes, setAportes] = useState<AporteVoluntario[]>([]);
   const [cargandoAportes, setCargandoAportes] = useState(true);
   const [errorAportes, setErrorAportes] = useState<string | null>(null);
-  const [contactos, setContactos] = useState<Record<string, AporteConContacto>>({});
   const [aviso, setAviso] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
@@ -98,16 +96,6 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
     }
     return Array.from(mapa.values());
   }, [aportes]);
-
-  const verContacto = async (r: RecogidaDetallada) => {
-    setAviso(null);
-    try {
-      const data = await obtenerContacto(r.aporte_id, token);
-      setContactos((prev) => ({ ...prev, [r.aporte_id]: data }));
-    } catch (e) {
-      setAviso(e instanceof Error ? e.message : "No se pudo obtener el contacto.");
-    }
-  };
 
   const completar = async (id: string) => {
     setAviso(null);
@@ -258,7 +246,6 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
         )}
 
         {recogidas.map((r) => {
-          const contacto = contactos[r.aporte_id];
           return (
             <div key={r.recogida.id} className="card flex flex-col gap-3">
               <div className="flex items-start justify-between gap-2">
@@ -293,23 +280,6 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
                   </p>
                 )}
               </div>
-
-              {contacto ? (
-                <div className="rounded-xl border border-accent p-3 text-sm">
-                  {contacto.contact_phone && (
-                    <a href={"tel:" + contacto.contact_phone} className="block font-semibold text-accent">
-                      Tel: {contacto.contact_phone}
-                    </a>
-                  )}
-                  {contacto.contact_telegram && (
-                    <p className="font-semibold text-accent">Telegram: {contacto.contact_telegram}</p>
-                  )}
-                </div>
-              ) : (
-                <button onClick={() => verContacto(r)} className="btn-ghost w-full">
-                  Ver contacto
-                </button>
-              )}
 
               <AccionesRecogidaVoluntario
                 recogida={r.recogida}

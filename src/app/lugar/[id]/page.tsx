@@ -1,17 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getItemsDeLugar, getLugar, getReservasDeRecogedor } from "@/lib/api";
 import { getRecogedorToken } from "@/lib/recogedor";
 import { ItemConCategoria, Location, ReservaRecogedor } from "@/lib/types";
 import Countdown from "@/components/Countdown";
-import ReservarItem, { ReservaConfirmadaInfo } from "@/components/ReservarItem";
+import ReservarItem from "@/components/ReservarItem";
 
 export default function LugarDetalle() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const locationId = params.id;
 
   const [lugar, setLugar] = useState<Location | null>(null);
@@ -19,7 +20,6 @@ export default function LugarDetalle() {
   const [misReservas, setMisReservas] = useState<ReservaRecogedor[]>([]);
   const [cargando, setCargando] = useState(true);
   const [errorReservas, setErrorReservas] = useState<string | null>(null);
-  const [reservaConfirmada, setReservaConfirmada] = useState<ReservaConfirmadaInfo | null>(null);
 
   // Reservas del dispositivo actual, filtradas por su token local en Supabase.
   // El token solo existe en este navegador; otro dispositivo no ve estas
@@ -123,42 +123,6 @@ export default function LugarDetalle() {
 
       {errorReservas && <p className="text-sm font-semibold text-danger">{errorReservas}</p>}
 
-      {reservaConfirmada && (
-        <section className="card flex flex-col gap-3 border-accent">
-          {reservaConfirmada.whatsapp ? (
-            <a
-              href={
-                "https://wa.me/" +
-                reservaConfirmada.whatsapp +
-                "?text=" +
-                encodeURIComponent(
-                  "Hola, acabo de solicitar " +
-                    reservaConfirmada.cantidad +
-                    " de " +
-                    reservaConfirmada.itemDescripcion +
-                    " en Panas Ayudan. Quiero coordinar la recogida."
-                )
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary w-full text-base"
-            >
-              Escribir al voluntario por WhatsApp
-            </a>
-          ) : (
-            <p className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-              No se encontró un WhatsApp del voluntario para este aporte.
-            </p>
-          )}
-          <div className="rounded-xl bg-bg p-3 text-sm">
-            <p className="font-semibold text-accent">Solicitud registrada</p>
-            <p className="mt-1 text-muted">
-              Tienes hasta que termine el contador para ir a buscar este insumo. Después se libera automáticamente.
-            </p>
-          </div>
-        </section>
-      )}
-
       {misReservas.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-bold uppercase tracking-wide text-accent">
@@ -213,10 +177,10 @@ export default function LugarDetalle() {
 
                 <ReservarItem
                   item={it}
-                  onReservada={async (info) => {
-                    setReservaConfirmada(info);
-                    await recargarDatos();
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  onReservada={() => {
+                    // Reserva exitosa: directo a /mis-recogidas (allí está el
+                    // botón para contactar al voluntario por WhatsApp).
+                    router.push("/mis-recogidas");
                   }}
                 />
               </div>
