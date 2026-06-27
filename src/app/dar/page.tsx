@@ -172,7 +172,7 @@ export default function Dar() {
           estadoId={estadoId}
           onChange={setEstadoId}
           label="Estado del aporte"
-          placeholder="Busca o elige el estado"
+          placeholder="Elige el estado"
           required
         />
       </section>

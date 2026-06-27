@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
 import { EstadoVenezuela } from "@/lib/types";
 
 interface Props {
@@ -13,75 +12,37 @@ interface Props {
   required?: boolean;
 }
 
-function normalizar(valor: string) {
-  return valor.trim().toLocaleLowerCase("es-VE");
-}
-
 export default function EstadoCombobox({
   estados,
   estadoId,
   onChange,
   includeTodos = false,
   label = "Estado",
-  placeholder = "Busca o elige un estado",
+  placeholder = "Elige un estado",
   required = false,
 }: Props) {
-  const datalistId = useId();
-  const seleccionado = estados.find((estado) => estado.id === estadoId) ?? null;
-  const [texto, setTexto] = useState(includeTodos ? "Todos los estados" : "");
-
-  useEffect(() => {
-    if (seleccionado) {
-      setTexto(seleccionado.nombre);
-      return;
-    }
-  }, [includeTodos, seleccionado]);
-
-  const cambiarTexto = (valor: string) => {
-    setTexto(valor);
-    const limpio = normalizar(valor);
-
-    if (includeTodos && (!limpio || limpio === normalizar("Todos los estados"))) {
-      onChange(null);
-      return;
-    }
-
-    const match = estados.find((estado) => normalizar(estado.nombre) === limpio);
-    onChange(match?.id ?? null);
-  };
-
-  const sinCoincidencia = texto.trim() !== "" && !seleccionado && !(includeTodos && normalizar(texto) === normalizar("Todos los estados"));
-
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-semibold text-muted">{label}</label>
-      <input
-        type="text"
-        list={datalistId}
-        value={texto}
-        onChange={(e) => cambiarTexto(e.target.value)}
-        onFocus={() => {
-          if (includeTodos && texto === "Todos los estados") setTexto("");
-        }}
-        onBlur={() => {
-          if (includeTodos && texto.trim() === "") {
-            setTexto("Todos los estados");
-            onChange(null);
-          }
-        }}
-        placeholder={placeholder}
+      <select
+        value={estadoId ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
         required={required}
         className="field"
-      />
-      <datalist id={datalistId}>
-        {includeTodos && <option value="Todos los estados" />}
+      >
+        {includeTodos ? (
+          <option value="">Todos los estados</option>
+        ) : (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
         {estados.map((estado) => (
-          <option key={estado.id} value={estado.nombre} />
+          <option key={estado.id} value={estado.id}>
+            {estado.nombre}
+          </option>
         ))}
-      </datalist>
-      {sinCoincidencia && (
-        <p className="text-xs text-muted">Elige una opción de la lista para aplicar este estado.</p>
-      )}
+      </select>
     </div>
   );
 }
