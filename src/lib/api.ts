@@ -255,16 +255,56 @@ export async function registrarVoluntario(input: {
   zona_descripcion: string | null;
   centro_acopio_id: string | null;
 }): Promise<{ id: string; token: string }> {
-  const { data, error } = await supabase.rpc("registrar_voluntario", {
-    p_nombre: input.nombre,
-    p_apellido: input.apellido,
-    p_telefono: input.telefono,
-    p_telegram: input.telegram,
-    p_zona: input.zona_descripcion,
-    p_centro_acopio_id: input.centro_acopio_id,
-  });
-  if (error) throw error;
-  return (data as { id: string; token: string }[])[0];
+  try {
+    const { data, error } = await supabase.rpc("registrar_voluntario", {
+      p_nombre: input.nombre,
+      p_apellido: input.apellido,
+      // El teléfono es opcional: enviamos null si viene vacío. La columna
+      // volunteers.telefono y volunteers.telegram permiten NULL (ver 0001_schema.sql),
+      // así que no se requiere migración para la nulabilidad de las columnas.
+      p_telefono: input.telefono?.trim() || null,
+      p_telegram: input.telegram?.trim() || null,
+      p_zona: input.zona_descripcion,
+      p_centro_acopio_id: input.centro_acopio_id,
+    });
+    if (error) throw error;
+    return (data as { id: string; token: string }[])[0];
+  } catch (e) {
+    // Nunca exponer el error crudo de Supabase/Postgres al usuario: se mapea a
+    // mensajes legibles en español.
+    const raw =
+      e instanceof Error
+        ? e.message
+        : e && typeof e === "object" && "message" in e
+        ? String((e as { message?: unknown }).message ?? "")
+        : "";
+    const code =
+      e && typeof e === "object" && "code" in e ? String((e as { code?: unknown }).code ?? "") : "";
+    const lower = raw.toLowerCase();
+
+    // Falta de medio de contacto (validación/constraint sobre los campos de contacto).
+    if (
+      lower.includes("contacto") ||
+      lower.includes("telefono o telegram") ||
+      lower.includes("teléfono o telegram")
+    ) {
+      throw new Error("Debes ingresar al menos un medio de contacto: teléfono o Telegram.");
+    }
+
+    // Duplicado (p. ej. teléfono ya registrado). 23505 = unique_violation en Postgres.
+    if (
+      code === "23505" ||
+      lower.includes("duplicate") ||
+      lower.includes("already registered") ||
+      lower.includes("ya registrado") ||
+      lower.includes("ya está registrado")
+    ) {
+      throw new Error("Este número de teléfono ya está registrado.");
+    }
+
+    // Cualquier otro error: mensaje genérico, sin filtrar detalles internos.
+    throw new Error("No se pudo completar el registro. Intenta de nuevo.");
+  }
 }
 
 export async function obtenerContacto(

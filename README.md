@@ -2,7 +2,8 @@
 
 App de emergencia para distribución de insumos en Venezuela. Los voluntarios
 registrados publican en un mapa lo que hay para dar; cualquier persona busca,
-reserva una cantidad y coordina la recogida.
+reserva una cantidad y coordina la recogida, llevándola a un centro de acopio o
+zona de rescate.
 
 ## Stack
 
@@ -42,10 +43,13 @@ reserva una cantidad y coordina la recogida.
    - `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`
 
 3. Ejecuta las migraciones SQL en tu proyecto de Supabase (SQL Editor),
-   en orden numérico (`supabase/migrations`, hasta `0017`): esquema, RLS, RPC,
-   cron, lectura de recogidas, voluntarios, WhatsApp y filtros por estado.
-   `pg_cron` debe estar habilitado en el proyecto. Los scripts de mantenimiento
-   manual viven en `supabase/scripts`.
+   en orden numérico (`supabase/migrations`, hasta `0027`): esquema, RLS, RPC,
+   cron, recogidas, voluntarios, WhatsApp, filtros por estado, identidad local
+   del recogedor, confirmación de entrega, estadísticas de impacto, bloqueo de
+   cédulas, y centros de acopio / zonas de rescate con su semilla de datos.
+   `pg_cron` debe estar habilitado (libera reservas vencidas y bloquea cédulas
+   que no fueron a buscar). Los scripts de mantenimiento manual viven en
+   `supabase/scripts`.
 
 4. Levanta el entorno de desarrollo:
 
@@ -58,27 +62,39 @@ reserva una cantidad y coordina la recogida.
 ```
 src/
   app/            Rutas (App Router): / · /buscar · /dar · /lugar/[id]
-                  /voluntarios · /voluntarios/gestionar/[id]
-  components/     Mapa, formularios, panel de voluntarios, utilidades de UI
+                  /mis-recogidas · /voluntarios · /voluntarios/gestionar/[id]
+  components/     Mapa, formularios, panel de voluntarios, impacto y UI
   hooks/          Suscripciones Realtime y carga de recogidas
-  lib/            Cliente Supabase, tipos, geo, Google Maps, teléfono y datos
+  lib/            Cliente Supabase, tipos, geo, Google Maps, teléfono,
+                  identidad local del recogedor y validaciones
 public/           manifest.json y service worker
+supabase/         migraciones SQL (esquema/RLS/RPC/cron) y scripts
 ```
 
 ## Notas
 
 - Modo oscuro siempre activo; no hay toggle de tema.
-- Publicar en `/dar` requiere ser voluntario registrado (token); el público
-  solo busca y reserva. Cada voluntario gestiona sus aportes y solicitudes en
-  `/voluntarios/gestionar/[id]`.
+- Hay dos identidades, ninguna con login:
+  - **Voluntario**: publica en `/dar`, gestiona sus aportes y solicitudes, y
+    confirma entregas. Se identifica con un token que se muestra una sola vez al
+    registrarse y se guarda en `localStorage` (no se puede recuperar).
+  - **Recogedor**: cualquiera que reserva. El navegador genera un token UUID
+    local permanente (`src/lib/recogedor.ts`) que le permite ver, modificar y
+    cancelar sus propias reservas en `/mis-recogidas`.
+- Cada aporte indica un **origen obligatorio** (centro de acopio o zona de
+  rescate) y cada reserva indica un **destino** a dónde se llevará el insumo.
+  Los centros de acopio y zonas de rescate son datos curados de solo lectura.
 - El teléfono de contacto se normaliza a WhatsApp venezolano (`src/lib/telefono.ts`).
 - El contacto del aporte nunca se expone en lecturas públicas: solo los
   voluntarios lo ven, vía RPC, usando su token.
-- Las reservas expiran a las 4 horas y se liberan automáticamente (pg_cron).
-- El token de voluntario se muestra una sola vez al registrarse y se guarda
-  en `localStorage`. No se puede recuperar.
+- Las reservas expiran a las 4 horas y se liberan automáticamente (pg_cron). El
+  recogedor tiene un plazo de confirmación de entrega de 24 horas.
+- Las cédulas que reservan y no van a buscar se bloquean automáticamente (job
+  de pg_cron cada 30 min) y no pueden volver a reservar.
+- La pantalla de inicio muestra estadísticas de impacto agregadas (sin datos
+  personales) vía RPC pública.
 
 ## Deploy
 
-Despliegue nativo en Vercel. Configura las tres variables de entorno en el
+Despliegue nativo en Vercel. Configura las cuatro variables de entorno en el
 panel del proyecto. El service worker y el manifest se sirven desde `public/`.

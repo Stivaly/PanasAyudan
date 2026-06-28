@@ -57,10 +57,20 @@ export default function Voluntarios() {
       setError("Nombre y apellido son obligatorios.");
       return;
     }
-    const telefonoNormalizado = normalizarTelefonoVe(telefono);
-    if (!telefonoNormalizado) {
-      setError("Ingresa un WhatsApp venezolano válido. Ej: 0412-1234567 o +58 412 1234567.");
+    // El spec exige al menos un medio de contacto: teléfono O Telegram.
+    // Esta validación corre antes de cualquier llamada de red.
+    if (!telefono.trim() && !telegram.trim()) {
+      setError("Ingresa al menos un medio de contacto: teléfono o Telegram");
       return;
+    }
+    // El teléfono es opcional, pero si se ingresa debe ser un WhatsApp venezolano válido.
+    let telefonoNormalizado: string | null = null;
+    if (telefono.trim()) {
+      telefonoNormalizado = normalizarTelefonoVe(telefono);
+      if (!telefonoNormalizado) {
+        setError("Ingresa un WhatsApp venezolano válido. Ej: 0412-1234567 o +58 412 1234567.");
+        return;
+      }
     }
     setEnviando(true);
     try {
