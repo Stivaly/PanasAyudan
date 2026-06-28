@@ -2,10 +2,20 @@
 
 import { Category, ItemData } from "@/lib/types";
 
+export const QTY_MAX = 999;
+
 export interface ItemDraft {
   category_id: string;
   descripcion: string;
-  qty_approx: string;
+  qty_approx: number | "";
+}
+
+// Mensaje de error inline para la cantidad; null si es válida o está vacía.
+function errorCantidad(qty: number | ""): string | null {
+  if (qty === "") return null;
+  if (qty < 1) return "La cantidad mínima es 1";
+  if (qty > QTY_MAX) return `La cantidad máxima es ${QTY_MAX.toLocaleString("es-VE")}`;
+  return null;
 }
 
 interface Props {
@@ -25,8 +35,14 @@ export function draftVacio(categorias: Category[]): ItemDraft {
 export function draftsValidos(items: ItemDraft[]): ItemData[] | null {
   const limpios: ItemData[] = [];
   for (const it of items) {
-    const qty = parseInt(it.qty_approx, 10);
-    if (!it.category_id || !it.descripcion.trim() || !Number.isFinite(qty) || qty <= 0) {
+    const qty = typeof it.qty_approx === "number" ? it.qty_approx : NaN;
+    if (
+      !it.category_id ||
+      !it.descripcion.trim() ||
+      !Number.isInteger(qty) ||
+      qty < 1 ||
+      qty > QTY_MAX
+    ) {
       return null;
     }
     limpios.push({
@@ -41,6 +57,48 @@ export function draftsValidos(items: ItemDraft[]): ItemData[] | null {
 export default function ItemsForm({ categorias, items, onChange }: Props) {
   const update = (idx: number, patch: Partial<ItemDraft>) => {
     onChange(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  };
+
+  // Cantidad máxima de dígitos que se pueden escribir (QTY_MAX tiene 3).
+  const MAX_DIGITOS = String(QTY_MAX).length;
+
+  // Bloquea cualquier tecla que no produzca un entero positivo y limita la
+  // cantidad de dígitos a MAX_DIGITOS.
+  const soloEnteros = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const esDigito = /^\d$/.test(e.key);
+    if (
+      !esDigito &&
+      !["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(
+        e.key
+      )
+    ) {
+      e.preventDefault();
+      return;
+    }
+    // Si ya hay MAX_DIGITOS y no se está reemplazando una selección, bloquear.
+    if (esDigito) {
+      const input = e.currentTarget;
+      const haySeleccion = (input.selectionStart ?? 0) !== (input.selectionEnd ?? 0);
+      if (input.value.length >= MAX_DIGITOS && !haySeleccion) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  // Pega solo los dígitos del portapapeles, respetando la posición del cursor.
+  // No usa execCommand: actualiza el estado directamente para no romper en
+  // navegadores que no lo soportan.
+  const alPegar = (idx: number, it: ItemDraft) => (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const soloDigitos = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (!soloDigitos) return;
+    const input = e.currentTarget;
+    const actual = it.qty_approx === "" ? "" : String(it.qty_approx);
+    const start = input.selectionStart ?? actual.length;
+    const end = input.selectionEnd ?? actual.length;
+    const nuevo = (actual.slice(0, start) + soloDigitos + actual.slice(end)).slice(0, MAX_DIGITOS);
+    const parsed = parseInt(nuevo, 10);
+    update(idx, { qty_approx: Number.isNaN(parsed) ? "" : parsed });
   };
 
   const remove = (idx: number) => {
@@ -91,12 +149,22 @@ export default function ItemsForm({ categorias, items, onChange }: Props) {
           <input
             type="number"
             inputMode="numeric"
-            min={1}
+            min="1"
+            max={QTY_MAX}
+            step="1"
             value={it.qty_approx}
-            onChange={(e) => update(idx, { qty_approx: e.target.value })}
+            onKeyDown={soloEnteros}
+            onPaste={alPegar(idx, it)}
+            onChange={(e) => {
+              const parsed = parseInt(e.target.value, 10);
+              update(idx, { qty_approx: Number.isNaN(parsed) ? "" : parsed });
+            }}
             placeholder="Cantidad aprox."
             className="field"
           />
+          {errorCantidad(it.qty_approx) && (
+            <p className="text-sm font-semibold text-danger">{errorCantidad(it.qty_approx)}</p>
+          )}
         </div>
       ))}
 

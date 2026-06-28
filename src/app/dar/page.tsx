@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EstadoCombobox from "@/components/EstadoCombobox";
-import ItemsForm, { ItemDraft, draftVacio, draftsValidos } from "@/components/ItemsForm";
+import ItemsForm, { ItemDraft, draftVacio, draftsValidos, QTY_MAX } from "@/components/ItemsForm";
 import {
   getCategorias,
   getEstados,
@@ -112,6 +112,16 @@ export default function Dar() {
     const itemsLimpios = draftsValidos(items);
     if (!itemsLimpios) {
       setError("Completa categoría, descripción y cantidad (mayor a 0) en cada item.");
+      return;
+    }
+    // Red de seguridad: las cantidades deben ser enteros entre 1 y QTY_MAX.
+    const cantidadesInvalidas = itemsLimpios.some(
+      (it) => !(Number.isInteger(it.qty_approx) && it.qty_approx >= 1 && it.qty_approx <= QTY_MAX)
+    );
+    if (cantidadesInvalidas) {
+      setError(
+        `Revisa las cantidades: cada ítem debe tener un número entre 1 y ${QTY_MAX.toLocaleString("es-VE")}`
+      );
       return;
     }
     const telefonoIngresado = telefono.trim();
