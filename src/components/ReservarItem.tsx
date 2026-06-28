@@ -202,7 +202,7 @@ export default function ReservarItem({ item, onReservada }: Props) {
           inputMode="numeric"
           placeholder="Cédula"
           value={cedula}
-          onChange={(e) => setCedula(formatearCedula(e.target.value))}
+          onChange={(e) => setCedula(formatearCedula(limpiarCedula(e.target.value).slice(0, 8)))}
         />
         {errorCedula && <p className="text-sm font-semibold text-danger">{errorCedula}</p>}
       </div>

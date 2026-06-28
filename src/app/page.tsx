@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { getVolunteerToken } from "@/lib/supabase";
 import SeccionImpacto from "@/components/SeccionImpacto";
+
+const ModalBienvenida = dynamic(() => import("@/components/ModalBienvenida"), {
+  ssr: false,
+});
 
 export default function Home() {
   const [tieneToken, setTieneToken] = useState(false);
@@ -13,6 +18,14 @@ export default function Home() {
   }, []);
   return (
     <main className="relative flex min-h-dvh w-full flex-col bg-bg px-4 py-8">
+      <ModalBienvenida />
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new Event("abrir-bienvenida"))}
+        className="absolute left-4 top-4 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-white"
+      >
+        ¿Cómo funciona?
+      </button>
       <Link
         href="/voluntarios"
         className="absolute right-4 top-4 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-white"
