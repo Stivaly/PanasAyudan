@@ -10,6 +10,7 @@ import {
   validarTokenVoluntario,
 } from "@/lib/api";
 import { getVolunteerToken, setVolunteerToken } from "@/lib/supabase";
+import { normalizarTelegram, errorTelegram } from "@/lib/telefono";
 import PanelVoluntario from "@/components/PanelVoluntario";
 import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
 
@@ -32,6 +33,7 @@ export default function Voluntarios() {
   const [tokenNuevo, setTokenNuevo] = useState<string | null>(null);
 
   const [tokenInput, setTokenInput] = useState("");
+  const [telegramError, setTelegramError] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -92,13 +94,20 @@ export default function Voluntarios() {
         return;
       }
     }
+    // El Telegram es opcional, pero si se ingresa debe tener un formato válido.
+    const errTelegram = errorTelegram(telegram);
+    if (errTelegram) {
+      setError(errTelegram);
+      return;
+    }
+    const telegramNormalizado = normalizarTelegram(telegram);
     setEnviando(true);
     try {
       const v = await registrarVoluntario({
         nombre: nombre.trim(),
         apellido: apellido.trim(),
         telefono: telefonoNormalizado,
-        telegram: telegram.trim() || null,
+        telegram: telegramNormalizado || null,
         zona_descripcion: zona.trim() || null,
         centro_acopio_id: centroAcopioId || null,
       });
@@ -237,7 +246,23 @@ export default function Voluntarios() {
           <p className="text-xs text-muted">
             Este número se compartirá por WhatsApp cuando alguien solicite uno de tus aportes.
           </p>
-          <input className="field" placeholder="Telegram (ej: @usuario)" value={telegram} onChange={(e) => setTelegram(e.target.value)} />
+          <input
+            className="field"
+            placeholder="Telegram (ej: @usuario)"
+            value={telegram}
+            onChange={(e) => {
+              // Solo letras, números, guion bajo y un único @ al inicio.
+              const limpio = e.target.value
+                .replace(/[^a-zA-Z0-9_@]/g, "")
+                .replace(/(?!^)@/g, "");
+              setTelegram(limpio);
+              if (telegramError) setTelegramError("");
+            }}
+            onBlur={() => {
+              setTelegramError(errorTelegram(telegram) ?? "");
+            }}
+          />
+          {telegramError && <p className="text-sm font-semibold text-danger">{telegramError}</p>}
           <textarea
             className="field min-h-24"
             placeholder="Tu zona de cobertura (texto libre, ej: Chacao y alrededores)"
