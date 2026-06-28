@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   registrarVoluntario,
-  getCentrosAcopioTodos,
+  getCentrosAcopioPorEstado,
   getEstados,
   validarTokenVoluntario,
 } from "@/lib/api";
 import { getVolunteerToken, setVolunteerToken } from "@/lib/supabase";
 import { normalizarTelegram, errorTelegram } from "@/lib/telefono";
 import PanelVoluntario from "@/components/PanelVoluntario";
+import EstadoCombobox from "@/components/EstadoCombobox";
 import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
 
 type Vista = "menu" | "registro" | "acceso" | "panel";
@@ -27,8 +28,10 @@ export default function Voluntarios() {
   const [telefono, setTelefono] = useState("");
   const [telegram, setTelegram] = useState("");
   const [zona, setZona] = useState("");
+  const [estadoId, setEstadoId] = useState<string | null>(null);
   const [centroAcopioId, setCentroAcopioId] = useState("");
   const [centros, setCentros] = useState<CentroAcopio[]>([]);
+  const [cargandoCentros, setCargandoCentros] = useState(false);
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [tokenNuevo, setTokenNuevo] = useState<string | null>(null);
 
@@ -57,12 +60,26 @@ export default function Voluntarios() {
     }
   }, [router]);
 
-  // Al abrir el formulario de registro, cargar centros y estados (para agrupar).
+  // Al abrir el formulario de registro, cargar la lista de estados (no los centros).
   useEffect(() => {
-    if (vista !== "registro" || centros.length > 0) return;
-    getCentrosAcopioTodos().then(setCentros).catch(() => setCentros([]));
+    if (vista !== "registro" || estados.length > 0) return;
     getEstados().then(setEstados).catch(() => setEstados([]));
-  }, [vista, centros.length]);
+  }, [vista, estados.length]);
+
+  // Los centros se cargan solo al elegir un estado, filtrados por ese estado.
+  useEffect(() => {
+    setCentroAcopioId("");
+    setCentros([]);
+    if (!estadoId) {
+      setCargandoCentros(false);
+      return;
+    }
+    setCargandoCentros(true);
+    getCentrosAcopioPorEstado(estadoId)
+      .then(setCentros)
+      .catch(() => setCentros([]))
+      .finally(() => setCargandoCentros(false));
+  }, [estadoId]);
 
   const normalizarTelefonoVe = (valor: string): string | null => {
     let digits = valor.replace(/\D/g, "");
@@ -269,27 +286,38 @@ export default function Voluntarios() {
             value={zona}
             onChange={(e) => setZona(e.target.value)}
           />
-          <label className="text-sm font-semibold text-muted">Centro de acopio</label>
-          <select
-            className="field"
-            value={centroAcopioId}
-            onChange={(e) => setCentroAcopioId(e.target.value)}
-          >
-            <option value="">Seleccionar centro (opcional)</option>
-            {estados.map((est) => {
-              const delEstado = centros.filter((c) => c.estado_id === est.id);
-              if (delEstado.length === 0) return null;
-              return (
-                <optgroup key={est.id} label={est.nombre}>
-                  {delEstado.map((c) => (
+          <EstadoCombobox
+            estados={estados}
+            estadoId={estadoId}
+            onChange={setEstadoId}
+            label="Estado del centro de acopio"
+            placeholder="Elige un estado (opcional)"
+          />
+          {estadoId && (
+            <>
+              <label className="text-sm font-semibold text-muted">Centro de acopio</label>
+              {cargandoCentros ? (
+                <p className="text-muted text-sm">Cargando centros…</p>
+              ) : centros.length === 0 ? (
+                <p className="text-muted text-sm">
+                  No hay centros de acopio registrados en este estado todavía.
+                </p>
+              ) : (
+                <select
+                  className="field"
+                  value={centroAcopioId}
+                  onChange={(e) => setCentroAcopioId(e.target.value)}
+                >
+                  <option value="">Seleccionar centro (opcional)</option>
+                  {centros.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nombre}
                     </option>
                   ))}
-                </optgroup>
-              );
-            })}
-          </select>
+                </select>
+              )}
+            </>
+          )}
           <p className="text-xs text-muted">
             Puedes ser el centro o solo un voluntario que ayuda desde ahí.
           </p>

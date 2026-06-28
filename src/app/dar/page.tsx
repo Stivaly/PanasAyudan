@@ -38,6 +38,7 @@ export default function Dar() {
   const [centroAcopioId, setCentroAcopioId] = useState<string>("");
   const [zonas, setZonas] = useState<ZonaRescate[]>([]);
   const [zonaRescateId, setZonaRescateId] = useState<string>("");
+  const [cargandoLugares, setCargandoLugares] = useState(false);
 
   const [items, setItems] = useState<ItemDraft[]>([]);
   const [telefono, setTelefono] = useState("");
@@ -67,13 +68,17 @@ export default function Dar() {
   useEffect(() => {
     setCentroAcopioId("");
     setZonaRescateId("");
+    setCentros([]);
+    setZonas([]);
     if (!estadoId) {
-      setCentros([]);
-      setZonas([]);
+      setCargandoLugares(false);
       return;
     }
-    getCentrosAcopioPorEstado(estadoId).then(setCentros).catch(() => setCentros([]));
-    getZonasRescatePorEstado(estadoId).then(setZonas).catch(() => setZonas([]));
+    setCargandoLugares(true);
+    Promise.all([
+      getCentrosAcopioPorEstado(estadoId).then(setCentros).catch(() => setCentros([])),
+      getZonasRescatePorEstado(estadoId).then(setZonas).catch(() => setZonas([])),
+    ]).finally(() => setCargandoLugares(false));
   }, [estadoId]);
 
   // Origen seleccionado: centro de acopio o zona de rescate (excluyentes).
@@ -233,38 +238,55 @@ export default function Dar() {
           <label className="text-sm font-semibold text-muted">
             Origen del aporte (centro de acopio o zona de rescate)
           </label>
+          {cargandoLugares ? (
+            <p className="text-muted text-sm">Cargando lugares…</p>
+          ) : centros.length === 0 && zonas.length === 0 ? (
+            <div className="card text-center py-6 space-y-2">
+              <p className="text-muted text-sm">
+                No hay centros ni zonas registradas en este estado todavía.
+              </p>
+              <p className="text-muted text-sm">
+                Puedes indicar la ubicación manualmente usando el mapa.
+              </p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <select
-              value={centroAcopioId}
-              onChange={(e) => setCentroAcopioId(e.target.value)}
-              disabled={!!zonaRescateId}
-              className="field disabled:text-muted disabled:opacity-60"
-            >
-              <option value="" disabled>
-                {zonaRescateId ? "No aplica" : "Selecciona un centro"}
-              </option>
-              {centros.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
+            {centros.length > 0 && (
+              <select
+                value={centroAcopioId}
+                onChange={(e) => setCentroAcopioId(e.target.value)}
+                disabled={!!zonaRescateId}
+                className="field disabled:text-muted disabled:opacity-60"
+              >
+                <option value="" disabled>
+                  {zonaRescateId ? "No aplica" : "Selecciona un centro"}
                 </option>
-              ))}
-            </select>
-            <select
-              value={zonaRescateId}
-              onChange={(e) => setZonaRescateId(e.target.value)}
-              disabled={!!centroAcopioId}
-              className="field disabled:text-muted disabled:opacity-60"
-            >
-              <option value="" disabled>
-                {centroAcopioId ? "No aplica" : "Selecciona una zona"}
-              </option>
-              {zonas.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.nombre}
+                {centros.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            )}
+            {zonas.length > 0 && (
+              <select
+                value={zonaRescateId}
+                onChange={(e) => setZonaRescateId(e.target.value)}
+                disabled={!!centroAcopioId}
+                className="field disabled:text-muted disabled:opacity-60"
+              >
+                <option value="" disabled>
+                  {centroAcopioId ? "No aplica" : "Selecciona una zona"}
                 </option>
-              ))}
-            </select>
+                {zonas.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.nombre}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
+          )}
           {sinCoordsExactas && (
             <p className="text-xs text-muted">
               Ubicación aproximada, aún sin coordenadas exactas.
