@@ -8,8 +8,13 @@ import {
   liberarRecogida,
   confirmarEntrega,
   getAportesVoluntario,
+  validarTokenVoluntario,
 } from "@/lib/api";
-import { clearVolunteerToken, supabase } from "@/lib/supabase";
+import {
+  clearVolunteerToken,
+  getVolunteerToken,
+  supabase,
+} from "@/lib/supabase";
 import { AporteVoluntario } from "@/lib/types";
 import Countdown from "@/components/Countdown";
 import AccionesRecogidaVoluntario from "@/components/AccionesRecogidaVoluntario";
@@ -35,6 +40,10 @@ function km(metros: number): string {
 
 export default function PanelVoluntario({ token, onSalir }: Props) {
   const { recogidas, cargando, error, recargar } = useRecogidasPendientes(token);
+  // Guard de sesión: revalida el token contra la BD en cada montaje del panel.
+  // No renderizamos contenido hasta confirmar que el token sigue siendo válido,
+  // para que un token falso o revocado en localStorage no pueda ver el panel.
+  const [validandoSesion, setValidandoSesion] = useState(true);
   const [aportes, setAportes] = useState<AporteVoluntario[]>([]);
   const [cargandoAportes, setCargandoAportes] = useState(true);
   const [errorAportes, setErrorAportes] = useState<string | null>(null);
@@ -54,7 +63,33 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
     }
   }, [token]);
 
+  // Guard de sesión al montar: lee el token de localStorage y lo revalida.
+  // Sin token => vuelve a /voluntarios. Token inválido => lo borra y vuelve con
+  // ?sesion=invalida. Usamos una redirección dura para remontar la página con
+  // estado limpio (la misma ruta vía router conservaría el estado de React).
   useEffect(() => {
+    let activo = true;
+    const guardado = getVolunteerToken();
+    if (!guardado) {
+      window.location.replace("/voluntarios");
+      return;
+    }
+    void validarTokenVoluntario(guardado).then((valido) => {
+      if (!activo) return;
+      if (!valido) {
+        clearVolunteerToken();
+        window.location.replace("/voluntarios?sesion=invalida");
+        return;
+      }
+      setValidandoSesion(false);
+    });
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (validandoSesion) return;
     void cargarAportes();
 
     const canal = supabase
@@ -74,7 +109,7 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
     return () => {
       void supabase.removeChannel(canal);
     };
-  }, [cargarAportes]);
+  }, [cargarAportes, validandoSesion]);
 
   const aportesPorLugar = useMemo(() => {
     const mapa = new Map<string, GrupoAporte>();
@@ -139,6 +174,11 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
     clearVolunteerToken();
     onSalir();
   };
+
+  // Mientras el guard revalida (o redirige), no exponemos el contenido del panel.
+  if (validandoSesion) {
+    return <p className="text-muted">Verificando sesión…</p>;
+  }
 
   return (
     <div className="flex flex-col gap-5">

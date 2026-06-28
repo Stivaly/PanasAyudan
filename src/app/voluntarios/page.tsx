@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { registrarVoluntario, getCentrosAcopioTodos, getEstados } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import {
+  registrarVoluntario,
+  getCentrosAcopioTodos,
+  getEstados,
+  validarTokenVoluntario,
+} from "@/lib/api";
 import { getVolunteerToken, setVolunteerToken } from "@/lib/supabase";
 import PanelVoluntario from "@/components/PanelVoluntario";
 import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
@@ -10,8 +16,10 @@ import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
 type Vista = "menu" | "registro" | "acceso" | "panel";
 
 export default function Voluntarios() {
+  const router = useRouter();
   const [vista, setVista] = useState<Vista>("menu");
   const [token, setToken] = useState<string | null>(null);
+  const [verificando, setVerificando] = useState(false);
 
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
@@ -34,6 +42,18 @@ export default function Voluntarios() {
       setVista("panel");
     }
   }, []);
+
+  // Si el guard del panel detectó una sesión inválida, redirige aquí con
+  // ?sesion=invalida. Mostramos el aviso en el área de error del formulario de
+  // acceso y limpiamos el parámetro de la URL sin recargar la página.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("sesion") === "invalida") {
+      setVista("acceso");
+      setError("Sesión inválida. Ingresa tu token nuevamente.");
+      router.replace("/voluntarios");
+    }
+  }, [router]);
 
   // Al abrir el formulario de registro, cargar centros y estados (para agrupar).
   useEffect(() => {
@@ -90,14 +110,25 @@ export default function Voluntarios() {
     }
   };
 
-  const entrar = () => {
+  const entrar = async () => {
     const t = tokenInput.trim();
     if (!t) {
       setError("Ingresa tu token.");
       return;
     }
+    setError(null);
+    setVerificando(true);
+    // Validar el token contra la base de datos ANTES de guardarlo o navegar.
+    // Un token falso o inválido no debe escribir nada en localStorage.
+    const valido = await validarTokenVoluntario(t);
+    if (!valido) {
+      setVerificando(false);
+      setError("Token no reconocido. Verifica que lo copiaste correctamente.");
+      return;
+    }
     setVolunteerToken(t);
     setToken(t);
+    setVerificando(false);
     setVista("panel");
   };
 
@@ -178,10 +209,10 @@ export default function Voluntarios() {
             onChange={(e) => setTokenInput(e.target.value)}
           />
           {error && <p className="text-sm font-semibold text-danger">{error}</p>}
-          <button type="submit" className="btn-primary w-full">
-            Entrar
+          <button type="submit" disabled={verificando} className="btn-primary w-full disabled:opacity-50">
+            {verificando ? "Verificando…" : "Entrar"}
           </button>
-          <button type="button" onClick={() => { setError(null); setVista("menu"); }} className="btn-ghost w-full">
+          <button type="button" disabled={verificando} onClick={() => { setError(null); setVista("menu"); }} className="btn-ghost w-full">
             Volver
           </button>
         </form>
