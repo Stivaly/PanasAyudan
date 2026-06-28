@@ -36,7 +36,7 @@ begin
   end if;
 
   if p_centro_acopio_id is not null
-     and not exists (select 1 from centros_acopio where id = p_centro_acopio_id) then
+     and not exists (select 1 from centros_acopio ca where ca.id = p_centro_acopio_id) then
     raise exception 'El centro de acopio seleccionado no existe.';
   end if;
 

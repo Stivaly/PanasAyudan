@@ -270,8 +270,6 @@ export async function registrarVoluntario(input: {
     if (error) throw error;
     return (data as { id: string; token: string }[])[0];
   } catch (e) {
-    // DEBUG TEMPORAL: ver el error crudo en consola para mapearlo. QUITAR luego.
-    console.error("registrarVoluntario error:", JSON.stringify(e), e);
     // Nunca exponer el error crudo de Supabase/Postgres al usuario: se mapea a
     // mensajes legibles en español.
     const raw =
