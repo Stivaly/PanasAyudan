@@ -235,7 +235,7 @@ export default function Voluntarios() {
             })}
           </select>
           <p className="text-xs text-muted">
-            No eres el centro, solo un voluntario que ayuda desde ahí.
+            Puedes ser el centro o solo un voluntario que ayuda desde ahí.
           </p>
           {error && <p className="text-sm font-semibold text-danger">{error}</p>}
           <button onClick={registrar} disabled={enviando} className="btn-primary w-full disabled:opacity-50">
