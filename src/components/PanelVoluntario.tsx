@@ -54,7 +54,9 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
     setCargandoAportes(true);
     try {
       const data = await getAportesVoluntario(token);
-      setAportes(data);
+      // El panel solo lista aportes activos; los cerrados se gestionan (editar
+      // datos históricos) desde la página de gestión del lugar.
+      setAportes(data.filter((a) => a.aporte_status === "activo"));
       setErrorAportes(null);
     } catch (e) {
       setErrorAportes(e instanceof Error ? e.message : "No se pudieron cargar tus aportes.");

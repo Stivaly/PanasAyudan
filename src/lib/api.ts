@@ -76,6 +76,7 @@ export async function getItemsActivos(
       "*, category:categories(*), aporte:aportes!inner(id, status, location:locations!inner(*, estado:estados(*)))"
     )
     .gt("qty_disponible", 0)
+    .eq("activo", true)
     .eq("aporte.status", "activo");
 
   if (categorySlug) {
@@ -388,6 +389,56 @@ export async function modificarQtyRecogida(
   if (error) {
     if (error.message.includes("stock_insuficiente")) {
       throw new Error("No hay suficientes insumos disponibles para esa cantidad.");
+    }
+    throw error;
+  }
+}
+
+// El voluntario dueño edita uno de sus aporte_items (descripción, categoría y/o
+// cantidad). Solo se envían los campos presentes en `datos`.
+export async function editarAporteItem(
+  itemId: string,
+  volunteerToken: string,
+  datos: {
+    descripcion?: string;
+    category_id?: string;
+    qty_approx?: number;
+  }
+): Promise<void> {
+  const { error } = await supabaseWithToken(volunteerToken).rpc("editar_aporte_item", {
+    p_item_id: itemId,
+    p_volunteer_token: volunteerToken,
+    p_nuevos_datos: datos,
+  });
+  if (error) {
+    if (error.message.includes("qty_invalida")) {
+      throw new Error("No puedes reducir la cantidad por debajo de las reservas activas.");
+    }
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para editar este item.");
+    }
+    throw error;
+  }
+}
+
+// El voluntario dueño elimina uno de sus aporte_items. La RPC decide entre
+// borrado físico (sin historial) y lógico (con recogidas completadas/canceladas).
+export async function eliminarAporteItem(
+  itemId: string,
+  volunteerToken: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(volunteerToken).rpc("eliminar_aporte_item", {
+    p_item_id: itemId,
+    p_volunteer_token: volunteerToken,
+  });
+  if (error) {
+    if (error.message.includes("tiene_recogidas_pendientes")) {
+      throw new Error(
+        "Este item tiene reservas pendientes. Espera a que venzan o libéralas primero."
+      );
+    }
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para eliminar este item.");
     }
     throw error;
   }

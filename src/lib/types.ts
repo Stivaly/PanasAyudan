@@ -200,6 +200,7 @@ export interface AporteVoluntario {
   item_descripcion: string;
   qty_approx: number;
   qty_disponible: number;
+  aporte_status: AporteStatus;
   created_at: string;
 }
 

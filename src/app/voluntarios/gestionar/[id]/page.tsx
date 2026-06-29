@@ -9,9 +9,12 @@ import {
   completarRecogida,
   liberarRecogida,
   confirmarEntrega,
+  getCategorias,
+  editarAporteItem,
+  eliminarAporteItem,
 } from "@/lib/api";
 import { getVolunteerToken } from "@/lib/supabase";
-import { AporteVoluntario } from "@/lib/types";
+import { AporteVoluntario, Category } from "@/lib/types";
 import Countdown from "@/components/Countdown";
 import AccionesRecogidaVoluntario from "@/components/AccionesRecogidaVoluntario";
 
@@ -27,11 +30,35 @@ export default function GestionarLugar() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
+  // Categorías para el selector del formulario de edición inline.
+  const [categorias, setCategorias] = useState<Category[]>([]);
+
+  // Edición inline: item en edición, su formulario, error y estado de guardado.
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{
+    category_id: string;
+    descripcion: string;
+    qty_approx: number;
+  }>({ category_id: "", descripcion: "", qty_approx: 1 });
+  const [editError, setEditError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  // Eliminación inline: confirmación abierta, estado de borrado, aviso de bloqueo.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [bloqueoId, setBloqueoId] = useState<string | null>(null);
+
   const { recogidas, error, recargar } = useRecogidasPendientes(token);
 
   useEffect(() => {
     setToken(getVolunteerToken());
     setVerificando(false);
+  }, []);
+
+  useEffect(() => {
+    void getCategorias()
+      .then(setCategorias)
+      .catch(() => setCategorias([]));
   }, []);
 
   const cargarAportes = useCallback(async () => {
@@ -106,6 +133,86 @@ export default function GestionarLugar() {
     }
   };
 
+  const abrirEdicion = (insumo: AporteVoluntario) => {
+    const cat = categorias.find((c) => c.name === insumo.category_name);
+    setConfirmDeleteId(null);
+    setBloqueoId(null);
+    setEditError(null);
+    setEditId(insumo.item_id);
+    setEditForm({
+      category_id: cat?.id ?? "",
+      descripcion: insumo.item_descripcion,
+      qty_approx: insumo.qty_approx,
+    });
+  };
+
+  const cancelarEdicion = () => {
+    setEditId(null);
+    setEditError(null);
+  };
+
+  const guardarEdicion = async (insumo: AporteVoluntario) => {
+    if (!token) return;
+    setEditError(null);
+    setGuardando(true);
+    try {
+      await editarAporteItem(insumo.item_id, token, {
+        descripcion: editForm.descripcion.trim(),
+        category_id: editForm.category_id,
+        qty_approx: editForm.qty_approx,
+      });
+      // Replicamos el recálculo del backend para refrescar sin reload:
+      // disponible = nuevo_qty - (qty_approx_anterior - qty_disponible_anterior).
+      const reservado = insumo.qty_approx - insumo.qty_disponible;
+      const nuevaDisp =
+        editForm.qty_approx !== insumo.qty_approx
+          ? editForm.qty_approx - reservado
+          : insumo.qty_disponible;
+      const nuevaCat = categorias.find((c) => c.id === editForm.category_id);
+      setAportes((prev) =>
+        prev.map((a) =>
+          a.item_id === insumo.item_id
+            ? {
+                ...a,
+                item_descripcion: editForm.descripcion.trim(),
+                category_name: nuevaCat?.name ?? a.category_name,
+                qty_approx: editForm.qty_approx,
+                qty_disponible: nuevaDisp,
+              }
+            : a
+        )
+      );
+      setEditId(null);
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : "No se pudo guardar el cambio.");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const eliminar = async (insumo: AporteVoluntario) => {
+    if (!token) return;
+    setEliminando(true);
+    try {
+      await eliminarAporteItem(insumo.item_id, token);
+      setConfirmDeleteId(null);
+      setAportes((prev) => prev.filter((a) => a.item_id !== insumo.item_id));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (msg.includes("reservas pendientes")) {
+        // Hay recogidas pendientes: cerrar la confirmación y mostrar el aviso
+        // con enlace al panel donde puede liberarlas.
+        setConfirmDeleteId(null);
+        setBloqueoId(insumo.item_id);
+      } else {
+        setAviso(msg || "No se pudo eliminar el item.");
+        setConfirmDeleteId(null);
+      }
+    } finally {
+      setEliminando(false);
+    }
+  };
+
   if (verificando) {
     return <main className="grid min-h-dvh place-items-center text-muted">Verificando acceso...</main>;
   }
@@ -172,6 +279,123 @@ export default function GestionarLugar() {
                 {insumo.qty_disponible}/{insumo.qty_approx} disp.
               </span>
             </div>
+
+            {/* Acciones: editar / eliminar el insumo */}
+            {editId === insumo.item_id ? (
+              <div className="flex flex-col gap-3 rounded-xl border border-border bg-bg p-3">
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-semibold">Categoría</span>
+                  <select
+                    value={editForm.category_id}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, category_id: e.target.value }))
+                    }
+                    className="rounded-lg border border-border bg-surface px-3 py-2"
+                  >
+                    {categorias.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-semibold">Descripción</span>
+                  <input
+                    type="text"
+                    value={editForm.descripcion}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, descripcion: e.target.value }))
+                    }
+                    className="rounded-lg border border-border bg-surface px-3 py-2"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-semibold">Cantidad aproximada</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editForm.qty_approx}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        qty_approx: Math.max(1, Number(e.target.value) || 1),
+                      }))
+                    }
+                    className="rounded-lg border border-border bg-surface px-3 py-2"
+                  />
+                </label>
+                {editError && <p className="text-sm font-semibold text-danger">{editError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void guardarEdicion(insumo)}
+                    disabled={guardando || !editForm.descripcion.trim() || !editForm.category_id}
+                    className="btn-primary flex-1 disabled:opacity-60"
+                  >
+                    {guardando ? "Guardando..." : "Guardar cambios"}
+                  </button>
+                  <button
+                    onClick={cancelarEdicion}
+                    disabled={guardando}
+                    className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : confirmDeleteId === insumo.item_id ? (
+              <div className="flex flex-col gap-3 rounded-xl border border-danger bg-bg p-3">
+                <p className="text-sm font-semibold">
+                  ¿Eliminar este item? Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void eliminar(insumo)}
+                    disabled={eliminando}
+                    className="flex-1 rounded-xl bg-danger px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {eliminando ? "Eliminando..." : "Sí, eliminar"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    disabled={eliminando}
+                    className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-semibold"
+                  >
+                    No, volver
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => abrirEdicion(insumo)}
+                  className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-semibold"
+                >
+                  Editar
+                </button>
+                {insumo.aporte_status !== "cerrado" && (
+                  <button
+                    onClick={() => {
+                      setBloqueoId(null);
+                      setConfirmDeleteId(insumo.item_id);
+                    }}
+                    className="flex-1 rounded-xl border border-danger px-3 py-2 text-sm font-semibold text-danger"
+                  >
+                    Eliminar
+                  </button>
+                )}
+              </div>
+            )}
+
+            {bloqueoId === insumo.item_id && (
+              <p className="rounded-xl border border-danger bg-bg p-3 text-sm text-danger">
+                Hay reservas pendientes sobre este item. Libéralas primero desde el{" "}
+                <Link href="/voluntarios" className="font-semibold underline">
+                  panel de recogidas
+                </Link>
+                .
+              </p>
+            )}
 
             {solicitudes.length === 0 ? (
               <p className="rounded-xl bg-bg p-3 text-sm text-muted">
