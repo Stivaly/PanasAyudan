@@ -16,6 +16,10 @@ import {
   AporteVoluntario,
   CentroAcopio,
   ZonaRescate,
+  VolunteerRole,
+  NodoData,
+  NodoAdmin,
+  TipoPausa,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -199,6 +203,19 @@ export async function validarTokenVoluntario(token: string): Promise<boolean> {
   }
 }
 
+// Obtiene el rol asociado a un token de voluntario (issue #17). Usa el cliente
+// autenticado por token y la RPC obtener_rol (SECURITY DEFINER). Si el token es
+// inválido/inactivo la RPC lanza 'token_invalido'; propagamos el error para que
+// el llamador bloquee la navegación (mismo criterio que el issue #3), en vez de
+// devolver un rol por defecto silencioso.
+export async function obtenerRol(token: string): Promise<VolunteerRole> {
+  const { data, error } = await supabaseWithToken(token).rpc("obtener_rol", {
+    p_token: token,
+  });
+  if (error) throw error;
+  return data as VolunteerRole;
+}
+
 export async function getAportesVoluntario(token: string): Promise<AporteVoluntario[]> {
   const { data, error } = await supabaseWithToken(token).rpc("listar_aportes_voluntario");
   if (error) throw error;
@@ -327,6 +344,92 @@ export async function registrarVoluntario(input: {
     // Cualquier otro error: mensaje genérico, sin filtrar detalles internos.
     throw new Error("No se pudo completar el registro. Intenta de nuevo.");
   }
+}
+
+// --- Nodos (issue #18) ---
+// Todas usan supabaseWithToken(token) para que el header 'volunteer-token' viaje
+// y las RPC SECURITY DEFINER validen rol/membresía, igual que el resto del archivo.
+
+// Un admin/superadmin crea un nodo. Nace en status 'inactivo' hasta verificar GPS.
+export async function crearNodo(datos: NodoData, token: string): Promise<string> {
+  const { data, error } = await supabaseWithToken(token).rpc("crear_nodo", {
+    p_datos: datos,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para crear nodos.");
+    }
+    throw error;
+  }
+  return data as string;
+}
+
+// El admin del nodo confirma su GPS. Devuelve true si quedó dentro de los 200 m.
+export async function verificarNodo(
+  nodeId: string,
+  lat: number,
+  lng: number,
+  token: string
+): Promise<boolean> {
+  const { data, error } = await supabaseWithToken(token).rpc("verificar_nodo", {
+    p_node_id: nodeId,
+    p_lat: lat,
+    p_lng: lng,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No eres administrador de este nodo.");
+    }
+    if (error.message.includes("nodo_sin_coordenadas")) {
+      throw new Error("El nodo no tiene coordenadas registradas.");
+    }
+    throw error;
+  }
+  return data as boolean;
+}
+
+// Pausa/reactiva recepción y/o entrega del nodo (gestión interna del admin).
+export async function pausarNodo(
+  nodeId: string,
+  tipoPausa: TipoPausa,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("pausar_nodo", {
+    p_node_id: nodeId,
+    p_tipo_pausa: tipoPausa,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No eres administrador de este nodo.");
+    }
+    throw error;
+  }
+}
+
+// Cierre permanente del nodo. Exclusivo de superadmin.
+export async function cerrarNodo(nodeId: string, token: string): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("cerrar_nodo", {
+    p_node_id: nodeId,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("Solo un superadmin puede cerrar un nodo.");
+    }
+    throw error;
+  }
+}
+
+// Los nodos que administra el token, con estado y verificación (panel de admin).
+export async function listarNodosAdmin(token: string): Promise<NodoAdmin[]> {
+  const { data, error } = await supabaseWithToken(token).rpc("listar_nodos_admin", {
+    p_token: token,
+  });
+  if (error) throw error;
+  return (data ?? []) as NodoAdmin[];
 }
 
 export async function obtenerContacto(

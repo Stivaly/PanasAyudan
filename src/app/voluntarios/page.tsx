@@ -8,12 +8,19 @@ import {
   getCentrosAcopioPorEstado,
   getEstados,
   validarTokenVoluntario,
+  obtenerRol,
 } from "@/lib/api";
-import { getVolunteerToken, setVolunteerToken } from "@/lib/supabase";
+import {
+  getVolunteerToken,
+  setVolunteerToken,
+  getCachedRole,
+  setCachedRole,
+  clearCachedRole,
+} from "@/lib/supabase";
 import { normalizarTelegram, errorTelegram } from "@/lib/telefono";
 import PanelVoluntario from "@/components/PanelVoluntario";
 import EstadoCombobox from "@/components/EstadoCombobox";
-import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
+import { CentroAcopio, EstadoVenezuela, VolunteerRole } from "@/lib/types";
 
 type Vista = "menu" | "registro" | "acceso" | "panel";
 
@@ -40,12 +47,44 @@ export default function Voluntarios() {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
+  // Resuelve el rol del token (cacheado una sola vez por sesión) y enruta según
+  // su valor. Para 'voluntario' usa el panel actual sin cambios; para los demás
+  // roles navega a su panel (placeholder si la ruta aún no existe). Si el token
+  // es inválido/inactivo, obtenerRol lanza y NO se navega a ningún panel.
+  const resolverYRedirigir = async (t: string): Promise<VolunteerRole> => {
+    let role = getCachedRole(t) as VolunteerRole | null;
+    if (!role) {
+      role = await obtenerRol(t); // lanza si el token es inválido
+      setCachedRole(t, role);
+    }
+    switch (role) {
+      case "superadmin":
+        router.push("/superadmin");
+        break;
+      case "admin":
+        router.push("/nodo");
+        break;
+      case "colaborador":
+        router.push("/nodo/colaborador");
+        break;
+      default:
+        // voluntario: panel actual, sin cambios.
+        setToken(t);
+        setVista("panel");
+    }
+    return role;
+  };
+
   useEffect(() => {
     const guardado = getVolunteerToken();
-    if (guardado) {
-      setToken(guardado);
-      setVista("panel");
-    }
+    if (!guardado) return;
+    // Token persistido: resolvemos su rol (desde cache si ya existe) y enrutamos.
+    // Si el token quedó inválido, limpiamos el cache de rol y dejamos el menú; el
+    // guard de PanelVoluntario ya cubre la limpieza del token persistente.
+    resolverYRedirigir(guardado).catch(() => {
+      clearCachedRole();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Si el guard del panel detectó una sesión inválida, redirige aquí con
@@ -152,14 +191,27 @@ export default function Voluntarios() {
       setError("Token no reconocido. Verifica que lo copiaste correctamente.");
       return;
     }
+    // El token cambió respecto a una sesión previa: invalidamos el cache de rol
+    // para no arrastrar un rol viejo, y resolvemos el rol de este token una vez.
+    clearCachedRole();
     setVolunteerToken(t);
-    setToken(t);
-    setVerificando(false);
-    setVista("panel");
+    try {
+      await resolverYRedirigir(t);
+    } catch {
+      // obtenerRol falló (token inválido/inactivo): mismo mensaje del flujo del
+      // issue #3, sin navegar a ningún panel.
+      setError("Token no reconocido. Verifica que lo copiaste correctamente.");
+    } finally {
+      setVerificando(false);
+    }
   };
 
   const guardarYEntrar = () => {
     if (!tokenNuevo) return;
+    // El registro libre solo crea voluntarios: vamos directo al panel actual y
+    // cacheamos el rol para no pedirlo de nuevo en esta sesión.
+    clearCachedRole();
+    setCachedRole(tokenNuevo, "voluntario");
     setVolunteerToken(tokenNuevo);
     setToken(tokenNuevo);
     setVista("panel");

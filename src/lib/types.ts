@@ -20,6 +20,12 @@ export interface EstadoVenezuela {
   orden: number;
 }
 
+// --- Nodos (issue #18) ---
+// Un "nodo" es lo que vive en centros_acopio: un lugar de acopio/entrega con
+// tipo, ciclo de vida (status) y ownership (node_admins / node_collaborators).
+export type NodeTipo = "acopio" | "entrega" | "mixto";
+export type NodeStatus = "inactivo" | "activo" | "pausado" | "cerrado";
+
 export interface CentroAcopio {
   id: string;
   estado_id: string;
@@ -31,6 +37,58 @@ export interface CentroAcopio {
   horario: string | null;
   contacto: string | null;
   activo: boolean;
+  // Campos del modelo de nodos (0031). Opcionales para no romper lecturas viejas.
+  tipo?: NodeTipo;
+  status?: NodeStatus;
+  pausado_recepcion?: boolean;
+  pausado_entrega?: boolean;
+  verificado_at?: string | null;
+}
+
+// Forma que devuelve listar_nodos_admin(p_token): los nodos que administra el
+// token, con su estado real y la verificación GPS de ESTE admin sobre el nodo.
+export interface NodoAdmin {
+  id: string;
+  nombre: string;
+  direccion: string;
+  tipo: NodeTipo;
+  status: NodeStatus;
+  lat: number | null;
+  lng: number | null;
+  estado_id: string;
+  pausado_recepcion: boolean;
+  pausado_entrega: boolean;
+  verificado: boolean;
+  verificado_at: string | null;
+}
+
+// Datos que viajan a crear_nodo (p_datos jsonb).
+export interface NodoData {
+  nombre: string;
+  direccion: string;
+  google_place_id: string | null;
+  lat: number | null;
+  lng: number | null;
+  estado_id: string;
+  tipo: NodeTipo;
+  horario: string | null;
+  contacto: string | null;
+}
+
+export type TipoPausa = "recepcion" | "entrega" | "ambas" | "reactivar";
+
+// Estado de visibilidad DERIVADO para lecturas públicas: si cualquiera de las
+// banderas está en true, el nodo se muestra como 'pausado' / "No operativo"
+// aunque la columna interna status siga en 'activo' (ver 0031).
+export function statusVisible(n: {
+  status?: NodeStatus;
+  pausado_recepcion?: boolean | null;
+  pausado_entrega?: boolean | null;
+}): NodeStatus {
+  if (n.status === "activo" && (n.pausado_recepcion || n.pausado_entrega)) {
+    return "pausado";
+  }
+  return n.status ?? "activo";
 }
 
 export interface ZonaRescate {
@@ -61,6 +119,8 @@ export interface Location {
   created_at: string;
 }
 
+export type VolunteerRole = "superadmin" | "admin" | "colaborador" | "voluntario";
+
 export interface Volunteer {
   id: string;
   nombre: string;
@@ -69,6 +129,7 @@ export interface Volunteer {
   telegram: string | null;
   zona_descripcion: string | null;
   centro_acopio_id?: string | null;
+  role?: VolunteerRole;
   token: string;
   activo: boolean;
   created_at: string;
