@@ -20,6 +20,9 @@ import {
   NodoData,
   NodoAdmin,
   TipoPausa,
+  SolicitudData,
+  SolicitudDisponible,
+  SolicitudNodo,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -293,6 +296,11 @@ export async function registrarVoluntario(input: {
   telegram: string | null;
   zona_descripcion: string | null;
   centro_acopio_id: string | null;
+  // Capacidad de vehículo (issue #19). Opcionales: la RPC los toma con default
+  // false/null, así que omitirlos mantiene el registro libre sin vehículo.
+  tiene_vehiculo?: boolean;
+  capacidad_peso_kg?: number | null;
+  capacidad_volumen_m3?: number | null;
 }): Promise<{ id: string; token: string }> {
   try {
     const { data, error } = await supabase.rpc("registrar_voluntario", {
@@ -305,6 +313,9 @@ export async function registrarVoluntario(input: {
       p_telegram: input.telegram?.trim() || null,
       p_zona: input.zona_descripcion,
       p_centro_acopio_id: input.centro_acopio_id,
+      p_tiene_vehiculo: input.tiene_vehiculo ?? false,
+      p_capacidad_peso_kg: input.capacidad_peso_kg ?? null,
+      p_capacidad_volumen_m3: input.capacidad_volumen_m3 ?? null,
     });
     if (error) throw error;
     return (data as { id: string; token: string }[])[0];
@@ -346,6 +357,32 @@ export async function registrarVoluntario(input: {
   }
 }
 
+// Un superadmin crea un admin (issue #17). La RPC crear_admin valida por
+// current_volunteer_token() que el caller sea superadmin y devuelve id + token
+// del nuevo admin. telefono/telegram/centro_acopio_id son opcionales (DEFAULT
+// null en la firma). No se mapea el error: se propaga tal cual lo devuelve el
+// backend (ej. 'no_autorizado' si el caller no es superadmin).
+export async function crearAdmin(
+  input: {
+    nombre: string;
+    apellido: string;
+    telefono?: string | null;
+    telegram?: string | null;
+    centro_acopio_id?: string | null;
+  },
+  token: string
+): Promise<{ id: string; token: string }> {
+  const { data, error } = await supabaseWithToken(token).rpc("crear_admin", {
+    p_nombre: input.nombre,
+    p_apellido: input.apellido,
+    p_telefono: input.telefono ?? null,
+    p_telegram: input.telegram ?? null,
+    p_centro_acopio_id: input.centro_acopio_id ?? null,
+  });
+  if (error) throw error;
+  return (data as { id: string; token: string }[])[0];
+}
+
 // --- Nodos (issue #18) ---
 // Todas usan supabaseWithToken(token) para que el header 'volunteer-token' viaje
 // y las RPC SECURITY DEFINER validen rol/membresía, igual que el resto del archivo.
@@ -358,7 +395,7 @@ export async function crearNodo(datos: NodoData, token: string): Promise<string>
   });
   if (error) {
     if (error.message.includes("no_autorizado")) {
-      throw new Error("No tienes permiso para crear nodos.");
+      throw new Error("No tienes permiso para crear puntos.");
     }
     throw error;
   }
@@ -380,10 +417,10 @@ export async function verificarNodo(
   });
   if (error) {
     if (error.message.includes("no_autorizado")) {
-      throw new Error("No eres administrador de este nodo.");
+      throw new Error("No eres administrador de este punto.");
     }
     if (error.message.includes("nodo_sin_coordenadas")) {
-      throw new Error("El nodo no tiene coordenadas registradas.");
+      throw new Error("El punto no tiene coordenadas registradas.");
     }
     throw error;
   }
@@ -403,7 +440,7 @@ export async function pausarNodo(
   });
   if (error) {
     if (error.message.includes("no_autorizado")) {
-      throw new Error("No eres administrador de este nodo.");
+      throw new Error("No eres administrador de este punto.");
     }
     throw error;
   }
@@ -417,7 +454,7 @@ export async function cerrarNodo(nodeId: string, token: string): Promise<void> {
   });
   if (error) {
     if (error.message.includes("no_autorizado")) {
-      throw new Error("Solo un superadmin puede cerrar un nodo.");
+      throw new Error("Solo un superadmin puede cerrar un punto.");
     }
     throw error;
   }
@@ -430,6 +467,156 @@ export async function listarNodosAdmin(token: string): Promise<NodoAdmin[]> {
   });
   if (error) throw error;
   return (data ?? []) as NodoAdmin[];
+}
+
+// --- Solicitudes entre nodos (issue #19) ---
+// Todas usan supabaseWithToken(token) para que el header 'volunteer-token' viaje
+// y las RPC SECURITY DEFINER validen rol/membresía, igual que el resto del archivo.
+
+// Un admin/colaborador del nodo crea una solicitud. Nace en status 'abierta'.
+export async function crearSolicitud(
+  nodeId: string,
+  datos: SolicitudData,
+  token: string
+): Promise<string> {
+  const { data, error } = await supabaseWithToken(token).rpc("crear_solicitud", {
+    p_node_id: nodeId,
+    p_datos: datos,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para crear solicitudes en este punto.");
+    }
+    throw error;
+  }
+  return data as string;
+}
+
+// Un voluntario responde a una solicitud comprometiendo magnitud + tiempo.
+export async function responderSolicitudVoluntario(
+  solicitudId: string,
+  magnitud: string,
+  tiempoEstimadoMinutos: number,
+  token: string
+): Promise<string> {
+  const { data, error } = await supabaseWithToken(token).rpc(
+    "responder_solicitud_voluntario",
+    {
+      p_solicitud_id: solicitudId,
+      p_magnitud: magnitud,
+      p_tiempo_estimado: tiempoEstimadoMinutos,
+      p_token_voluntario: token,
+    }
+  );
+  if (error) {
+    if (error.message.includes("requiere_vehiculo")) {
+      throw new Error(
+        "Esta solicitud requiere un voluntario con vehículo y tu perfil no tiene vehículo registrado."
+      );
+    }
+    if (error.message.includes("solicitud_no_disponible")) {
+      throw new Error("Esta solicitud ya no admite respuestas.");
+    }
+    throw error;
+  }
+  return data as string;
+}
+
+// Un admin/colaborador compromete stock de su nodo hacia una solicitud.
+export async function responderSolicitudNodo(
+  solicitudId: string,
+  magnitud: string,
+  tieneTransporte: boolean,
+  token: string,
+  nodeId?: string
+): Promise<string> {
+  const { data, error } = await supabaseWithToken(token).rpc("responder_solicitud_nodo", {
+    p_solicitud_id: solicitudId,
+    p_magnitud: magnitud,
+    p_tiene_transporte: tieneTransporte,
+    p_token_admin: token,
+    p_node_id: nodeId ?? null,
+  });
+  if (error) {
+    if (error.message.includes("nodo_ambiguo")) {
+      throw new Error("Administras varios puntos; indica con cuál te comprometes.");
+    }
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para comprometer stock de este punto.");
+    }
+    throw error;
+  }
+  return data as string;
+}
+
+// Cancela un compromiso (de voluntario o de nodo). p_motivo opcional:
+// 'incumplimiento' para que el admin del nodo origen marque no-cumplimiento.
+export async function cancelarCompromiso(
+  compromisoId: string,
+  token: string,
+  motivo?: "incumplimiento"
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("cancelar_compromiso", {
+    p_compromiso_id: compromisoId,
+    p_token: token,
+    p_motivo: motivo ?? null,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para cancelar este compromiso.");
+    }
+    throw error;
+  }
+}
+
+// El admin del nodo que PUBLICÓ la solicitud confirma la entrega de un
+// compromiso (voluntario -> completado, nodo -> entregado).
+export async function confirmarEntregaCompromiso(
+  compromisoId: string,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("confirmar_entrega_compromiso", {
+    p_compromiso_id: compromisoId,
+    p_token_admin_destino: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("Solo el punto que publicó la solicitud puede confirmar la entrega.");
+    }
+    throw error;
+  }
+}
+
+// Lectura filtrada para el panel de voluntario: las solicitudes que puede
+// atender (filtro de vehículo y sobrante aplicados server-side).
+export async function listarSolicitudesDisponibles(
+  token: string
+): Promise<SolicitudDisponible[]> {
+  const { data, error } = await supabaseWithToken(token).rpc(
+    "listar_solicitudes_disponibles",
+    { p_token_voluntario: token }
+  );
+  if (error) throw error;
+  return (data ?? []) as SolicitudDisponible[];
+}
+
+// Las solicitudes de un nodo con sus compromisos (panel de admin del nodo origen).
+export async function listarSolicitudesNodo(
+  nodeId: string,
+  token: string
+): Promise<SolicitudNodo[]> {
+  const { data, error } = await supabaseWithToken(token).rpc("listar_solicitudes_nodo", {
+    p_node_id: nodeId,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No administras este punto.");
+    }
+    throw error;
+  }
+  return (data ?? []) as SolicitudNodo[];
 }
 
 export async function obtenerContacto(

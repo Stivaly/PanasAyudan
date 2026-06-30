@@ -318,6 +318,18 @@ grant execute on function verificar_nodo(uuid, double precision, double precisio
 -- ---------------------------------------------------------------------------
 -- 9. RPC pausar_nodo: gestión interna (un admin sin verificar también puede).
 --    Solo toca las banderas granulares; NO toca status (ver estrategia arriba).
+--
+--    Las pausas son ACUMULATIVAS: 'recepcion' y 'entrega' encienden su bandera
+--    sin tocar la otra, de modo que un nodo mixto puede quedar con una mitad
+--    operativa y la otra no.
+--
+--    LIMITACIÓN CONOCIDA: 'reactivar' siempre limpia AMBAS banderas; no existe
+--    reactivación parcial (p. ej. reabrir solo entrega dejando recepción
+--    pausada). Para volver a un estado de pausa parcial hay que reactivar y
+--    pausar de nuevo la mitad deseada. Si se requiere reactivación granular,
+--    abrir un issue futuro y extender p_tipo_pausa (p. ej. reactivar_recepcion
+--    / reactivar_entrega) — se deja fuera del alcance del #18 a propósito, sin
+--    cambiar la firma actual.
 -- ---------------------------------------------------------------------------
 create or replace function pausar_nodo(
   p_node_id     uuid,

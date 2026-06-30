@@ -35,6 +35,11 @@ export default function Voluntarios() {
   const [telefono, setTelefono] = useState("");
   const [telegram, setTelegram] = useState("");
   const [zona, setZona] = useState("");
+  // Capacidad de vehículo (issue #19): al registrarse se pregunta si tiene
+  // vehículo; si sí, se pide peso y volumen aproximado que puede transportar.
+  const [tieneVehiculo, setTieneVehiculo] = useState(false);
+  const [capacidadPeso, setCapacidadPeso] = useState("");
+  const [capacidadVolumen, setCapacidadVolumen] = useState("");
   const [estadoId, setEstadoId] = useState<string | null>(null);
   const [centroAcopioId, setCentroAcopioId] = useState("");
   const [centros, setCentros] = useState<CentroAcopio[]>([]);
@@ -157,6 +162,18 @@ export default function Voluntarios() {
       return;
     }
     const telegramNormalizado = normalizarTelegram(telegram);
+    // Si declara vehículo, peso y volumen son obligatorios (lo refuerza también
+    // el CHECK volunteers_capacidad_vehiculo en la BD).
+    let pesoNum: number | null = null;
+    let volumenNum: number | null = null;
+    if (tieneVehiculo) {
+      pesoNum = Number(capacidadPeso);
+      volumenNum = Number(capacidadVolumen);
+      if (!capacidadPeso.trim() || !capacidadVolumen.trim() || !(pesoNum > 0) || !(volumenNum > 0)) {
+        setError("Si tienes vehículo, indica el peso (kg) y el volumen (m³) que puedes transportar.");
+        return;
+      }
+    }
     setEnviando(true);
     try {
       const v = await registrarVoluntario({
@@ -166,6 +183,9 @@ export default function Voluntarios() {
         telegram: telegramNormalizado || null,
         zona_descripcion: zona.trim() || null,
         centro_acopio_id: centroAcopioId || null,
+        tiene_vehiculo: tieneVehiculo,
+        capacidad_peso_kg: pesoNum,
+        capacidad_volumen_m3: volumenNum,
       });
       setTokenNuevo(v.token);
     } catch (e) {
@@ -338,6 +358,32 @@ export default function Voluntarios() {
             value={zona}
             onChange={(e) => setZona(e.target.value)}
           />
+          <label className="flex items-center gap-2 rounded-xl border border-border bg-bg p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={tieneVehiculo}
+              onChange={(e) => setTieneVehiculo(e.target.checked)}
+            />
+            <span>Tengo vehículo para transportar insumos</span>
+          </label>
+          {tieneVehiculo && (
+            <div className="flex gap-2">
+              <input
+                className="field"
+                inputMode="decimal"
+                placeholder="Peso aprox. (kg)"
+                value={capacidadPeso}
+                onChange={(e) => setCapacidadPeso(e.target.value.replace(/[^0-9.]/g, ""))}
+              />
+              <input
+                className="field"
+                inputMode="decimal"
+                placeholder="Volumen aprox. (m³)"
+                value={capacidadVolumen}
+                onChange={(e) => setCapacidadVolumen(e.target.value.replace(/[^0-9.]/g, ""))}
+              />
+            </div>
+          )}
           <EstadoCombobox
             estados={estados}
             estadoId={estadoId}

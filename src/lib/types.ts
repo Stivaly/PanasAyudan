@@ -135,6 +135,105 @@ export interface Volunteer {
   created_at: string;
 }
 
+// --- Solicitudes entre nodos (issue #19) ---
+// Magnitud: escala ORDINAL (no medida física). El array está en el mismo orden
+// que magnitud_orden() del backend (unidades=1 ... gandola=7), reutilizable para
+// poblar selects en ese orden.
+export const MAGNITUD_ORDEN = [
+  "unidades",
+  "decenas",
+  "centenas",
+  "cajas",
+  "pallets",
+  "camioneta",
+  "gandola",
+] as const;
+
+export type Magnitud = (typeof MAGNITUD_ORDEN)[number];
+
+export type SolicitudStatus =
+  | "abierta"
+  | "parcial"
+  | "en_camino"
+  | "inventario_asegurado"
+  | "cerrada";
+
+export interface Solicitud {
+  id: string;
+  node_id_origen: string;
+  category_id: string;
+  subcategoria: string | null;
+  magnitud: Magnitud;
+  requiere_vehiculo: boolean;
+  status: SolicitudStatus;
+  created_at: string;
+}
+
+export type CompromisoVoluntarioStatus = "pendiente" | "completado" | "incumplido";
+
+export interface CompromisoVoluntario {
+  id: string;
+  magnitud: Magnitud;
+  tiempo_estimado_minutos: number;
+  status: CompromisoVoluntarioStatus;
+  created_at: string;
+}
+
+export type CompromisoNodoStatus =
+  | "comprometido"
+  | "en_camino"
+  | "entregado"
+  | "cancelado";
+
+export interface CompromisoNodo {
+  id: string;
+  magnitud: Magnitud;
+  tiene_transporte: boolean;
+  status: CompromisoNodoStatus;
+  node_id_compromete: string;
+  created_at: string;
+}
+
+// Forma que devuelve listar_solicitudes_disponibles (panel de voluntario): el
+// sobrante calculado, sin detalle de quién comprometió qué ni ubicación alguna.
+export interface SolicitudDisponible {
+  id: string;
+  node_id_origen: string;
+  nodo_nombre: string;
+  category_id: string;
+  category_name: string;
+  subcategoria: string | null;
+  magnitud: Magnitud;
+  requiere_vehiculo: boolean;
+  status: SolicitudStatus;
+  sobrante: number;
+  created_at: string;
+}
+
+// Forma que devuelve listar_solicitudes_nodo (panel de admin): la solicitud del
+// nodo con sus compromisos anidados.
+export interface SolicitudNodo {
+  id: string;
+  category_id: string;
+  category_name: string;
+  subcategoria: string | null;
+  magnitud: Magnitud;
+  requiere_vehiculo: boolean;
+  status: SolicitudStatus;
+  sobrante: number;
+  created_at: string;
+  compromisos_voluntario: CompromisoVoluntario[];
+  compromisos_nodo: CompromisoNodo[];
+}
+
+// Datos que viajan a crear_solicitud (p_datos jsonb).
+export interface SolicitudData {
+  category_id: string;
+  subcategoria: string | null;
+  magnitud: Magnitud;
+  requiere_vehiculo: boolean;
+}
+
 export type AporteStatus = "activo" | "cerrado";
 
 export interface Aporte {

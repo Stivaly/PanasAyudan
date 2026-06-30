@@ -44,15 +44,15 @@ export default function VerificarNodo({
           );
           if (dentro) {
             setResultado("ok");
-            setMensaje("Nodo verificado y activado.");
+            setMensaje("Punto verificado y activado.");
             onVerificado?.();
           } else {
             setResultado("lejos");
-            setMensaje("Estás a más de 200 m del nodo. Acércate e intenta de nuevo.");
+            setMensaje("Estás a más de 200 m del punto. Acércate e intenta de nuevo.");
           }
         } catch (e) {
           setResultado("error");
-          setMensaje(e instanceof Error ? e.message : "No se pudo verificar el nodo.");
+          setMensaje(e instanceof Error ? e.message : "No se pudo verificar el punto.");
         } finally {
           setCargando(false);
         }

@@ -16,6 +16,7 @@ import {
 import { getVolunteerToken } from "@/lib/supabase";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import VerificarNodo from "@/components/VerificarNodo";
+import SolicitudesNodo from "@/components/SolicitudesNodo";
 import {
   EstadoVenezuela,
   NodoAdmin,
@@ -81,7 +82,7 @@ export default function NodoAdminPanel() {
       setLng("");
       cargar(token);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo crear el nodo.");
+      setError(e instanceof Error ? e.message : "No se pudo crear el punto.");
     } finally {
       setCreando(false);
     }
@@ -93,7 +94,7 @@ export default function NodoAdminPanel() {
       await pausarNodo(nodeId, tipoPausa, token);
       cargar(token);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo actualizar el nodo.");
+      setError(e instanceof Error ? e.message : "No se pudo actualizar el punto.");
     }
   };
 
@@ -103,15 +104,15 @@ export default function NodoAdminPanel() {
         <Link href="/voluntarios" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
           ←
         </Link>
-        <h1 className="text-lg font-bold">Panel de nodo</h1>
+        <h1 className="text-lg font-bold">Panel de punto</h1>
       </div>
 
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       {/* Crear nodo (mínimo) */}
       <div className="card border-accent flex flex-col gap-3">
-        <p className="text-sm font-semibold text-accent">Crear nodo</p>
-        <input className="field" placeholder="Nombre del nodo" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <p className="text-sm font-semibold text-accent">Crear punto</p>
+        <input className="field" placeholder="Nombre del punto" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         <input className="field" placeholder="Dirección" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
         <EstadoCombobox
           estados={estados}
@@ -130,18 +131,18 @@ export default function NodoAdminPanel() {
           <input className="field" inputMode="decimal" placeholder="Longitud" value={lng} onChange={(e) => setLng(e.target.value)} />
         </div>
         <p className="text-xs text-muted">
-          El nodo nace inactivo: no aparece en público hasta que lo verifiques desde su ubicación.
+          El punto nace inactivo: no aparece en público hasta que lo verifiques desde su ubicación.
         </p>
         <button onClick={crear} disabled={creando} className="btn-primary w-full disabled:opacity-50">
-          {creando ? "Creando…" : "Crear nodo"}
+          {creando ? "Creando…" : "Crear punto"}
         </button>
       </div>
 
       {/* Mis nodos */}
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-semibold text-muted">Mis nodos</p>
+        <p className="text-sm font-semibold text-muted">Mis puntos</p>
         {nodos.length === 0 ? (
-          <p className="text-sm text-muted">Aún no administras ningún nodo.</p>
+          <p className="text-sm text-muted">Aún no administras ningún punto.</p>
         ) : (
           nodos.map((n) => {
             const vis = statusVisible(n);
@@ -199,6 +200,8 @@ export default function NodoAdminPanel() {
                     Reactivar
                   </button>
                 </div>
+
+                {token && <SolicitudesNodo nodeId={n.id} token={token} />}
               </div>
             );
           })

@@ -18,6 +18,7 @@ import {
 import { AporteVoluntario } from "@/lib/types";
 import Countdown from "@/components/Countdown";
 import AccionesRecogidaVoluntario from "@/components/AccionesRecogidaVoluntario";
+import SolicitudesDisponibles from "@/components/SolicitudesDisponibles";
 
 interface Props {
   token: string;
@@ -265,6 +266,8 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
           );
         })}
       </section>
+
+      <SolicitudesDisponibles token={token} />
 
       <section className="flex flex-col gap-3">
         <h3 className="text-lg font-bold">Recogidas pendientes</h3>
