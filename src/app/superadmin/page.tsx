@@ -6,10 +6,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cerrarNodo, crearAdmin } from "@/lib/api";
-import { getVolunteerToken } from "@/lib/supabase";
+import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 
 export default function SuperadminPanel() {
+  const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [nodeId, setNodeId] = useState("");
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -27,6 +29,15 @@ export default function SuperadminPanel() {
   useEffect(() => {
     setToken(getVolunteerToken());
   }, []);
+
+  // Cierra la sesión: limpia el token persistente y el cache de rol, y vuelve a
+  // /voluntarios para poder ingresar con otra cuenta. Sin esto el superadmin
+  // quedaría atrapado en su panel (su token lo re-redirige aquí al entrar).
+  const salir = () => {
+    clearVolunteerToken();
+    clearCachedRole();
+    router.push("/voluntarios");
+  };
 
   const cerrar = async () => {
     if (!token) return;
@@ -80,6 +91,9 @@ export default function SuperadminPanel() {
           ←
         </Link>
         <h1 className="text-lg font-bold">Panel superadmin</h1>
+        <button onClick={salir} className="ml-auto text-sm font-semibold text-muted">
+          Salir
+        </button>
       </div>
 
       <div className="card border-accent flex flex-col gap-3">

@@ -7,13 +7,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   getEstados,
   listarNodosAdmin,
   crearNodo,
   pausarNodo,
 } from "@/lib/api";
-import { getVolunteerToken } from "@/lib/supabase";
+import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import VerificarNodo from "@/components/VerificarNodo";
 import SolicitudesNodo from "@/components/SolicitudesNodo";
@@ -26,6 +27,7 @@ import {
 } from "@/lib/types";
 
 export default function NodoAdminPanel() {
+  const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [nodos, setNodos] = useState<NodoAdmin[]>([]);
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
@@ -88,6 +90,13 @@ export default function NodoAdminPanel() {
     }
   };
 
+  // Cierra la sesión y vuelve a /voluntarios para entrar con otra cuenta.
+  const salir = () => {
+    clearVolunteerToken();
+    clearCachedRole();
+    router.push("/voluntarios");
+  };
+
   const pausar = async (nodeId: string, tipoPausa: TipoPausa) => {
     if (!token) return;
     try {
@@ -105,6 +114,9 @@ export default function NodoAdminPanel() {
           ←
         </Link>
         <h1 className="text-lg font-bold">Panel de punto</h1>
+        <button onClick={salir} className="ml-auto text-sm font-semibold text-muted">
+          Salir
+        </button>
       </div>
 
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
