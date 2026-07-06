@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Props {
   hasta: Date | string;
@@ -21,7 +21,12 @@ function formatear(ms: number): string {
 }
 
 export default function Countdown({ hasta, vencidoTexto = "Vencida" }: Props) {
-  const fecha = typeof hasta === "string" ? new Date(hasta) : hasta;
+  // useMemo evita recrear el Date en cada render, lo que cambiaría la dependencia
+  // del efecto de intervalo y lo reiniciaría constantemente.
+  const fecha = useMemo(
+    () => (typeof hasta === "string" ? new Date(hasta) : hasta),
+    [hasta]
+  );
   const [ms, setMs] = useState(() => restante(fecha));
 
   useEffect(() => {

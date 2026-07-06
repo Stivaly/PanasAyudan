@@ -8,12 +8,19 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   getCategorias,
+  getSubcategorias,
   crearSolicitud,
   listarSolicitudesNodo,
   cancelarCompromiso,
   confirmarEntregaCompromiso,
 } from "@/lib/api";
-import { Category, Magnitud, MAGNITUD_ORDEN, SolicitudNodo } from "@/lib/types";
+import {
+  Category,
+  Subcategory,
+  Magnitud,
+  MAGNITUD_ORDEN,
+  SolicitudNodo,
+} from "@/lib/types";
 
 interface Props {
   nodeId: string;
@@ -22,12 +29,13 @@ interface Props {
 
 export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [categorias, setCategorias] = useState<Category[]>([]);
+  const [subcategorias, setSubcategorias] = useState<Subcategory[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudNodo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
 
   const [categoryId, setCategoryId] = useState("");
-  const [subcategoria, setSubcategoria] = useState("");
+  const [subcategoryId, setSubcategoryId] = useState("");
   const [magnitud, setMagnitud] = useState<Magnitud>("unidades");
   const [requiereVehiculo, setRequiereVehiculo] = useState(false);
 
@@ -42,6 +50,20 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     cargar();
   }, [cargar]);
 
+  // Dropdown de subcategoría dependiente de la macro seleccionada (issue #30).
+  useEffect(() => {
+    // Reset de la subcategoría al cambiar la macro + fetch dependiente (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSubcategoryId("");
+    if (!categoryId) {
+      setSubcategorias([]);
+      return;
+    }
+    getSubcategorias(categoryId)
+      .then(setSubcategorias)
+      .catch(() => setSubcategorias([]));
+  }, [categoryId]);
+
   const crear = async () => {
     setError(null);
     if (!categoryId) {
@@ -54,13 +76,13 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
         nodeId,
         {
           category_id: categoryId,
-          subcategoria: subcategoria.trim() || null,
+          subcategory_id: subcategoryId || null,
           magnitud,
           requiere_vehiculo: requiereVehiculo,
         },
         token
       );
-      setSubcategoria("");
+      setSubcategoryId("");
       setRequiereVehiculo(false);
       cargar();
     } catch (e) {
@@ -105,12 +127,19 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             </option>
           ))}
         </select>
-        <input
+        <select
           className="field"
-          placeholder="Subcategoría (opcional)"
-          value={subcategoria}
-          onChange={(e) => setSubcategoria(e.target.value)}
-        />
+          value={subcategoryId}
+          onChange={(e) => setSubcategoryId(e.target.value)}
+          disabled={!categoryId || subcategorias.length === 0}
+        >
+          <option value="">Subcategoría (opcional)…</option>
+          {subcategorias.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
         <select
           className="field"
           value={magnitud}

@@ -55,6 +55,9 @@ export default function Buscar() {
   // Al cambiar de estado: cargar centros/zonas de ese estado y resetear los
   // selects de centro y zona a "Todos".
   useEffect(() => {
+    // Reset de selects dependientes al cambiar de estado + fetch. Efecto
+    // intencional; no es un store síncrono para useSyncExternalStore.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCentroActivo(null);
     setZonaActiva(null);
     if (!estadoActivo) {

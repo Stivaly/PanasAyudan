@@ -38,6 +38,8 @@ export default function SolicitudesDisponibles({ token }: Props) {
   }, [token]);
 
   useEffect(() => {
+    // Carga inicial async en efecto (cargar marca "cargando"; intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargar();
   }, [cargar]);
 

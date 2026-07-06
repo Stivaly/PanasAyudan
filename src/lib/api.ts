@@ -2,6 +2,7 @@ import { supabase, supabaseWithToken } from "./supabase";
 import { getRecogedorToken } from "./recogedor";
 import {
   Category,
+  Subcategory,
   EstadoVenezuela,
   ContactData,
   ItemData,
@@ -29,6 +30,18 @@ export async function getCategorias(): Promise<Category[]> {
   const { data, error } = await supabase.from("categories").select("*").order("name");
   if (error) throw error;
   return data as Category[];
+}
+
+// Subcategorías fijas (issue #30). Sin argumento devuelve todas; con categoryId
+// devuelve solo las de esa macrocategoría (para dropdowns dependientes).
+export async function getSubcategorias(categoryId?: string): Promise<Subcategory[]> {
+  let query = supabase.from("subcategories").select("*").order("name");
+  if (categoryId) {
+    query = query.eq("category_id", categoryId);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as Subcategory[];
 }
 
 export async function getEstados(): Promise<EstadoVenezuela[]> {
@@ -105,7 +118,18 @@ export async function getItemsActivos(
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data as any[])
+  type ItemActivoRow = {
+    id: string;
+    aporte_id: string;
+    category_id: string;
+    descripcion: string;
+    qty_approx: number;
+    qty_disponible: number;
+    category: Category | null;
+    aporte: { location: Location | null } | null;
+  };
+
+  return (data as ItemActivoRow[])
     .filter((row) => row.aporte?.location && row.category)
     .map((row) => ({
       item: {
@@ -115,9 +139,9 @@ export async function getItemsActivos(
         descripcion: row.descripcion,
         qty_approx: row.qty_approx,
         qty_disponible: row.qty_disponible,
-        category: row.category,
+        category: row.category as Category,
       },
-      location: row.aporte.location,
+      location: row.aporte!.location as Location,
     }));
 }
 
@@ -129,7 +153,17 @@ export async function getItemsDeLugar(locationId: string): Promise<ItemConCatego
     .eq("aporte.status", "activo");
 
   if (error) throw error;
-  return (data as any[]).map((row) => ({
+  type ItemLugarRow = {
+    id: string;
+    aporte_id: string;
+    category_id: string;
+    descripcion: string;
+    qty_approx: number;
+    qty_disponible: number;
+    category: Category;
+  };
+
+  return (data as ItemLugarRow[]).map((row) => ({
     id: row.id,
     aporte_id: row.aporte_id,
     category_id: row.category_id,

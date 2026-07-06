@@ -71,6 +71,31 @@ public/           manifest.json y service worker
 supabase/         migraciones SQL (esquema/RLS/RPC/cron) y scripts
 ```
 
+## Memoria de agentes
+
+El repositorio versiona `.codebase-memory/graph.db.zst` como snapshot compartido
+del grafo de conocimiento usado por agentes. El archivo se genera al indexar el
+proyecto con persistencia habilitada y debe tratarse como un artefacto
+regenerable.
+
+`.gitattributes` configura el merge del snapshot asi:
+
+```gitattributes
+.codebase-memory/graph.db.zst merge=ours
+```
+
+Cada clon local debe registrar una vez el driver de merge correspondiente:
+
+```bash
+git config merge.ours.driver true
+```
+
+Esa configuracion vive en `.git/config`, por lo que no se commitea. Antes de
+resolver merges que puedan tocar `.codebase-memory/graph.db.zst`, verifica que
+el driver este configurado. Si el snapshot queda desactualizado despues de un
+merge, reindexa el proyecto con persistencia habilitada y commitea el nuevo
+artefacto.
+
 ## Notas
 
 - Modo oscuro siempre activo; no hay toggle de tema.

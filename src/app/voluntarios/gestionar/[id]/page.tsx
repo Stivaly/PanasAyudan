@@ -51,6 +51,8 @@ export default function GestionarLugar() {
   const { recogidas, error, recargar } = useRecogidasPendientes(token);
 
   useEffect(() => {
+    // Lectura de token cliente-only al montar (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToken(getVolunteerToken());
     setVerificando(false);
   }, []);
@@ -76,6 +78,8 @@ export default function GestionarLugar() {
   }, [token, locationId]);
 
   useEffect(() => {
+    // Carga inicial async en efecto (cargarAportes marca "cargando"; intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargarAportes();
   }, [cargarAportes]);
 

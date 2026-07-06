@@ -96,6 +96,8 @@ function PendienteCard({
   const [errorQty, setErrorQty] = useState<string | null>(null);
 
   // La reserva vence dentro de las próximas 2 horas (y aún no ha vencido).
+  // Lectura intencional de la hora actual en render para decidir el aviso.
+  // eslint-disable-next-line react-hooks/purity
   const msHastaVencer = new Date(r.reserved_until).getTime() - Date.now();
   const venceProximo = msHastaVencer > 0 && msHastaVencer <= 2 * 60 * 60 * 1000;
 
@@ -293,6 +295,8 @@ export default function MisRecogidas() {
 
   useEffect(() => {
     const t = typeof window === "undefined" ? null : window.localStorage.getItem(TOKEN_KEY);
+    // Lectura de token cliente-only al montar (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToken(t);
     setVerificando(false);
   }, []);
@@ -312,6 +316,7 @@ export default function MisRecogidas() {
 
   useEffect(() => {
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCargando(false);
       return;
     }

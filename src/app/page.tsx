@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { getVolunteerToken } from "@/lib/supabase";
+import { useVolunteerToken } from "@/hooks/useVolunteerToken";
 import SeccionImpacto from "@/components/SeccionImpacto";
 
 const ModalBienvenida = dynamic(() => import("@/components/ModalBienvenida"), {
@@ -11,11 +10,10 @@ const ModalBienvenida = dynamic(() => import("@/components/ModalBienvenida"), {
 });
 
 export default function Home() {
-  const [tieneToken, setTieneToken] = useState(false);
+  // Lectura cliente-only del token vía store externo: SSR-safe y sin setState
+  // dentro de un efecto (ver useVolunteerToken).
+  const tieneToken = useVolunteerToken() !== null;
 
-  useEffect(() => {
-    setTieneToken(Boolean(getVolunteerToken()));
-  }, []);
   return (
     <main className="relative flex min-h-dvh w-full flex-col bg-bg px-4 py-8">
       <ModalBienvenida />

@@ -93,6 +93,8 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
 
   useEffect(() => {
     if (validandoSesion) return;
+    // Carga inicial async en efecto (cargarAportes marca "cargando"; intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargarAportes();
 
     const canal = supabase

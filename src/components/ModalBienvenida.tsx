@@ -13,6 +13,8 @@ export default function ModalBienvenida() {
   useEffect(() => {
     try {
       if (!localStorage.getItem(STORAGE_KEY)) {
+        // Primera visita (según localStorage): mostrar el modal al montar.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setVisible(true);
       }
     } catch {

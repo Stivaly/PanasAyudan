@@ -1,16 +1,29 @@
+// Taxonomía fija de macrocategorías (issue #30). Los slugs son estables y los
+// define el sistema (ver 0037_taxonomia_categorias.sql).
 export type CategorySlug =
   | "agua"
-  | "comida"
+  | "alimentacion"
   | "medicinas"
-  | "higiene"
-  | "ropa"
-  | "herramientas"
+  | "higiene-personal"
+  | "higiene-sanitaria"
+  | "ropa-abrigo"
+  | "herramientas-rescate"
+  | "comunicacion"
+  | "transporte"
   | "otro";
 
 export interface Category {
   id: string;
   name: string;
   slug: CategorySlug;
+}
+
+// Subcategoría fija de una macrocategoría (issue #30).
+export interface Subcategory {
+  id: string;
+  category_id: string;
+  name: string;
+  slug: string;
 }
 
 export interface EstadoVenezuela {
@@ -229,7 +242,9 @@ export interface SolicitudNodo {
 // Datos que viajan a crear_solicitud (p_datos jsonb).
 export interface SolicitudData {
   category_id: string;
-  subcategoria: string | null;
+  // Subcategoría por FK (issue #30). El texto libre subcategoria queda como
+  // legado: crear_solicitud lo deriva del nombre de la subcategoría elegida.
+  subcategory_id: string | null;
   magnitud: Magnitud;
   requiere_vehiculo: boolean;
 }

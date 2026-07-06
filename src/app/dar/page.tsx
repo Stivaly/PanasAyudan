@@ -48,6 +48,8 @@ export default function Dar() {
 
   useEffect(() => {
     const token = getVolunteerToken();
+    // Lectura de token + carga inicial en el mismo efecto (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVolunteerTokenState(token);
     setVerificandoVoluntario(false);
 
@@ -66,6 +68,8 @@ export default function Dar() {
 
   // Al cambiar de estado, cargar centros y zonas de ese estado en paralelo.
   useEffect(() => {
+    // Reset de selects dependientes al cambiar de estado + fetch (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCentroAcopioId("");
     setZonaRescateId("");
     setCentros([]);

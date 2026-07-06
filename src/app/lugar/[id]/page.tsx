@@ -57,6 +57,8 @@ export default function LugarDetalle() {
       .catch(() => setErrorReservas("No se pudieron cargar los insumos de este lugar."))
       .finally(() => activo && setCargando(false));
 
+    // Carga inicial async en efecto (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void recargarMisReservas();
 
     const canal = supabase

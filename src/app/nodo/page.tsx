@@ -18,11 +18,13 @@ import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/s
 import EstadoCombobox from "@/components/EstadoCombobox";
 import VerificarNodo from "@/components/VerificarNodo";
 import SolicitudesNodo from "@/components/SolicitudesNodo";
+import PlacesAutocomplete from "@/components/PlacesAutocomplete";
 import {
   EstadoVenezuela,
   NodoAdmin,
   NodeTipo,
   TipoPausa,
+  PlaceSeleccion,
   statusVisible,
 } from "@/lib/types";
 
@@ -34,13 +36,13 @@ export default function NodoAdminPanel() {
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
 
-  // Formulario mínimo de creación.
+  // Formulario mínimo de creación. La ubicación (dirección + coordenadas) se toma
+  // de Google Places, no se escribe a mano: al elegir el lugar quedan
+  // google_place_id, lat, lng y address detrás, igual que en /dar.
   const [nombre, setNombre] = useState("");
-  const [direccion, setDireccion] = useState("");
   const [estadoId, setEstadoId] = useState<string | null>(null);
   const [tipo, setTipo] = useState<NodeTipo>("acopio");
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
+  const [lugar, setLugar] = useState<PlaceSeleccion | null>(null);
 
   const cargar = (t: string) => {
     listarNodosAdmin(t)
@@ -50,6 +52,8 @@ export default function NodoAdminPanel() {
 
   useEffect(() => {
     const t = getVolunteerToken();
+    // Lectura de token + carga inicial en el mismo efecto (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToken(t);
     if (t) cargar(t);
     getEstados().then(setEstados).catch(() => setEstados([]));
@@ -58,8 +62,12 @@ export default function NodoAdminPanel() {
   const crear = async () => {
     if (!token) return;
     setError(null);
-    if (!nombre.trim() || !direccion.trim() || !estadoId) {
-      setError("Nombre, dirección y estado son obligatorios.");
+    if (!nombre.trim() || !estadoId) {
+      setError("Nombre y estado son obligatorios.");
+      return;
+    }
+    if (!lugar) {
+      setError("Busca y selecciona la ubicación del punto en Google.");
       return;
     }
     setCreando(true);
@@ -67,10 +75,10 @@ export default function NodoAdminPanel() {
       await crearNodo(
         {
           nombre: nombre.trim(),
-          direccion: direccion.trim(),
-          google_place_id: null,
-          lat: lat.trim() ? Number(lat) : null,
-          lng: lng.trim() ? Number(lng) : null,
+          direccion: lugar.address ?? lugar.place_name,
+          google_place_id: lugar.google_place_id,
+          lat: lugar.lat,
+          lng: lugar.lng,
           estado_id: estadoId,
           tipo,
           horario: null,
@@ -79,9 +87,7 @@ export default function NodoAdminPanel() {
         token
       );
       setNombre("");
-      setDireccion("");
-      setLat("");
-      setLng("");
+      setLugar(null);
       cargar(token);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo crear el punto.");
@@ -125,7 +131,27 @@ export default function NodoAdminPanel() {
       <div className="card border-accent flex flex-col gap-3">
         <p className="text-sm font-semibold text-accent">Crear punto</p>
         <input className="field" placeholder="Nombre del punto" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-        <input className="field" placeholder="Dirección" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
+        <label className="text-sm font-semibold text-muted">Ubicación</label>
+        {lugar ? (
+          <div className="flex items-start justify-between gap-2 rounded-xl border border-border bg-bg p-3">
+            <div>
+              <p className="text-sm font-semibold">{lugar.place_name}</p>
+              {lugar.address && <p className="text-xs text-muted">{lugar.address}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={() => setLugar(null)}
+              className="text-sm font-semibold text-muted"
+            >
+              Cambiar
+            </button>
+          </div>
+        ) : (
+          <PlacesAutocomplete onSelect={setLugar} />
+        )}
+        <p className="text-xs text-muted">
+          Busca el lugar en Google: la dirección y las coordenadas se guardan solas.
+        </p>
         <EstadoCombobox
           estados={estados}
           estadoId={estadoId}
@@ -138,10 +164,6 @@ export default function NodoAdminPanel() {
           <option value="entrega">Entrega</option>
           <option value="mixto">Mixto</option>
         </select>
-        <div className="flex gap-2">
-          <input className="field" inputMode="decimal" placeholder="Latitud" value={lat} onChange={(e) => setLat(e.target.value)} />
-          <input className="field" inputMode="decimal" placeholder="Longitud" value={lng} onChange={(e) => setLng(e.target.value)} />
-        </div>
         <p className="text-xs text-muted">
           El punto nace inactivo: no aparece en público hasta que lo verifiques desde su ubicación.
         </p>

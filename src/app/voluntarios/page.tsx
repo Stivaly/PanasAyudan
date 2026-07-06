@@ -86,6 +86,8 @@ export default function Voluntarios() {
     // Token persistido: resolvemos su rol (desde cache si ya existe) y enrutamos.
     // Si el token quedó inválido, limpiamos el cache de rol y dejamos el menú; el
     // guard de PanelVoluntario ya cubre la limpieza del token persistente.
+    // Token persistido leído al montar: resuelve rol y enruta (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     resolverYRedirigir(guardado).catch(() => {
       clearCachedRole();
     });
@@ -98,6 +100,8 @@ export default function Voluntarios() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("sesion") === "invalida") {
+      // Aviso derivado del parámetro de URL al montar (intencional).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVista("acceso");
       setError("Sesión inválida. Ingresa tu token nuevamente.");
       router.replace("/voluntarios");
@@ -112,6 +116,8 @@ export default function Voluntarios() {
 
   // Los centros se cargan solo al elegir un estado, filtrados por ese estado.
   useEffect(() => {
+    // Reset de selects dependientes al cambiar de estado + fetch (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCentroAcopioId("");
     setCentros([]);
     if (!estadoId) {

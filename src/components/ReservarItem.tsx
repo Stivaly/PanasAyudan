@@ -56,6 +56,8 @@ export default function ReservarItem({ item, onReservada }: Props) {
   useEffect(() => {
     const guardado = getRecogedorLocal();
     if (!guardado) return;
+    // Pre-relleno del formulario desde localStorage al montar (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNombre(guardado.nombre);
     setApellido(guardado.apellido);
     setCedula(formatearCedula(guardado.cedula));
@@ -73,6 +75,8 @@ export default function ReservarItem({ item, onReservada }: Props) {
 
   // Al cambiar el estado de destino, carga centros y zonas y resetea selección.
   useEffect(() => {
+    // Reset de selects de destino al cambiar de estado + fetch (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCentroDestinoId("");
     setZonaDestinoId("");
     if (!estadoDestinoId) {
