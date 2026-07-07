@@ -8,15 +8,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
-import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
+import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import { normalizarTelefonoVe, errorTelegram, normalizarTelegram } from "@/lib/telefono";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import SolicitudesRegistroNodo from "@/components/SolicitudesRegistroNodo";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
 
 export default function SuperadminPanel() {
   const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
+  const guard = useRoleGuard(["superadmin"]);
+  const token = guard.token;
   const [nodeId, setNodeId] = useState("");
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +43,6 @@ export default function SuperadminPanel() {
   const [creandoAdmin, setCreandoAdmin] = useState(false);
 
   useEffect(() => {
-    // Lectura de token cliente-only al montar (intencional).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setToken(getVolunteerToken());
     getEstados().then(setEstados).catch(() => setEstados([]));
   }, []);
 
@@ -80,6 +79,9 @@ export default function SuperadminPanel() {
     setError(null);
     if (!nodeId.trim()) {
       setError("Ingresa el ID del punto a cerrar.");
+      return;
+    }
+    if (!window.confirm("El cierre es permanente y no tiene reapertura. Confirmas cerrar este punto?")) {
       return;
     }
     setEnviando(true);
@@ -146,6 +148,14 @@ export default function SuperadminPanel() {
       setCreandoAdmin(false);
     }
   };
+
+  if (guard.loading || !token) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4">
+        <p className="text-sm text-muted">Verificando acceso...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">

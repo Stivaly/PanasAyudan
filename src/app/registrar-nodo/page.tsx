@@ -54,7 +54,11 @@ export default function RegistrarNodo() {
       return;
     }
     if (!ubicacion) {
-      setError("Indica la ubicación del punto: búscala en Google o marca el mapa.");
+      setError("Indica la ubicación del punto seleccionándola desde Google Maps.");
+      return;
+    }
+    if (!ubicacion.google_place_id) {
+      setError("Busca y selecciona el punto desde Google Maps para poder registrarlo.");
       return;
     }
     if (!solicitanteNombre.trim()) {
@@ -80,6 +84,7 @@ export default function RegistrarNodo() {
         lat: ubicacion.lat,
         lng: ubicacion.lng,
         direccion: ubicacion.direccion,
+        google_place_id: ubicacion.google_place_id,
         estado_id: estadoId,
         categorias: categoriasSel,
         horarios: horarios.trim() || null,
@@ -166,7 +171,10 @@ export default function RegistrarNodo() {
 
       <section className="flex flex-col gap-2">
         <label className="text-sm font-semibold text-muted">Ubicación</label>
-        <UbicacionPicker valor={ubicacion} onChange={setUbicacion} />
+        <UbicacionPicker valor={ubicacion} onChange={setUbicacion} allowManual={false} />
+        <p className="text-xs text-muted">
+          Selecciona el punto desde Google Maps para evitar duplicados y guardar su ubicación exacta.
+        </p>
       </section>
 
       <section className="flex flex-col gap-2">

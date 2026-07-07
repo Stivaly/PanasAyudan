@@ -562,6 +562,7 @@ export async function crearSolicitudRegistroNodo(datos: {
   lat: number | null;
   lng: number | null;
   direccion: string | null;
+  google_place_id: string;
   estado_id: string | null;
   categorias: string[];
   horarios: string | null;
@@ -594,7 +595,7 @@ export async function listarSolicitudesRegistro(
   return (data ?? []) as SolicitudRegistroNodo[];
 }
 
-// Superadmin: aprobar. Crea admin + nodo inactivo en una transacción y devuelve
+// Superadmin: aprobar. Crea admin + nodo vigente en una transacción y devuelve
 // el token del admin UNA sola vez (no se puede recuperar después).
 export async function aprobarSolicitudRegistro(
   solicitudId: string,

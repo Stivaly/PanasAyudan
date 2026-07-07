@@ -13,8 +13,11 @@ degrada a `en_rango=false`, sin errores).
 - Dataset: *Venezuela - Subnational Administrative Boundaries* (HDX / OCHA COD-AB).
   - https://data.humdata.org/dataset/cod-ab-ven
   - Descargar la capa **ADM2** (municipios) en GeoJSON, SRID 4326 (WGS84).
-- Campos relevantes del GeoJSON (nombres exactos según la versión que descargues,
-  suelen ser `ADM2_ES`/`ADM2_PCODE` para el municipio y `ADM1_ES` para el estado).
+- Campos relevantes del GeoJSON. En la versión descargada (HDX COD-AB, 335
+  features, SRID 4326) las columnas reales son **minúsculas**:
+  `adm2_name` (municipio), `adm1_name` (estado), `adm2_pcode` (código ADM2).
+  Los 24 valores de `adm1_name` calzan 1:1 con `estados.nombre` — incluido
+  `La Guaira` (no `Vargas`).
 
 ## Requisitos
 
@@ -23,41 +26,42 @@ degrada a `en_rango=false`, sin errores).
 
 ## 1. Convertir el GeoJSON a INSERTs SQL
 
-`ogr2ogr` puede emitir SQL directamente contra el esquema `municipios`. Genera un
-archivo `0039_seed_municipios.sql` (siguiente número de migración libre):
+`ogr2ogr` emite un dump PGDUMP que crea la tabla staging `municipios_seed_raw`.
+El dump ya está generado en `supabase/scripts/municipios_seed_raw.sql` (335 INSERTs,
+~12 MB). El comando exacto (conda env `geo`, GDAL 3.13):
 
 ```bash
-# ven_adm2.geojson = la capa ADM2 descargada de HDX.
 ogr2ogr \
-  -f PGDUMP /tmp/municipios_raw.sql \
-  ven_adm2.geojson \
+  -f PGDUMP supabase/scripts/municipios_seed_raw.sql \
+  ven_admin2.geojson \
   -nln municipios_seed_raw \
   -lco GEOMETRY_NAME=geom \
   -lco SRID=4326 \
+  -lco SCHEMA=public \
   -nlt MULTIPOLYGON \
   -lco LAUNDER=NO
 ```
 
-Esto crea una tabla staging `municipios_seed_raw` con la geometría y todas las
-columnas del GeoJSON. No cargues eso como tabla final: úsala como staging para
-insertar en `municipios` mapeando el estado por nombre.
+`LAUNDER=NO` preserva los nombres de columna del GeoJSON tal cual (`adm2_name`,
+`adm1_name`, …). Es staging, NO la tabla final: se usa para insertar en
+`municipios` mapeando el estado por nombre y luego se descarta.
 
 ## 2. Cargar staging + poblar `municipios` mapeando el estado
 
-Aplica el dump staging y luego este bloque (ajusta `ADM2_ES`/`ADM1_ES` a los
-nombres reales de columna del GeoJSON descargado):
+Aplica el dump staging (`municipios_seed_raw.sql`) y luego este bloque, disponible
+ya listo en `supabase/scripts/poblar_municipios.sql`:
 
 ```sql
 -- Inserta municipios resolviendo estado_id por nombre (unaccent + lower para
 -- tolerar acentos/casing). estado_id queda NULL si no hay match (aceptable).
 insert into municipios (nombre, estado_id, geom)
 select
-  r."ADM2_ES",
+  r.adm2_name,
   e.id,
   st_multi(st_makevalid(r.geom))::geometry(MultiPolygon, 4326)
 from municipios_seed_raw r
 left join estados e
-  on lower(unaccent(e.nombre)) = lower(unaccent(r."ADM1_ES"));
+  on lower(unaccent(e.nombre)) = lower(unaccent(r.adm1_name));
 
 drop table municipios_seed_raw;
 

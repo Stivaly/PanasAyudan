@@ -33,9 +33,10 @@ interface Props {
 }
 
 export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = false }: Props) {
-  const { items, error: cargaError } = useInventarioNodo(nodeId, token);
+  const { items, error: cargaError, refrescar } = useInventarioNodo(nodeId, token);
   const publicaMagnitud = tipo !== "entrega"; // acopio | mixto muestran magnitud
   const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
 
   // --- Formulario de configuración (solo admin) ---
   const [categorias, setCategorias] = useState<Category[]>([]);
@@ -71,6 +72,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
 
   const guardar = async () => {
     setError(null);
+    setExito(null);
     if (!fCategory) {
       setError("Elige una categoría para el item.");
       return;
@@ -94,8 +96,13 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
         ],
         token
       );
+      refrescar();
+      setFCategory("");
+      setFSubcategory("");
+      setFDisponible(true);
       setFCondicion("");
       setFMagnitud("");
+      setExito("Item guardado.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar el item.");
     } finally {
@@ -105,8 +112,10 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
 
   const agotar = async (inventoryId: string) => {
     setError(null);
+    setExito(null);
     try {
       const r = await marcarAgotado(inventoryId, token);
+      refrescar();
       // La app ofrece de inmediato crear la solicitud de reposición.
       if (r.sugerir_solicitud) setSolicitarFor(inventoryId);
     } catch (e) {
@@ -117,10 +126,13 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   const solicitar = useCallback(
     async (inventoryId: string) => {
       setError(null);
+      setExito(null);
       try {
         await solicitarReposicion(inventoryId, solMagnitud, solVehiculo, token);
         setSolicitarFor(null);
         setSolVehiculo(false);
+        setSolMagnitud("unidades");
+        setExito("Solicitud de reposicion creada.");
       } catch (e) {
         setError(e instanceof Error ? e.message : "No se pudo crear la solicitud.");
       }
@@ -134,6 +146,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
       {(error || cargaError) && (
         <p className="text-sm font-semibold text-danger">{error ?? cargaError}</p>
       )}
+      {exito && <p className="text-sm font-semibold text-accent">{exito}</p>}
 
       {/* Alta/edición (solo admin) */}
       {!soloColaborador && (

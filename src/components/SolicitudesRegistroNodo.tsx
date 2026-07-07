@@ -148,8 +148,8 @@ export default function SolicitudesRegistroNodo({ token }: Props) {
                   Copiar token
                 </button>
                 <p className="text-xs text-muted">
-                  El nodo nace inactivo: el admin debe verificar su GPS en el punto para
-                  que aparezca en público.
+                  El nodo queda vigente y aparece en las listas por estado. El token
+                  permite al admin gestionar ese punto.
                 </p>
               </>
             ) : rechazando === s.id ? (

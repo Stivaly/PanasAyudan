@@ -286,8 +286,8 @@ export default function Voluntarios() {
           </div>
 
           <div className="grid gap-2 text-sm text-muted">
-            <p className="rounded-xl bg-surface p-3">Coordina recogidas cercanas.</p>
-            <p className="rounded-xl bg-surface p-3">Conecta clínicas, centros de acopio y rescatistas.</p>
+            <p className="rounded-xl bg-surface p-3">Responde solicitudes cercanas.</p>
+            <p className="rounded-xl bg-surface p-3">Apoya traslados entre puntos y zonas que necesitan ayuda.</p>
             <p className="rounded-xl bg-surface p-3">Ayuda sin exponerte: tú eliges tu zona.</p>
           </div>
 
@@ -366,7 +366,7 @@ export default function Voluntarios() {
             onChange={(e) => setTelefono(e.target.value.replace(/[a-zA-Z]/g, ""))}
           />
           <p className="text-xs text-muted">
-            Este número se compartirá por WhatsApp cuando alguien solicite uno de tus aportes.
+            Este numero se usara para coordinar los compromisos que aceptes.
           </p>
           <input
             className="field"

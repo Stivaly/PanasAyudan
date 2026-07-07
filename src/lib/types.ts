@@ -118,6 +118,7 @@ export interface SolicitudRegistroNodo {
   lat: number | null;
   lng: number | null;
   direccion: string | null;
+  google_place_id: string | null;
   estado_id: string | null;
   categorias: string[];
   horarios: string | null;

@@ -18,13 +18,14 @@ export interface UbicacionSeleccion {
 interface Props {
   valor: UbicacionSeleccion | null;
   onChange: (u: UbicacionSeleccion | null) => void;
+  allowManual?: boolean;
 }
 
 // Selector de ubicación reutilizable (issue #29): busca el lugar en Google
 // (PlaceAutocompleteElement) o marca el pin a mano en el mapa (MapaPicker). El
 // centro del mapa lo resuelve resolverCentro (IP -> GPS solo si ya autorizado):
 // nunca dispara el prompt de permisos.
-export default function UbicacionPicker({ valor, onChange }: Props) {
+export default function UbicacionPicker({ valor, onChange, allowManual = true }: Props) {
   const [centro, setCentro] = useState<Coords | null>(null);
   const [manual, setManual] = useState(false);
   const [coordsManual, setCoordsManual] = useState<Coords | null>(null);
@@ -87,13 +88,15 @@ export default function UbicacionPicker({ valor, onChange }: Props) {
       {!manual ? (
         <>
           <PlacesAutocomplete onSelect={elegirPlace} />
-          <button
-            type="button"
-            onClick={() => setManual(true)}
-            className="text-sm font-semibold text-accent underline self-start"
-          >
-            No lo encuentro, marcar en el mapa
-          </button>
+          {allowManual && (
+            <button
+              type="button"
+              onClick={() => setManual(true)}
+              className="text-sm font-semibold text-accent underline self-start"
+            >
+              No lo encuentro, marcar en el mapa
+            </button>
+          )}
         </>
       ) : (
         <>
