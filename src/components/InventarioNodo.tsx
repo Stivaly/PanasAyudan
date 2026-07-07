@@ -8,7 +8,7 @@
 //     reposición; no configura (coherente con 0030 y el criterio de aceptación).
 // Al marcar agotado se ofrece crear la solicitud automática (solicitar_reposicion).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getCategorias,
   getSubcategorias,
@@ -23,6 +23,7 @@ import {
   Magnitud,
   MAGNITUD_ORDEN,
   NodeTipo,
+  InventarioItem,
 } from "@/lib/types";
 
 interface Props {
@@ -49,6 +50,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   const [fCondicion, setFCondicion] = useState("");
   const [fNota, setFNota] = useState("");
   const [guardando, setGuardando] = useState(false);
+  // Item en edición: cuando está definido, el formulario superior edita ese item
+  // en vez de crear uno nuevo. La categoría/subcategoría son la identidad del item
+  // (unique node_id+category+subcategory) y quedan fijas; el resto es editable,
+  // incluido "Disponible" (así se repone stock tras un "no hay").
+  const [editItem, setEditItem] = useState<InventarioItem | null>(null);
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   // --- Prompt "¿Solicitar más?" (ambos modos) ---
   const [solicitarFor, setSolicitarFor] = useState<string | null>(null);
@@ -74,10 +81,39 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
     getSubcategorias(fCategory).then(setSubcategorias).catch(() => setSubcategorias([]));
   }, [fCategory, soloColaborador]);
 
+  const limpiarFormulario = () => {
+    setEditItem(null);
+    setFCategory("");
+    setFSubcategory("");
+    setFDisponible(true);
+    setFCondicion("");
+    setFNota("");
+    setFMagnitud("");
+    setFCantidad("");
+  };
+
+  // Carga un item existente en el formulario superior para editarlo. La identidad
+  // (categoría/subcategoría) se conserva vía editItem; los selects quedan fijos.
+  const iniciarEdicion = (it: InventarioItem) => {
+    setError(null);
+    setExito(null);
+    setSolicitarFor(null);
+    setEditItem(it);
+    setFDisponible(it.disponible);
+    setFMagnitud(it.magnitud ?? "");
+    setFCantidad(it.cantidad != null ? String(it.cantidad) : "");
+    setFCondicion(it.condicion ?? "");
+    setFNota(it.nota ?? "");
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const guardar = async () => {
     setError(null);
     setExito(null);
-    if (!fCategory) {
+    // En edición la categoría/subcategoría vienen del item; en alta, de los selects.
+    const categoryId = editItem ? editItem.category_id : fCategory;
+    const subcategoryId = editItem ? editItem.subcategory_id : (fSubcategory || null);
+    if (!categoryId) {
       setError("Elige una categoría para el item.");
       return;
     }
@@ -98,8 +134,8 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
         nodeId,
         [
           {
-            category_id: fCategory,
-            subcategory_id: fSubcategory || null,
+            category_id: categoryId,
+            subcategory_id: subcategoryId,
             disponible: fDisponible,
             magnitud: magnitudFinal,
             cantidad: magnitudFinal ? cant : null,
@@ -110,14 +146,9 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
         token
       );
       refrescar();
-      setFCategory("");
-      setFSubcategory("");
-      setFDisponible(true);
-      setFCondicion("");
-      setFNota("");
-      setFMagnitud("");
-      setFCantidad("");
-      setExito("Item guardado.");
+      const editando = editItem !== null;
+      limpiarFormulario();
+      setExito(editando ? "Cambios guardados." : "Item guardado.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar el item.");
     } finally {
@@ -172,24 +203,52 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
 
       {/* Alta/edición (solo admin) */}
       {!soloColaborador && (
-        <div className="flex flex-col gap-2 rounded-xl bg-bg p-3">
-          <select className="field" value={fCategory} onChange={(e) => setFCategory(e.target.value)}>
-            <option value="">Categoría…</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <select
-            className="field"
-            value={fSubcategory}
-            onChange={(e) => setFSubcategory(e.target.value)}
-            disabled={!fCategory || subcategorias.length === 0}
-          >
-            <option value="">Subcategoría (opcional)…</option>
-            {subcategorias.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+        <div
+          ref={formRef}
+          className={
+            "flex flex-col gap-2 rounded-xl bg-bg p-3" +
+            (editItem ? " ring-1 ring-accent" : "")
+          }
+        >
+          {editItem ? (
+            // En edición la identidad (categoría/subcategoría) es fija: se muestra
+            // como texto y no se puede cambiar (crearía otro item distinto).
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold text-accent">Editando item</p>
+                <p className="font-semibold">
+                  {editItem.category?.name ?? "—"}
+                  {editItem.subcategory ? " · " + editItem.subcategory.name : ""}
+                </p>
+              </div>
+              <button
+                onClick={limpiarFormulario}
+                className="shrink-0 text-xs font-semibold text-muted"
+              >
+                Cancelar edición
+              </button>
+            </div>
+          ) : (
+            <>
+              <select className="field" value={fCategory} onChange={(e) => setFCategory(e.target.value)}>
+                <option value="">Categoría…</option>
+                {categorias.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <select
+                className="field"
+                value={fSubcategory}
+                onChange={(e) => setFSubcategory(e.target.value)}
+                disabled={!fCategory || subcategorias.length === 0}
+              >
+                <option value="">Subcategoría (opcional)…</option>
+                {subcategorias.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </>
+          )}
           {publicaMagnitud && (
             <div className="flex gap-2">
               <input
@@ -231,7 +290,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             <span>Disponible</span>
           </label>
           <button onClick={guardar} disabled={guardando} className="btn-primary text-sm disabled:opacity-50">
-            {guardando ? "Guardando…" : "Guardar item"}
+            {guardando ? "Guardando…" : editItem ? "Guardar cambios" : "Guardar item"}
           </button>
         </div>
       )}
@@ -257,15 +316,29 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                 {it.nota && <p className="mt-1 text-xs text-white">💬 {it.nota}</p>}
                 {it.condicion && <p className="mt-1 text-xs text-muted">⚠ {it.condicion}</p>}
               </div>
-              {it.disponible && (
-                <button onClick={() => agotar(it.id)} className="shrink-0 text-xs font-semibold text-danger">
-                  Marcar “no hay”
-                </button>
-              )}
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {/* Reparto por rol: el admin edita el item completo (y agota/repone
+                    con la casilla "Disponible"); el colaborador solo marca "no hay". */}
+                {soloColaborador
+                  ? it.disponible && (
+                      <button onClick={() => agotar(it.id)} className="text-xs font-semibold text-danger">
+                        Marcar “no hay”
+                      </button>
+                    )
+                  : (
+                      <button
+                        onClick={() => iniciarEdicion(it)}
+                        className="text-xs font-semibold text-accent"
+                      >
+                        Editar
+                      </button>
+                    )}
+              </div>
             </div>
 
-            {/* Prompt de reposición: auto tras agotar, o manual si ya está en "no hay" */}
-            {!it.disponible && solicitarFor !== it.id && (
+            {/* Reposición atada al item: exclusiva del colaborador. El admin pide a
+                la red con "Crear solicitud" (arriba), que cubre este caso. */}
+            {soloColaborador && !it.disponible && solicitarFor !== it.id && (
               <button
                 onClick={() => setSolicitarFor(it.id)}
                 className="mt-2 text-xs font-semibold text-accent"
@@ -273,7 +346,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                 ¿Solicitar más?
               </button>
             )}
-            {solicitarFor === it.id && (
+            {soloColaborador && solicitarFor === it.id && (
               <div className="mt-2 flex flex-col gap-2 rounded-lg bg-surface p-2">
                 <div className="flex gap-2">
                   <input
