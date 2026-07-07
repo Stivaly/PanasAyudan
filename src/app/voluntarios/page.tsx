@@ -297,7 +297,7 @@ export default function Voluntarios() {
               Créate una cuenta con tus datos. Al terminar recibirás un código de acceso
               propio para volver a entrar.
             </p>
-            <button onClick={() => setVista("registro")} className="btn-primary mt-1 w-full">
+            <button onClick={() => setVista("registro")} className="btn-ghost mt-1 w-full">
               Crear cuenta nueva
             </button>
           </div>
@@ -307,7 +307,7 @@ export default function Voluntarios() {
             <p className="text-xs text-muted">
               Entra con el código de acceso que recibiste cuando creaste tu cuenta.
             </p>
-            <button onClick={() => setVista("acceso")} className="btn-ghost mt-1 w-full">
+            <button onClick={() => setVista("acceso")} className="btn-primary mt-1 w-full">
               Entrar con mi código de acceso
             </button>
           </div>
