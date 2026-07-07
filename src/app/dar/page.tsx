@@ -189,13 +189,13 @@ export default function Dar() {
           <h1 className="text-lg font-bold">Publicar insumos</h1>
         </div>
         <div className="card border-accent">
-          <p className="font-semibold text-accent">Solo voluntarios registrados</p>
+          <p className="font-semibold text-accent">Necesitas sumarte al apoyo</p>
           <p className="mt-2 text-sm text-muted">
-            Para publicar algo para dar debes registrarte o entrar con tu token de voluntario.
+            Para publicar algo para dar debes sumarte al apoyo o usar tu codigo de apoyo.
           </p>
         </div>
         <Link href="/voluntarios" className="btn-primary w-full">
-          Registrarme o entrar como voluntario
+          Sumarme o usar mi codigo
         </Link>
         <Link href="/buscar" className="btn-ghost w-full">
           Necesito buscar algo

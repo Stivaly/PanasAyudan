@@ -105,7 +105,7 @@ export default function Voluntarios() {
       // Aviso derivado del parámetro de URL al montar (intencional).
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVista("acceso");
-      setError("Sesión inválida. Ingresa tu token nuevamente.");
+      setError("Codigo invalido. Ingresa tu codigo de apoyo nuevamente.");
       router.replace("/voluntarios");
     }
   }, [router]);
@@ -214,7 +214,7 @@ export default function Voluntarios() {
   const entrar = async () => {
     const t = tokenInput.trim();
     if (!t) {
-      setError("Ingresa tu token.");
+      setError("Ingresa tu codigo de apoyo.");
       return;
     }
     setError(null);
@@ -224,7 +224,7 @@ export default function Voluntarios() {
     const valido = await validarTokenVoluntario(t);
     if (!valido) {
       setVerificando(false);
-      setError("Token no reconocido. Verifica que lo copiaste correctamente.");
+      setError("Codigo no reconocido. Verifica que lo copiaste correctamente.");
       return;
     }
     // El token cambió respecto a una sesión previa: invalidamos el cache de rol
@@ -236,7 +236,7 @@ export default function Voluntarios() {
     } catch {
       // obtenerRol falló (token inválido/inactivo): mismo mensaje del flujo del
       // issue #3, sin navegar a ningún panel.
-      setError("Token no reconocido. Verifica que lo copiaste correctamente.");
+      setError("Codigo no reconocido. Verifica que lo copiaste correctamente.");
     } finally {
       setVerificando(false);
     }
@@ -260,8 +260,8 @@ export default function Voluntarios() {
           ←
         </Link>
         <div>
-          <h1 className="text-lg font-bold">🇻🇪 Voluntarios</h1>
-          {vista === "panel" && <p className="text-xs text-muted">Estás en el panel de voluntarios</p>}
+          <h1 className="text-lg font-bold">🇻🇪 Apoyo en traslados</h1>
+          {vista === "panel" && <p className="text-xs text-muted">Estas en solicitudes para ayudar</p>}
         </div>
       </div>
 
@@ -292,10 +292,10 @@ export default function Voluntarios() {
           </div>
 
           <button onClick={() => setVista("registro")} className="btn-primary w-full">
-            Registrarme como voluntario
+            Sumarme al apoyo
           </button>
           <button onClick={() => setVista("acceso")} className="btn-ghost w-full">
-            Ya tengo token
+            Tengo codigo de apoyo
           </button>
           <p className="text-center text-xs text-muted">
             ¿Tienes un centro de acopio o entrega?{" "}
@@ -315,7 +315,7 @@ export default function Voluntarios() {
           }}
         >
           <div className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-            Puedes guardar este token en el navegador como una contraseña para entrar más rápido la próxima vez.
+            Este codigo identifica tu acceso de apoyo en este dispositivo. Puedes guardarlo para usarlo mas rapido la proxima vez.
           </div>
           <input type="hidden" name="username" autoComplete="username" value="voluntario-panasayudan" readOnly />
           <input
@@ -324,13 +324,13 @@ export default function Voluntarios() {
             className="field"
             type="password"
             autoComplete="current-password"
-            placeholder="Ingresa tu token"
+            placeholder="Codigo de apoyo"
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
           />
           {error && <p className="text-sm font-semibold text-danger">{error}</p>}
           <button type="submit" disabled={verificando} className="btn-primary w-full disabled:opacity-50">
-            {verificando ? "Verificando…" : "Entrar"}
+            {verificando ? "Verificando..." : "Usar codigo"}
           </button>
           <button type="button" disabled={verificando} onClick={() => { setError(null); setVista("menu"); }} className="btn-ghost w-full">
             Volver
@@ -471,12 +471,12 @@ export default function Voluntarios() {
           }}
         >
           <div className="card border-accent">
-            <p className="font-semibold text-accent">Guarda tu token</p>
+            <p className="font-semibold text-accent">Guarda tu codigo de apoyo</p>
             <p className="mt-1 text-sm text-muted">
-              Es tu única forma de acceder. No se muestra de nuevo y no se puede recuperar.
+              Es tu forma de volver a tu panel de apoyo. No se muestra de nuevo y no se puede recuperar.
             </p>
             <p className="mt-3 rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-              Tu navegador puede ofrecer guardarlo como contraseña. Acepta esa opción para entrar rápido en este dispositivo.
+              Tu navegador puede ofrecer guardarlo. Acepta esa opcion para usarlo rapido en este dispositivo.
             </p>
             <input type="hidden" name="username" autoComplete="username" value="voluntario-panasayudan" readOnly />
             <input
@@ -492,11 +492,11 @@ export default function Voluntarios() {
               onClick={() => navigator.clipboard?.writeText(tokenNuevo)}
               className="btn-ghost mt-3 w-full"
             >
-              Copiar token
+              Copiar codigo
             </button>
           </div>
           <button type="submit" className="btn-primary w-full">
-            Ya lo guardé, entrar
+            Ya lo guarde, usar codigo
           </button>
         </form>
       )}

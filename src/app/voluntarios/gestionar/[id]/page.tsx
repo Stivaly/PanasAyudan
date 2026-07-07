@@ -231,13 +231,13 @@ export default function GestionarLugar() {
           <h1 className="text-lg font-bold">Gestionar mis aportes</h1>
         </div>
         <div className="card border-accent">
-          <p className="font-semibold text-accent">Solo voluntarios registrados</p>
+          <p className="font-semibold text-accent">Necesitas un codigo de apoyo</p>
           <p className="mt-2 text-sm text-muted">
-            Para gestionar tus aportes y completar solicitudes debes entrar con tu token de voluntario.
+            Para gestionar tus aportes y completar solicitudes debes usar tu codigo de apoyo.
           </p>
         </div>
         <Link href="/voluntarios" className="btn-primary w-full">
-          Entrar como voluntario
+          Usar codigo de apoyo
         </Link>
       </main>
     );

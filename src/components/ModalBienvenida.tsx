@@ -238,7 +238,7 @@ export default function ModalBienvenida() {
                 }}
                 className="btn-ghost min-h-[44px] w-full"
               >
-                Registrarme como voluntario
+                Sumarme al apoyo
               </button>
             </div>
           </div>
