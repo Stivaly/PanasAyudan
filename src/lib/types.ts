@@ -354,6 +354,8 @@ export interface SolicitudNodo {
   id: string;
   category_id: string;
   category_name: string;
+  // FK de subcategoría (para pre-seleccionar al editar); el texto queda en subcategoria.
+  subcategory_id: string | null;
   subcategoria: string | null;
   nota: string | null;
   magnitud: Magnitud;

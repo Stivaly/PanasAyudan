@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   confirmarEntregaCompromiso,
   confirmarLlegadaCompromiso,
   crearSolicitud,
+  editarSolicitud,
+  eliminarSolicitud,
   getCategorias,
   getSubcategorias,
   listarSolicitudesNodo,
@@ -37,6 +39,13 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [nota, setNota] = useState("");
   const [requiereVehiculo, setRequiereVehiculo] = useState(false);
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState<string | null>(null);
+  // id de la solicitud en edición (null = el formulario crea una nueva).
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [eliminandoId, setEliminandoId] = useState<string | null>(null);
+  // Subcategoría a pre-seleccionar al editar: se aplica cuando sus opciones ya
+  // cargaron (el efecto de categoría limpia subcategoryId primero). null = nada.
+  const [subPendiente, setSubPendiente] = useState<string | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const cargar = useCallback(() => {
     listarSolicitudesNodo(nodeId, token)
@@ -102,7 +111,32 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       .catch(() => setSubcategorias([]));
   }, [categoryId]);
 
-  const crear = async () => {
+  // Al editar se fija subPendiente; cuando sus opciones ya cargaron, se aplica
+  // (consumiéndolo). Deja de pelear con el reset del efecto de categoría.
+  useEffect(() => {
+    if (subPendiente && subcategorias.some((s) => s.id === subPendiente)) {
+      setSubcategoryId(subPendiente);
+      setSubPendiente(null);
+    }
+  }, [subPendiente, subcategorias]);
+
+  // Traer el formulario a la vista al empezar a editar.
+  useEffect(() => {
+    if (editandoId) formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [editandoId]);
+
+  const limpiarFormulario = () => {
+    setEditandoId(null);
+    setSubPendiente(null);
+    setCategoryId("");
+    setSubcategoryId("");
+    setMagnitud("unidades");
+    setCantidad("");
+    setNota("");
+    setRequiereVehiculo(false);
+  };
+
+  const guardar = async () => {
     setError(null);
     if (!categoryId) {
       setError("Elige una categoria para la solicitud.");
@@ -113,31 +147,60 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       setError("Indica la cantidad (numero entero mayor a cero).");
       return;
     }
+    const datos = {
+      category_id: categoryId,
+      subcategory_id: subcategoryId || null,
+      magnitud,
+      cantidad: cant,
+      requiere_vehiculo: requiereVehiculo,
+      nota: nota.trim() || null,
+    };
     setCreando(true);
     try {
-      await crearSolicitud(
-        nodeId,
-        {
-          category_id: categoryId,
-          subcategory_id: subcategoryId || null,
-          magnitud,
-          cantidad: cant,
-          requiere_vehiculo: requiereVehiculo,
-          nota: nota.trim() || null,
-        },
-        token
-      );
-      setCategoryId("");
-      setSubcategoryId("");
-      setMagnitud("unidades");
-      setCantidad("");
-      setNota("");
-      setRequiereVehiculo(false);
+      if (editandoId) {
+        await editarSolicitud(editandoId, datos, token);
+      } else {
+        await crearSolicitud(nodeId, datos, token);
+      }
+      limpiarFormulario();
       cargar();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo crear la solicitud.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : editandoId
+          ? "No se pudo editar la solicitud."
+          : "No se pudo crear la solicitud."
+      );
     } finally {
       setCreando(false);
+    }
+  };
+
+  const empezarEdicion = (s: SolicitudNodo) => {
+    setError(null);
+    setEliminandoId(null);
+    setEditandoId(s.id);
+    setMagnitud(s.magnitud);
+    setCantidad(s.cantidad ? String(s.cantidad) : "");
+    setNota(s.nota ?? "");
+    setRequiereVehiculo(s.requiere_vehiculo);
+    setCategoryId(s.category_id);
+    // La subcategoría se aplica vía subPendiente cuando sus opciones cargan; si
+    // la categoría no cambia, el efecto también la resuelve contra las ya cargadas.
+    setSubcategoryId("");
+    setSubPendiente(s.subcategory_id);
+  };
+
+  const eliminar = async (solicitudId: string) => {
+    setError(null);
+    try {
+      await eliminarSolicitud(solicitudId, token);
+      setEliminandoId(null);
+      if (editandoId === solicitudId) limpiarFormulario();
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo eliminar la solicitud.");
     }
   };
 
@@ -165,14 +228,18 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   return (
     <div className="flex flex-col gap-3 border-t border-border pt-3">
       <div>
-        <p className="text-sm font-semibold text-accent">Pedir insumos</p>
+        <p className="text-sm font-semibold text-accent">
+          {editandoId ? "Editar solicitud" : "Pedir insumos"}
+        </p>
         <p className="mt-1 text-xs text-muted">
-          Crea pedidos para este punto y revisa compromisos de voluntarios o de otros puntos.
+          {editandoId
+            ? "Corrige los datos del pedido. Solo se pueden editar solicitudes abiertas sin compromisos."
+            : "Crea pedidos para este punto y revisa compromisos de voluntarios o de otros puntos."}
         </p>
       </div>
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
-      <div className="flex flex-col gap-2 rounded-xl bg-bg p-3">
+      <div ref={formRef} className="flex flex-col gap-2 rounded-xl bg-bg p-3">
         <select className="field" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
           <option value="">Categoria...</option>
           {categorias.map((c) => (
@@ -229,9 +296,28 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
           />
           <span>Requiere vehiculo</span>
         </label>
-        <button onClick={crear} disabled={creando} className="btn-primary text-sm disabled:opacity-50">
-          {creando ? "Creando..." : "Crear solicitud"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={guardar}
+            disabled={creando}
+            className="btn-primary flex-1 text-sm disabled:opacity-50"
+          >
+            {creando
+              ? "Guardando..."
+              : editandoId
+              ? "Guardar cambios"
+              : "Crear solicitud"}
+          </button>
+          {editandoId && (
+            <button
+              onClick={limpiarFormulario}
+              disabled={creando}
+              className="btn-ghost text-sm disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
       </div>
 
       {solicitudes.length === 0 ? (
@@ -337,6 +423,40 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                       )}
                     </div>
                   )}
+
+                  {s.status === "abierta" &&
+                    (eliminandoId === s.id ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border pt-2">
+                        <span className="text-xs text-danger">Eliminar esta solicitud?</span>
+                        <button
+                          onClick={() => eliminar(s.id)}
+                          className="text-xs font-semibold text-danger"
+                        >
+                          Si, eliminar
+                        </button>
+                        <button
+                          onClick={() => setEliminandoId(null)}
+                          className="text-xs font-semibold text-muted"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-2 flex gap-3 border-t border-border pt-2">
+                        <button
+                          onClick={() => empezarEdicion(s)}
+                          className="text-xs font-semibold text-accent"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setEliminandoId(s.id)}
+                          className="text-xs font-semibold text-danger"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    ))}
                 </div>
               ))}
             </div>

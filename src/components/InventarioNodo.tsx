@@ -15,6 +15,7 @@ import {
   upsertInventario,
   marcarAgotado,
   solicitarReposicion,
+  eliminarInventario,
 } from "@/lib/api";
 import { useInventarioNodo } from "@/hooks/useInventarioNodo";
 import {
@@ -56,6 +57,9 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   // incluido "Disponible" (así se repone stock tras un "no hay").
   const [editItem, setEditItem] = useState<InventarioItem | null>(null);
   const formRef = useRef<HTMLDivElement | null>(null);
+  // Item pendiente de confirmación de borrado (abre el modal "¿Estás seguro?").
+  const [borrarItem, setBorrarItem] = useState<InventarioItem | null>(null);
+  const [borrando, setBorrando] = useState(false);
 
   // --- Prompt "¿Solicitar más?" (ambos modos) ---
   const [solicitarFor, setSolicitarFor] = useState<string | null>(null);
@@ -105,6 +109,26 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
     setFCondicion(it.condicion ?? "");
     setFNota(it.nota ?? "");
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Elimina el item tras confirmar en el modal (solo admin, revalidado en la RPC).
+  const eliminar = async () => {
+    if (!borrarItem) return;
+    setError(null);
+    setExito(null);
+    setBorrando(true);
+    try {
+      await eliminarInventario(borrarItem.id, token);
+      // Si estabas editando justo ese item, cierra el formulario de edición.
+      if (editItem?.id === borrarItem.id) limpiarFormulario();
+      setBorrarItem(null);
+      refrescar();
+      setExito("Item eliminado.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo eliminar el item.");
+    } finally {
+      setBorrando(false);
+    }
   };
 
   const guardar = async () => {
@@ -326,12 +350,20 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                       </button>
                     )
                   : (
-                      <button
-                        onClick={() => iniciarEdicion(it)}
-                        className="text-xs font-semibold text-accent"
-                      >
-                        Editar
-                      </button>
+                      <>
+                        <button
+                          onClick={() => iniciarEdicion(it)}
+                          className="text-xs font-semibold text-accent"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setBorrarItem(it)}
+                          className="text-xs font-semibold text-danger"
+                        >
+                          Eliminar
+                        </button>
+                      </>
                     )}
               </div>
             </div>
@@ -389,6 +421,47 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             )}
           </div>
         ))
+      )}
+
+      {/* Modal de doble verificación antes de eliminar (solo admin). */}
+      {borrarItem && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-4 sm:items-center"
+          onClick={() => !borrando && setBorrarItem(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-surface p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-base font-semibold text-danger">¿Estás seguro?</p>
+            <p className="mt-2 text-sm">
+              Vas a eliminar del inventario{" "}
+              <span className="font-semibold">
+                {borrarItem.category?.name ?? "este item"}
+                {borrarItem.subcategory ? " · " + borrarItem.subcategory.name : ""}
+              </span>
+              . Esta acción no se puede deshacer.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={eliminar}
+                disabled={borrando}
+                className="btn-danger flex-1 text-sm disabled:opacity-50"
+              >
+                {borrando ? "Eliminando…" : "Sí, eliminar"}
+              </button>
+              <button
+                onClick={() => setBorrarItem(null)}
+                disabled={borrando}
+                className="btn-ghost flex-1 text-sm disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

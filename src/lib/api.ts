@@ -666,6 +666,55 @@ export async function crearSolicitud(
   return data as string;
 }
 
+// Editar una solicitud propia (solo mientras está 'abierta', sin compromisos).
+// Reusa la misma forma de datos que crearSolicitud.
+export async function editarSolicitud(
+  solicitudId: string,
+  datos: SolicitudData,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("editar_solicitud", {
+    p_solicitud_id: solicitudId,
+    p_datos: datos,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para editar esta solicitud.");
+    }
+    if (error.message.includes("solicitud_no_editable")) {
+      throw new Error("Solo puedes editar una solicitud abierta y sin compromisos.");
+    }
+    if (error.message.includes("solicitud_inexistente")) {
+      throw new Error("Esta solicitud ya no existe.");
+    }
+    throw error;
+  }
+}
+
+// Eliminar (cancelar) una solicitud propia (solo mientras está 'abierta').
+export async function eliminarSolicitud(
+  solicitudId: string,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("cancelar_solicitud", {
+    p_solicitud_id: solicitudId,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para eliminar esta solicitud.");
+    }
+    if (error.message.includes("solicitud_no_cancelable")) {
+      throw new Error("Solo puedes eliminar una solicitud abierta y sin compromisos.");
+    }
+    if (error.message.includes("solicitud_inexistente")) {
+      throw new Error("Esta solicitud ya no existe.");
+    }
+    throw error;
+  }
+}
+
 // Un voluntario responde a una solicitud comprometiendo magnitud + cantidad + tiempo.
 export async function responderSolicitudVoluntario(
   solicitudId: string,
@@ -952,6 +1001,24 @@ export async function marcarAgotado(
     throw error;
   }
   return data as AgotadoSugerencia;
+}
+
+// Elimina un item del inventario (solo el admin del nodo). Borrado físico: el
+// item no participa en históricos ni FKs, así que no deja huérfanos.
+export async function eliminarInventario(
+  inventoryId: string,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("eliminar_inventario", {
+    p_token: token,
+    p_inventory_id: inventoryId,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("Solo el administrador del punto puede eliminar items del inventario.");
+    }
+    throw error;
+  }
 }
 
 // Solicita reposición de un item del inventario (admin o colaborador). Es un
