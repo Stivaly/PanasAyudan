@@ -30,6 +30,7 @@ import {
   AgotadoSugerencia,
   NodoMiembro,
   Magnitud,
+  SolicitudRegistroNodo,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -523,6 +524,91 @@ export async function listarNodosAdmin(token: string): Promise<NodoAdmin[]> {
   });
   if (error) throw error;
   return (data ?? []) as NodoAdmin[];
+}
+
+// --- Solicitudes de registro de nodo (issue #21) ---
+
+// Pública (anon): cualquier persona solicita registrar un nodo. La RPC valida el
+// teléfono y rechaza una segunda solicitud pendiente con el mismo número.
+export async function crearSolicitudRegistroNodo(datos: {
+  nombre_nodo: string;
+  tipo: string;
+  lat: number | null;
+  lng: number | null;
+  direccion: string | null;
+  estado_id: string | null;
+  categorias: string[];
+  horarios: string | null;
+  solicitante_nombre: string;
+  solicitante_telefono: string;
+  mensaje: string | null;
+  audio_url: string | null;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc("crear_solicitud_registro_nodo", {
+    p_datos: datos,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+// Superadmin: la cola de solicitudes (pendientes primero).
+export async function listarSolicitudesRegistro(
+  token: string
+): Promise<SolicitudRegistroNodo[]> {
+  const { data, error } = await supabaseWithToken(token).rpc(
+    "listar_solicitudes_registro",
+    { p_token: token }
+  );
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para ver las solicitudes de registro.");
+    }
+    throw error;
+  }
+  return (data ?? []) as SolicitudRegistroNodo[];
+}
+
+// Superadmin: aprobar. Crea admin + nodo inactivo en una transacción y devuelve
+// el token del admin UNA sola vez (no se puede recuperar después).
+export async function aprobarSolicitudRegistro(
+  solicitudId: string,
+  token: string
+): Promise<{ admin_token: string; node_id: string }> {
+  const { data, error } = await supabaseWithToken(token).rpc(
+    "aprobar_solicitud_registro",
+    { p_solicitud_id: solicitudId, p_token: token }
+  );
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para aprobar solicitudes.");
+    }
+    if (error.message.includes("solicitud_ya_resuelta")) {
+      throw new Error("Esta solicitud ya fue resuelta.");
+    }
+    throw error;
+  }
+  return (data as { admin_token: string; node_id: string }[])[0];
+}
+
+// Superadmin: rechazar con motivo.
+export async function rechazarSolicitudRegistro(
+  solicitudId: string,
+  motivo: string,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc(
+    "rechazar_solicitud_registro",
+    { p_solicitud_id: solicitudId, p_token: token, p_motivo: motivo }
+  );
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para rechazar solicitudes.");
+    }
+    if (error.message.includes("solicitud_ya_resuelta")) {
+      throw new Error("Esta solicitud ya fue resuelta.");
+    }
+    throw error;
+  }
 }
 
 // --- Solicitudes entre nodos (issue #19) ---

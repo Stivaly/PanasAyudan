@@ -88,6 +88,31 @@ export interface NodoMiembro {
   pausado_entrega: boolean;
 }
 
+// Solicitud pública de registro de nodo (issue #21). La cola que ve la superadmin
+// en /superadmin; al aprobar nace un admin + un nodo inactivo. El teléfono del
+// solicitante solo lo lee la superadmin (RLS), nunca sale en lecturas públicas.
+export type SolicitudRegistroStatus = "pendiente" | "aprobada" | "rechazada";
+
+export interface SolicitudRegistroNodo {
+  id: string;
+  nombre_nodo: string;
+  tipo: NodeTipo;
+  lat: number | null;
+  lng: number | null;
+  direccion: string | null;
+  estado_id: string | null;
+  categorias: string[];
+  horarios: string | null;
+  solicitante_nombre: string;
+  solicitante_telefono: string;
+  mensaje: string | null;
+  audio_url: string | null;
+  status: SolicitudRegistroStatus;
+  motivo_rechazo: string | null;
+  node_id: string | null;
+  created_at: string;
+}
+
 // Datos que viajan a crear_nodo (p_datos jsonb).
 export interface NodoData {
   nombre: string;

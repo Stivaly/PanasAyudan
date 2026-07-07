@@ -11,6 +11,7 @@ import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@
 import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import { normalizarTelefonoVe, errorTelegram, normalizarTelegram } from "@/lib/telefono";
 import EstadoCombobox from "@/components/EstadoCombobox";
+import SolicitudesRegistroNodo from "@/components/SolicitudesRegistroNodo";
 import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
 
 export default function SuperadminPanel() {
@@ -157,6 +158,9 @@ export default function SuperadminPanel() {
           Salir
         </button>
       </div>
+
+      {/* Cola de solicitudes de registro de nodo (issue #21) */}
+      {token && <SolicitudesRegistroNodo token={token} />}
 
       <div className="card border-accent flex flex-col gap-3">
         <p className="text-sm font-semibold text-accent">Cerrar punto (permanente)</p>
