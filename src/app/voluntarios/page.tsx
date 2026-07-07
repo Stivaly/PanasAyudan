@@ -105,7 +105,7 @@ export default function Voluntarios() {
       // Aviso derivado del parámetro de URL al montar (intencional).
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVista("acceso");
-      setError("Codigo invalido. Ingresa tu codigo de apoyo nuevamente.");
+      setError("Codigo invalido. Ingresa tu codigo de acceso nuevamente.");
       router.replace("/voluntarios");
     }
   }, [router]);
@@ -214,7 +214,7 @@ export default function Voluntarios() {
   const entrar = async () => {
     const t = tokenInput.trim();
     if (!t) {
-      setError("Ingresa tu codigo de apoyo.");
+      setError("Ingresa tu codigo de acceso.");
       return;
     }
     setError(null);
@@ -291,12 +291,27 @@ export default function Voluntarios() {
             <p className="rounded-xl bg-surface p-3">Ayuda sin exponerte: tú eliges tu zona.</p>
           </div>
 
-          <button onClick={() => setVista("registro")} className="btn-primary w-full">
-            Sumarme al apoyo
-          </button>
-          <button onClick={() => setVista("acceso")} className="btn-ghost w-full">
-            Tengo codigo de apoyo
-          </button>
+          <div className="flex flex-col gap-2 rounded-xl border border-accent bg-bg p-4">
+            <p className="text-sm font-semibold text-accent">¿Es tu primera vez?</p>
+            <p className="text-xs text-muted">
+              Créate una cuenta con tus datos. Al terminar recibirás un código de acceso
+              propio para volver a entrar.
+            </p>
+            <button onClick={() => setVista("registro")} className="btn-primary mt-1 w-full">
+              Crear cuenta nueva
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-xl border border-border bg-bg p-4">
+            <p className="text-sm font-semibold">¿Ya te registraste antes?</p>
+            <p className="text-xs text-muted">
+              Entra con el código de acceso que recibiste cuando creaste tu cuenta.
+            </p>
+            <button onClick={() => setVista("acceso")} className="btn-ghost mt-1 w-full">
+              Entrar con mi código de acceso
+            </button>
+          </div>
+
           <p className="text-center text-xs text-muted">
             ¿Tienes un centro de acopio o entrega?{" "}
             <Link href="/registrar-nodo" className="font-semibold text-accent underline">
@@ -314,8 +329,12 @@ export default function Voluntarios() {
             entrar();
           }}
         >
-          <div className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-            Este codigo identifica tu acceso de apoyo en este dispositivo. Puedes guardarlo para usarlo mas rapido la proxima vez.
+          <div>
+            <h2 className="text-xl font-bold">Entrar con tu código de acceso</h2>
+            <p className="mt-1 text-sm text-muted">
+              Pega el código que recibiste al crear tu cuenta. Si aún no tienes uno, vuelve y
+              crea una cuenta nueva.
+            </p>
           </div>
           <input type="hidden" name="username" autoComplete="username" value="voluntario-panasayudan" readOnly />
           <input
@@ -324,13 +343,13 @@ export default function Voluntarios() {
             className="field"
             type="password"
             autoComplete="current-password"
-            placeholder="Codigo de apoyo"
+            placeholder="Código de acceso"
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
           />
           {error && <p className="text-sm font-semibold text-danger">{error}</p>}
           <button type="submit" disabled={verificando} className="btn-primary w-full disabled:opacity-50">
-            {verificando ? "Verificando..." : "Usar codigo"}
+            {verificando ? "Verificando..." : "Entrar"}
           </button>
           <button type="button" disabled={verificando} onClick={() => { setError(null); setVista("menu"); }} className="btn-ghost w-full">
             Volver
@@ -471,9 +490,9 @@ export default function Voluntarios() {
           }}
         >
           <div className="card border-accent">
-            <p className="font-semibold text-accent">Guarda tu codigo de apoyo</p>
+            <p className="font-semibold text-accent">Guarda tu código de acceso</p>
             <p className="mt-1 text-sm text-muted">
-              Es tu forma de volver a tu panel de apoyo. No se muestra de nuevo y no se puede recuperar.
+              Es tu forma de volver a entrar a tu panel. No se muestra de nuevo y no se puede recuperar.
             </p>
             <p className="mt-3 rounded-xl border border-border bg-bg p-3 text-sm text-muted">
               Tu navegador puede ofrecer guardarlo. Acepta esa opcion para usarlo rapido en este dispositivo.

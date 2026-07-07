@@ -64,7 +64,7 @@ export default function Home() {
         <p className="mt-1 text-center text-xs text-muted">
           ¿Coordinas recogidas en tu zona?{" "}
           <Link href="/voluntarios" className="font-semibold text-accent underline">
-            Usa tu codigo de apoyo
+            Usa tu codigo de acceso
           </Link>
         </p>
         <p className="text-center text-xs text-muted">

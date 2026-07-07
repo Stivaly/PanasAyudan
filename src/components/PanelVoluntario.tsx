@@ -19,7 +19,7 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-accent">Codigo de apoyo activo</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-accent">Codigo de acceso activo</p>
           <h2 className="text-lg font-bold">Solicitudes para ayudar</h2>
         </div>
         <button onClick={salir} className="text-sm font-semibold text-muted">
