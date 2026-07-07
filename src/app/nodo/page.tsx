@@ -9,8 +9,14 @@ import EditarNodo from "@/components/EditarNodo";
 import InventarioNodo from "@/components/InventarioNodo";
 import SolicitudesNodo from "@/components/SolicitudesNodo";
 import VerificarNodo from "@/components/VerificarNodo";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { EstadoVenezuela, NodoAdmin, TipoPausa, statusVisible } from "@/lib/types";
+
+const REALTIME_TABLES = [
+  { table: "centros_acopio" },
+  { table: "node_admins" },
+];
 
 export default function NodoAdminPanel() {
   const router = useRouter();
@@ -23,8 +29,8 @@ export default function NodoAdminPanel() {
   const [cargando, setCargando] = useState(true);
 
   const cargar = useCallback(
-    async (t: string) => {
-      setCargando(true);
+    async (t: string, mostrarCarga = true) => {
+      if (mostrarCarga) setCargando(true);
       try {
         const data = await listarNodosAdmin(t);
         setNodos(data);
@@ -50,6 +56,15 @@ export default function NodoAdminPanel() {
     void cargar(token);
   }, [cargar, token]);
 
+  useRealtimeRefresh(
+    "nodos_admin_changes",
+    REALTIME_TABLES,
+    () => {
+      if (token) void cargar(token, false);
+    },
+    Boolean(token)
+  );
+
   const selectedNodeId =
     activeNodeId && nodos.some((n) => n.id === activeNodeId) ? activeNodeId : nodos[0]?.id ?? "";
 
@@ -68,7 +83,7 @@ export default function NodoAdminPanel() {
     if (!token || !activo) return;
     try {
       await pausarNodo(activo.id, tipoPausa, token);
-      await cargar(token);
+      await cargar(token, false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo actualizar el punto.");
     }

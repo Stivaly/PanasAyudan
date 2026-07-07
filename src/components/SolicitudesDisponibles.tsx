@@ -18,10 +18,17 @@ import {
   verificarUbicacionVoluntario,
 } from "@/lib/api";
 import { Magnitud, MAGNITUD_ORDEN, SolicitudDisponible } from "@/lib/types";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 
 interface Props {
   token: string;
 }
+
+const REALTIME_TABLES = [
+  { table: "solicitudes" },
+  { table: "compromisos_voluntario" },
+  { table: "compromisos_nodo" },
+];
 
 export default function SolicitudesDisponibles({ token }: Props) {
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
@@ -35,8 +42,8 @@ export default function SolicitudesDisponibles({ token }: Props) {
   const [tiempo, setTiempo] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
+  const cargar = useCallback(async (mostrarCarga = true) => {
+    if (mostrarCarga) setCargando(true);
     try {
       const resp = await listarSolicitudesDisponibles(token);
       setSolicitudes(resp.solicitudes);
@@ -54,6 +61,13 @@ export default function SolicitudesDisponibles({ token }: Props) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargar();
   }, [cargar]);
+
+  useRealtimeRefresh(
+    "solicitudes_disponibles_changes",
+    REALTIME_TABLES,
+    () => void cargar(false),
+    Boolean(token)
+  );
 
   const verificar = async () => {
     setError(null);

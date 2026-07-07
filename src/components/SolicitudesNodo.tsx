@@ -16,6 +16,7 @@ import {
   SolicitudNodo,
   Subcategory,
 } from "@/lib/types";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 
 interface Props {
   nodeId: string;
@@ -65,10 +66,26 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     [solicitudes]
   );
 
+  const realtimeTables = useMemo(
+    () => [
+      { table: "solicitudes", filter: `node_id_origen=eq.${nodeId}` },
+      { table: "compromisos_voluntario" },
+      { table: "compromisos_nodo" },
+    ],
+    [nodeId]
+  );
+
   useEffect(() => {
     getCategorias().then(setCategorias).catch(() => setCategorias([]));
     cargar();
   }, [cargar]);
+
+  useRealtimeRefresh(
+    `solicitudes_nodo_${nodeId}`,
+    realtimeTables,
+    cargar,
+    Boolean(nodeId && token)
+  );
 
   useEffect(() => {
     // Reset del selector dependiente al cambiar categoria (intencional).

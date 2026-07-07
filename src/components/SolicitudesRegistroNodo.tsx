@@ -13,6 +13,7 @@ import {
   rechazarSolicitudRegistro,
 } from "@/lib/api";
 import { SolicitudRegistroNodo } from "@/lib/types";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 
 interface Props {
   token: string;
@@ -23,6 +24,8 @@ const TIPO_LABEL: Record<string, string> = {
   entrega: "Entrega",
   mixto: "Mixto",
 };
+
+const REALTIME_TABLES = [{ table: "solicitudes_registro_nodo" }];
 
 export default function SolicitudesRegistroNodo({ token }: Props) {
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistroNodo[]>([]);
@@ -47,6 +50,13 @@ export default function SolicitudesRegistroNodo({ token }: Props) {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  useRealtimeRefresh(
+    "solicitudes_registro_nodo_changes",
+    REALTIME_TABLES,
+    cargar,
+    Boolean(token)
+  );
 
   const aprobar = async (id: string) => {
     setError(null);

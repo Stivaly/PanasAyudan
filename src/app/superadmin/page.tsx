@@ -4,7 +4,7 @@
 // permanente de un nodo, que es exclusivo de superadmin (un admin del nodo solo
 // puede pausarlo). El panel de aprobación/gestión completo llega en otro issue.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
@@ -12,6 +12,7 @@ import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import { normalizarTelefonoVe, errorTelegram, normalizarTelegram } from "@/lib/telefono";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import SolicitudesRegistroNodo from "@/components/SolicitudesRegistroNodo";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
 
@@ -44,6 +45,22 @@ export default function SuperadminPanel() {
     getEstados().then(setEstados).catch(() => setEstados([]));
   }, []);
 
+  const cargarCentros = useCallback((estadoId: string, mostrarCarga = true) => {
+    if (mostrarCarga) setCargandoCentros(true);
+    return getCentrosAcopioPorEstado(estadoId)
+      .then(setCentros)
+      .catch(() => setCentros([]))
+      .finally(() => setCargandoCentros(false));
+  }, []);
+
+  const realtimeCentros = useMemo(
+    () =>
+      adminEstadoId
+        ? [{ table: "centros_acopio", filter: `estado_id=eq.${adminEstadoId}` }]
+        : [],
+    [adminEstadoId]
+  );
+
   // Los centros se cargan solo al elegir un estado, filtrados por ese estado
   // (mismo patrón que el registro de voluntario).
   useEffect(() => {
@@ -55,12 +72,17 @@ export default function SuperadminPanel() {
       setCargandoCentros(false);
       return;
     }
-    setCargandoCentros(true);
-    getCentrosAcopioPorEstado(adminEstadoId)
-      .then(setCentros)
-      .catch(() => setCentros([]))
-      .finally(() => setCargandoCentros(false));
-  }, [adminEstadoId]);
+    void cargarCentros(adminEstadoId);
+  }, [adminEstadoId, cargarCentros]);
+
+  useRealtimeRefresh(
+    "superadmin_centros_estado_changes",
+    realtimeCentros,
+    () => {
+      if (adminEstadoId) void cargarCentros(adminEstadoId, false);
+    },
+    Boolean(adminEstadoId)
+  );
 
   // Cierra la sesión: limpia el token persistente y el cache de rol, y vuelve a
   // /voluntarios para poder ingresar con otra cuenta. Sin esto el superadmin

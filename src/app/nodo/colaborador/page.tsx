@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { listarNodosMiembro } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
 import InventarioNodo from "@/components/InventarioNodo";
+import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { NodoMiembro } from "@/lib/types";
+
+const REALTIME_TABLES = [
+  { table: "centros_acopio" },
+  { table: "node_admins" },
+  { table: "node_collaborators" },
+];
 
 export default function ColaboradorPanel() {
   const router = useRouter();
@@ -18,12 +25,9 @@ export default function ColaboradorPanel() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!token) return;
-    // Carga inicial al obtener el token validado por el guard (intencional).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCargando(true);
-    listarNodosMiembro(token)
+  const cargar = useCallback((t: string, mostrarCarga = true) => {
+    if (mostrarCarga) setCargando(true);
+    return listarNodosMiembro(t)
       .then((data) => {
         setNodos(data);
         setError(null);
@@ -33,7 +37,23 @@ export default function ColaboradorPanel() {
         setError(e instanceof Error ? e.message : "No se pudieron cargar tus puntos.");
       })
       .finally(() => setCargando(false));
-  }, [token]);
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    // Carga inicial al obtener el token validado por el guard (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void cargar(token);
+  }, [cargar, token]);
+
+  useRealtimeRefresh(
+    "nodos_miembro_changes",
+    REALTIME_TABLES,
+    () => {
+      if (token) void cargar(token, false);
+    },
+    Boolean(token)
+  );
 
   const selectedNodeId =
     activeNodeId && nodos.some((n) => n.id === activeNodeId) ? activeNodeId : nodos[0]?.id ?? "";
