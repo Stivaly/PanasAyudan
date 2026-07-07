@@ -18,6 +18,7 @@ import {
   clearCachedRole,
 } from "@/lib/supabase";
 import { normalizarTelegram, errorTelegram } from "@/lib/telefono";
+import { validarCedula, formatearCedula, limpiarCedula } from "@/lib/validaciones";
 import PanelVoluntario from "@/components/PanelVoluntario";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import { CentroAcopio, EstadoVenezuela, VolunteerRole } from "@/lib/types";
@@ -32,6 +33,7 @@ export default function Voluntarios() {
 
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
+  const [cedula, setCedula] = useState("");
   const [telefono, setTelefono] = useState("");
   const [telegram, setTelegram] = useState("");
   const [zona, setZona] = useState("");
@@ -146,6 +148,13 @@ export default function Voluntarios() {
       setError("Nombre y apellido son obligatorios.");
       return;
     }
+    // La cédula es obligatoria (issue #23): es la base del bloqueo por
+    // incumplimiento. Se valida y se envía limpia (solo dígitos).
+    const cedulaCheck = validarCedula(cedula);
+    if (!cedulaCheck.valida) {
+      setError(cedulaCheck.error ?? "Cédula inválida.");
+      return;
+    }
     // El spec exige al menos un medio de contacto: teléfono O Telegram.
     // Esta validación corre antes de cualquier llamada de red.
     if (!telefono.trim() && !telegram.trim()) {
@@ -185,6 +194,7 @@ export default function Voluntarios() {
       const v = await registrarVoluntario({
         nombre: nombre.trim(),
         apellido: apellido.trim(),
+        cedula: limpiarCedula(cedula),
         telefono: telefonoNormalizado,
         telegram: telegramNormalizado || null,
         zona_descripcion: zona.trim() || null,
@@ -251,7 +261,7 @@ export default function Voluntarios() {
         </Link>
         <div>
           <h1 className="text-lg font-bold">🇻🇪 Voluntarios</h1>
-          {vista === "panel" && <p className="text-xs text-muted">Estás logueada como voluntaria</p>}
+          {vista === "panel" && <p className="text-xs text-muted">Estás en el panel de voluntarios</p>}
         </div>
       </div>
 
@@ -330,6 +340,17 @@ export default function Voluntarios() {
           </div>
           <input className="field" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
           <input className="field" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} />
+          <input
+            className="field"
+            inputMode="numeric"
+            placeholder="Cédula (ej: 12.345.678)"
+            value={cedula}
+            onChange={(e) => setCedula(formatearCedula(e.target.value))}
+          />
+          <p className="text-xs text-muted">
+            Tu cédula no se muestra públicamente. Se usa solo para el registro y queda
+            bloqueada si no cumples un compromiso aceptado.
+          </p>
           <input
             className="field"
             type="tel"

@@ -332,6 +332,9 @@ export async function getRecogidasDeRecogedor(
 export async function registrarVoluntario(input: {
   nombre: string;
   apellido: string;
+  // Cédula obligatoria (issue #23): base del bloqueo por incumplimiento. Debe
+  // llegar ya limpia (solo dígitos) vía limpiarCedula.
+  cedula: string;
   telefono: string | null;
   telegram: string | null;
   zona_descripcion: string | null;
@@ -346,6 +349,7 @@ export async function registrarVoluntario(input: {
     const { data, error } = await supabase.rpc("registrar_voluntario", {
       p_nombre: input.nombre,
       p_apellido: input.apellido,
+      p_cedula: input.cedula,
       // El teléfono es opcional: enviamos null si viene vacío. La columna
       // volunteers.telefono y volunteers.telegram permiten NULL (ver 0001_schema.sql),
       // así que no se requiere migración para la nulabilidad de las columnas.
@@ -371,6 +375,18 @@ export async function registrarVoluntario(input: {
     const code =
       e && typeof e === "object" && "code" in e ? String((e as { code?: unknown }).code ?? "") : "";
     const lower = raw.toLowerCase();
+
+    // Cédula bloqueada por incumplimiento previo: sin apelación (issue #23).
+    if (lower.includes("cedula_bloqueada")) {
+      throw new Error(
+        "Esta cédula fue bloqueada por no cumplir un compromiso. No puede registrarse de nuevo."
+      );
+    }
+
+    // Cédula ya registrada con otro token.
+    if (lower.includes("cedula_duplicada")) {
+      throw new Error("Esta cédula ya está registrada.");
+    }
 
     // Falta de medio de contacto (validación/constraint sobre los campos de contacto).
     if (
@@ -623,6 +639,31 @@ export async function confirmarEntregaCompromiso(
   if (error) {
     if (error.message.includes("no_autorizado")) {
       throw new Error("Solo el punto que publicó la solicitud puede confirmar la entrega.");
+    }
+    throw error;
+  }
+}
+
+// El admin del nodo DESTINO registra si el voluntario llegó (issue #23).
+//   llego=true  -> confirma la entrega (delega en confirmar_entrega_compromiso).
+//   llego=false -> incumplimiento: bloquea la cédula (permanente, sin apelación),
+//                  desactiva el token y el sobrante vuelve a ofrecerse.
+export async function confirmarLlegadaCompromiso(
+  compromisoId: string,
+  llego: boolean,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("confirmar_llegada_compromiso", {
+    p_compromiso_id: compromisoId,
+    p_llego: llego,
+    p_token: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("Solo el punto que publicó la solicitud puede registrar la llegada.");
+    }
+    if (error.message.includes("compromiso_no_pendiente")) {
+      throw new Error("Este compromiso ya fue resuelto.");
     }
     throw error;
   }

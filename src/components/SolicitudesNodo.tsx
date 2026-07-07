@@ -11,8 +11,8 @@ import {
   getSubcategorias,
   crearSolicitud,
   listarSolicitudesNodo,
-  cancelarCompromiso,
   confirmarEntregaCompromiso,
+  confirmarLlegadaCompromiso,
 } from "@/lib/api";
 import {
   Category,
@@ -38,6 +38,8 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [subcategoryId, setSubcategoryId] = useState("");
   const [magnitud, setMagnitud] = useState<Magnitud>("unidades");
   const [requiereVehiculo, setRequiereVehiculo] = useState(false);
+  // Confirmación en dos pasos de "No llegó": el bloqueo de cédula es permanente.
+  const [confirmandoNoLlego, setConfirmandoNoLlego] = useState<string | null>(null);
 
   const cargar = useCallback(() => {
     listarSolicitudesNodo(nodeId, token)
@@ -102,13 +104,16 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     }
   };
 
-  const cancelar = async (compromisoId: string, motivo?: "incumplimiento") => {
+  // Registra si el voluntario llegó. llego=false bloquea su cédula de forma
+  // permanente y libera el sobrante de la solicitud (issue #23).
+  const registrarLlegada = async (compromisoId: string, llego: boolean) => {
     setError(null);
     try {
-      await cancelarCompromiso(compromisoId, token, motivo);
+      await confirmarLlegadaCompromiso(compromisoId, llego, token);
+      setConfirmandoNoLlego(null);
       cargar();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo cancelar el compromiso.");
+      setError(e instanceof Error ? e.message : "No se pudo registrar la llegada.");
     }
   };
 
@@ -188,24 +193,53 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             {(s.compromisos_voluntario.length > 0 || s.compromisos_nodo.length > 0) && (
               <div className="mt-2 flex flex-col gap-1">
                 {s.compromisos_voluntario.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface p-2">
-                    <span>
-                      🙋 {c.magnitud} · {c.tiempo_estimado_minutos} min ·{" "}
-                      <span className="text-muted">{c.status}</span>
-                    </span>
-                    {c.status === "pendiente" && (
-                      <span className="flex gap-1">
-                        <button onClick={() => confirmar(c.id)} className="text-xs font-semibold text-accent">
-                          Confirmar
-                        </button>
-                        <button
-                          onClick={() => cancelar(c.id, "incumplimiento")}
-                          className="text-xs font-semibold text-danger"
-                        >
-                          Incumplió
-                        </button>
+                  <div key={c.id} className="flex flex-col gap-1 rounded-lg bg-surface p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span>
+                        🙋 {c.magnitud} · {c.tiempo_estimado_minutos} min ·{" "}
+                        <span className="text-muted">{c.status}</span>
                       </span>
-                    )}
+                      {c.atrasado_24h && (
+                        <span className="shrink-0 rounded-full bg-danger px-2 py-0.5 text-xs font-semibold text-white">
+                          Sin confirmar +24h
+                        </span>
+                      )}
+                    </div>
+                    {c.status === "pendiente" &&
+                      (confirmandoNoLlego === c.id ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-danger">
+                            Bloqueará su cédula de forma permanente. ¿Confirmas?
+                          </span>
+                          <button
+                            onClick={() => registrarLlegada(c.id, false)}
+                            className="text-xs font-semibold text-danger"
+                          >
+                            Sí, no llegó
+                          </button>
+                          <button
+                            onClick={() => setConfirmandoNoLlego(null)}
+                            className="text-xs font-semibold text-muted"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="flex gap-2">
+                          <button
+                            onClick={() => registrarLlegada(c.id, true)}
+                            className="text-xs font-semibold text-accent"
+                          >
+                            Llegó
+                          </button>
+                          <button
+                            onClick={() => setConfirmandoNoLlego(c.id)}
+                            className="text-xs font-semibold text-danger"
+                          >
+                            No llegó
+                          </button>
+                        </span>
+                      ))}
                   </div>
                 ))}
                 {s.compromisos_nodo.map((c) => (

@@ -203,6 +203,9 @@ export interface CompromisoVoluntario {
   tiempo_estimado_minutos: number;
   status: CompromisoVoluntarioStatus;
   created_at: string;
+  // Aviso de 24h (issue #23): compromiso 'pendiente' cuya llegada estimada
+  // venció hace más de 24h sin confirmación. Alimenta la badge roja del panel.
+  atrasado_24h: boolean;
 }
 
 export type CompromisoNodoStatus =
