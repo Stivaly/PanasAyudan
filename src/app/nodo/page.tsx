@@ -18,6 +18,7 @@ import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/s
 import EstadoCombobox from "@/components/EstadoCombobox";
 import VerificarNodo from "@/components/VerificarNodo";
 import SolicitudesNodo from "@/components/SolicitudesNodo";
+import InventarioNodo from "@/components/InventarioNodo";
 import PlacesAutocomplete from "@/components/PlacesAutocomplete";
 import {
   EstadoVenezuela,
@@ -234,6 +235,8 @@ export default function NodoAdminPanel() {
                     Reactivar
                   </button>
                 </div>
+
+                {token && <InventarioNodo nodeId={n.id} token={token} tipo={n.tipo} />}
 
                 {token && <SolicitudesNodo nodeId={n.id} token={token} />}
               </div>

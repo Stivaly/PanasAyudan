@@ -25,6 +25,11 @@ import {
   SolicitudesDisponiblesResp,
   SolicitudNodo,
   VerificacionUbicacion,
+  InventarioItem,
+  InventarioUpsertItem,
+  AgotadoSugerencia,
+  NodoMiembro,
+  Magnitud,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -695,6 +700,102 @@ export async function listarSolicitudesNodo(
     throw error;
   }
   return (data ?? []) as SolicitudNodo[];
+}
+
+// --- Inventario por nodo (issue #22) ---
+
+// Los nodos donde el token es admin O colaborador (para el panel de colaborador).
+export async function listarNodosMiembro(token: string): Promise<NodoMiembro[]> {
+  const { data, error } = await supabaseWithToken(token).rpc("listar_nodos_miembro", {
+    p_token: token,
+  });
+  if (error) throw error;
+  return (data ?? []) as NodoMiembro[];
+}
+
+// Inventario de un nodo con su categoría/subcategoría anidadas. Sin token lee por
+// el cliente público (RLS: solo nodos visibles y verificados, para #24); con token
+// el miembro del nodo ve el suyo en cualquier estado (policy es_miembro_nodo).
+export async function getInventarioNodo(
+  nodeId: string,
+  token?: string
+): Promise<InventarioItem[]> {
+  const client = token ? supabaseWithToken(token) : supabase;
+  const { data, error } = await client
+    .from("node_inventory")
+    .select("*, category:categories(id, name, slug), subcategory:subcategories(id, category_id, name, slug)")
+    .eq("node_id", nodeId)
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as InventarioItem[];
+}
+
+// Alta/edición del inventario (solo el admin del nodo). La RPC valida la magnitud
+// contra el tipo de nodo: entrega la rechaza, acopio la exige, mixto la acepta.
+export async function upsertInventario(
+  nodeId: string,
+  items: InventarioUpsertItem[],
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("upsert_inventario", {
+    p_token: token,
+    p_node_id: nodeId,
+    p_items: items,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("Solo el administrador del punto puede configurar el inventario.");
+    }
+    if (error.message.includes("entrega_sin_magnitud")) {
+      throw new Error("Un punto de entrega publica disponibilidad sin cantidades; no indiques magnitud.");
+    }
+    if (error.message.includes("acopio_requiere_magnitud")) {
+      throw new Error("Un centro de acopio debe indicar la magnitud de cada item.");
+    }
+    throw error;
+  }
+}
+
+// Marca un item como "no hay" (admin o colaborador). Devuelve los datos para
+// ofrecer una solicitud de reposición.
+export async function marcarAgotado(
+  inventoryId: string,
+  token: string
+): Promise<AgotadoSugerencia> {
+  const { data, error } = await supabaseWithToken(token).rpc("marcar_agotado", {
+    p_token: token,
+    p_inventory_id: inventoryId,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para actualizar el inventario de este punto.");
+    }
+    throw error;
+  }
+  return data as AgotadoSugerencia;
+}
+
+// Solicita reposición de un item del inventario (admin o colaborador). Es un
+// wrapper de crear_solicitud (issue #19) con la magnitud (nivel mínimo del nodo).
+export async function solicitarReposicion(
+  inventoryId: string,
+  magnitud: Magnitud,
+  requiereVehiculo: boolean,
+  token: string
+): Promise<string> {
+  const { data, error } = await supabaseWithToken(token).rpc("solicitar_reposicion", {
+    p_token: token,
+    p_inventory_id: inventoryId,
+    p_magnitud: magnitud,
+    p_requiere_vehiculo: requiereVehiculo,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No tienes permiso para solicitar reposición en este punto.");
+    }
+    throw error;
+  }
+  return data as string;
 }
 
 export async function obtenerContacto(

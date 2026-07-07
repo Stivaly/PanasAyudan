@@ -1,13 +1,31 @@
 "use client";
 
+// Panel de colaborador (issue #17 fijó el routing; issue #22 lo hace operativo):
+// el colaborador ve el inventario de su(s) nodo(s) y solo puede marcar "no hay" y
+// solicitar reposición — no configura items ni condiciones (eso es del admin).
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
+import { listarNodosMiembro } from "@/lib/api";
+import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
+import InventarioNodo from "@/components/InventarioNodo";
+import { NodoMiembro } from "@/lib/types";
 
-// Placeholder del panel de colaborador (issue #17): solo fija el destino del
-// routing por rol. La operación real del colaborador llega en un issue posterior.
-export default function ColaboradorPlaceholder() {
+export default function ColaboradorPanel() {
   const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+  const [nodos, setNodos] = useState<NodoMiembro[]>([]);
+
+  useEffect(() => {
+    const t = getVolunteerToken();
+    // Lectura de token + carga inicial en el mismo efecto (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setToken(t);
+    if (t) {
+      listarNodosMiembro(t).then(setNodos).catch(() => setNodos([]));
+    }
+  }, []);
 
   // Cierra la sesión y vuelve a /voluntarios para entrar con otra cuenta.
   const salir = () => {
@@ -27,9 +45,23 @@ export default function ColaboradorPlaceholder() {
           Salir
         </button>
       </div>
-      <div className="card border-accent">
-        <p className="text-sm text-muted">Panel de colaborador — próximamente.</p>
-      </div>
+
+      {nodos.length === 0 ? (
+        <div className="card border-accent">
+          <p className="text-sm text-muted">Aún no colaboras en ningún punto.</p>
+        </div>
+      ) : (
+        nodos.map((n) => (
+          <div key={n.id} className="card flex flex-col gap-3">
+            <div>
+              <p className="font-semibold">{n.nombre}</p>
+              <p className="text-xs text-muted">{n.direccion}</p>
+              <p className="mt-1 text-xs text-muted">Tipo: {n.tipo}</p>
+            </div>
+            {token && <InventarioNodo nodeId={n.id} token={token} tipo={n.tipo} soloColaborador />}
+          </div>
+        ))
+      )}
     </main>
   );
 }

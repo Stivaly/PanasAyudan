@@ -75,6 +75,19 @@ export interface NodoAdmin {
   verificado_at: string | null;
 }
 
+// Forma que devuelve listar_nodos_miembro(p_token): los nodos donde el token es
+// admin O colaborador (issue #22). Subconjunto de NodoAdmin (sin verificación de
+// ownership), suficiente para que el panel de colaborador alcance su inventario.
+export interface NodoMiembro {
+  id: string;
+  nombre: string;
+  direccion: string;
+  tipo: NodeTipo;
+  status: NodeStatus;
+  pausado_recepcion: boolean;
+  pausado_entrega: boolean;
+}
+
 // Datos que viajan a crear_nodo (p_datos jsonb).
 export interface NodoData {
   nombre: string;
@@ -267,6 +280,43 @@ export interface SolicitudData {
   subcategory_id: string | null;
   magnitud: Magnitud;
   requiere_vehiculo: boolean;
+}
+
+// --- Inventario por nodo (issue #22) ---
+// Un item de inventario de un nodo: disponibilidad por categoría/subcategoría.
+// magnitud solo la publican los nodos acopio | mixto (null en entrega). condicion
+// es pública (ej. "Se requiere receta médica"). category/subcategory llegan
+// anidadas cuando se lee con el join de getInventarioNodo.
+export interface InventarioItem {
+  id: string;
+  node_id: string;
+  category_id: string;
+  subcategory_id: string | null;
+  disponible: boolean;
+  magnitud: Magnitud | null;
+  condicion: string | null;
+  updated_at: string;
+  category?: Category | null;
+  subcategory?: Subcategory | null;
+}
+
+// Item que viaja a upsert_inventario (p_items jsonb array). subcategory_id null =
+// item a nivel de macrocategoría; magnitud null = sin cantidad (punto de entrega).
+export interface InventarioUpsertItem {
+  category_id: string;
+  subcategory_id: string | null;
+  disponible: boolean;
+  magnitud: Magnitud | null;
+  condicion: string | null;
+}
+
+// Respuesta de marcar_agotado: los datos para ofrecer la solicitud de reposición.
+export interface AgotadoSugerencia {
+  sugerir_solicitud: boolean;
+  inventory_id: string;
+  node_id: string;
+  category_id: string;
+  subcategory_id: string | null;
 }
 
 export type AporteStatus = "activo" | "cerrado";
