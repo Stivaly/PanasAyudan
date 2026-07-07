@@ -574,7 +574,7 @@ export async function crearSolicitudRegistroNodo(datos: {
   const { data, error } = await supabase.rpc("crear_solicitud_registro_nodo", {
     p_datos: datos,
   });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data as string;
 }
 

@@ -41,9 +41,9 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
         const { placePrediction } = event as unknown as GmpSelectEvent;
         const place = placePrediction.toPlace();
         await place.fetchFields({
-          fields: ["displayName", "formattedAddress", "location"],
+          fields: ["id", "displayName", "formattedAddress", "location"],
         });
-        if (!place.location) return;
+        if (!place.id || !place.location) return;
         onSelect({
           google_place_id: place.id,
           place_name: place.displayName ?? place.formattedAddress ?? "Lugar",
@@ -69,7 +69,7 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
         <input
           type="text"
           readOnly
-          placeholder={cargando ? "Cargando…" : "Busca el lugar en Google (opcional)"}
+          placeholder={cargando ? "Cargando…" : "Busca el lugar en Google"}
           className="field"
           onFocus={iniciar}
         />

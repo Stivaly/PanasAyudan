@@ -95,7 +95,13 @@ export default function RegistrarNodo() {
       });
       setEnviado(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo enviar la solicitud.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : e && typeof e === "object" && "message" in e && typeof e.message === "string"
+          ? e.message
+          : "No se pudo enviar la solicitud."
+      );
     } finally {
       setEnviando(false);
     }
