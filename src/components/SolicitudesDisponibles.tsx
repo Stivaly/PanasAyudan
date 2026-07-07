@@ -108,6 +108,9 @@ export default function SolicitudesDisponibles({ token }: Props) {
             Confirma dónde estás una sola vez para poder tomar solicitudes cercanas. Tu ubicación
             no se guarda: solo se usa para saber tu municipio, y la verificación vale 24 horas.
           </p>
+          <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
+            Esta verificación debe hacerse desde un celular con ubicación activa.
+          </div>
           <button
             onClick={verificar}
             disabled={verificando}
