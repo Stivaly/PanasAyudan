@@ -12,7 +12,7 @@ import SolicitudesNodo from "@/components/SolicitudesNodo";
 import VerificarNodo from "@/components/VerificarNodo";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
-import { EstadoVenezuela, NodoAdmin, TipoPausa, statusVisible } from "@/lib/types";
+import { EstadoVenezuela, NodoAdmin, TipoPausa, pausadoRelevante, statusVisible } from "@/lib/types";
 
 const REALTIME_TABLES = [
   { table: "centros_acopio" },
@@ -99,7 +99,11 @@ export default function NodoAdminPanel() {
   }
 
   const vis = activo ? statusVisible(activo) : null;
-  const noOperativo = Boolean(activo?.pausado_recepcion || activo?.pausado_entrega);
+  // Un acopio solo recibe y una entrega solo da: cada tipo opera una mitad (o
+  // ambas, si es mixto). Los controles y avisos se acotan a lo que aplica.
+  const operaRecepcion = activo ? activo.tipo !== "entrega" : false;
+  const operaEntrega = activo ? activo.tipo !== "acopio" : false;
+  const noOperativo = activo ? pausadoRelevante(activo) : false;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
@@ -168,8 +172,8 @@ export default function NodoAdminPanel() {
               {noOperativo && (
                 <p className="text-xs font-semibold text-danger">
                   No operativo
-                  {activo.pausado_recepcion ? " - recepcion pausada" : ""}
-                  {activo.pausado_entrega ? " - entrega pausada" : ""}
+                  {operaRecepcion && activo.pausado_recepcion ? " - recepcion pausada" : ""}
+                  {operaEntrega && activo.pausado_entrega ? " - entrega pausada" : ""}
                 </p>
               )}
 
@@ -181,15 +185,22 @@ export default function NodoAdminPanel() {
               />
 
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
-                  Pausar recepcion
-                </button>
-                <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
-                  Pausar entrega
-                </button>
-                <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
-                  Pausar ambas
-                </button>
+                {operaRecepcion && (
+                  <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
+                    Pausar recepcion
+                  </button>
+                )}
+                {operaEntrega && (
+                  <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
+                    Pausar entrega
+                  </button>
+                )}
+                {/* Pausar ambas solo tiene sentido en un mixto: opera las dos mitades. */}
+                {operaRecepcion && operaEntrega && (
+                  <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
+                    Pausar ambas
+                  </button>
+                )}
                 <button onClick={() => pausar("reactivar")} className="btn-ghost text-sm">
                   Reactivar
                 </button>

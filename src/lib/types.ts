@@ -150,15 +150,34 @@ export type TipoPausa = "recepcion" | "entrega" | "ambas" | "reactivar";
 // Estado de visibilidad DERIVADO para lecturas públicas: si cualquiera de las
 // banderas está en true, el nodo se muestra como 'pausado' / "No operativo"
 // aunque la columna interna status siga en 'activo' (ver 0031).
+// Un nodo 'activo' se ve 'pausado' cuando tiene alguna mitad relevante pausada.
+// El tipo acota qué mitades cuentan: un acopio solo recibe (importa recepción),
+// una entrega solo da (importa entrega) y un mixto opera ambas. Sin tipo, se
+// considera cualquiera de las dos (comportamiento previo, seguro para lecturas).
 export function statusVisible(n: {
   status?: NodeStatus;
+  tipo?: NodeTipo | null;
   pausado_recepcion?: boolean | null;
   pausado_entrega?: boolean | null;
 }): NodeStatus {
-  if (n.status === "activo" && (n.pausado_recepcion || n.pausado_entrega)) {
+  if (n.status === "activo" && pausadoRelevante(n)) {
     return "pausado";
   }
   return n.status ?? "activo";
+}
+
+// Indica si el nodo está pausado en alguna mitad que su tipo realmente opera.
+export function pausadoRelevante(n: {
+  tipo?: NodeTipo | null;
+  pausado_recepcion?: boolean | null;
+  pausado_entrega?: boolean | null;
+}): boolean {
+  const cuentaRecepcion = n.tipo !== "entrega";
+  const cuentaEntrega = n.tipo !== "acopio";
+  return (
+    (cuentaRecepcion && Boolean(n.pausado_recepcion)) ||
+    (cuentaEntrega && Boolean(n.pausado_entrega))
+  );
 }
 
 export interface ZonaRescate {
