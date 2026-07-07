@@ -7,6 +7,7 @@ import { getEstados, listarNodosAdmin, pausarNodo } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
 import EditarNodo from "@/components/EditarNodo";
 import InventarioNodo from "@/components/InventarioNodo";
+import NodoTabBar, { NodoTab } from "@/components/NodoTabBar";
 import SolicitudesEntreCentros from "@/components/SolicitudesEntreCentros";
 import SolicitudesNodo from "@/components/SolicitudesNodo";
 import VerificarNodo from "@/components/VerificarNodo";
@@ -28,6 +29,7 @@ export default function NodoAdminPanel() {
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [tab, setTab] = useState<NodoTab>("estado");
 
   const cargar = useCallback(
     async (t: string, mostrarCarga = true) => {
@@ -106,7 +108,7 @@ export default function NodoAdminPanel() {
   const noOperativo = activo ? pausadoRelevante(activo) : false;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
           &larr;
@@ -129,35 +131,19 @@ export default function NodoAdminPanel() {
           </p>
         </div>
       ) : (
-        <>
-          {nodos.length > 1 && (
+        activo && (
+          <>
+            {/* Barra de contexto: nombre + estado + selector, siempre visible sobre
+                cualquier pestaña para no perder de vista sobre qué punto se opera. */}
             <div className="card flex flex-col gap-2">
-              <label className="text-sm font-semibold text-muted">Punto activo</label>
-              <select
-                className="field"
-                value={selectedNodeId}
-                onChange={(e) => setActiveNodeId(e.target.value)}
-              >
-                {nodos.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {n.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {activo && (
-            <div className="card flex flex-col gap-3">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{activo.nombre}</p>
-                  <p className="text-xs text-muted">{activo.direccion}</p>
-                  <p className="mt-1 text-xs text-muted">Tipo: {activo.tipo}</p>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{activo.nombre}</p>
+                  <p className="truncate text-xs text-muted">{activo.direccion}</p>
                 </div>
                 <span
                   className={
-                    "rounded-full px-2 py-1 text-xs font-semibold " +
+                    "shrink-0 rounded-full px-2 py-1 text-xs font-semibold " +
                     (vis === "activo"
                       ? "bg-accent/15 text-accent"
                       : vis === "pausado"
@@ -168,7 +154,6 @@ export default function NodoAdminPanel() {
                   {vis}
                 </span>
               </div>
-
               {noOperativo && (
                 <p className="text-xs font-semibold text-danger">
                   No operativo
@@ -176,48 +161,86 @@ export default function NodoAdminPanel() {
                   {operaEntrega && activo.pausado_entrega ? " - entrega pausada" : ""}
                 </p>
               )}
-
-              <VerificarNodo
-                nodeId={activo.id}
-                token={token}
-                verificado={activo.verificado}
-                onVerificado={() => cargar(token)}
-              />
-
-              <div className="grid grid-cols-2 gap-2">
-                {operaRecepcion && (
-                  <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
-                    Pausar recepcion
-                  </button>
-                )}
-                {operaEntrega && (
-                  <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
-                    Pausar entrega
-                  </button>
-                )}
-                {/* Pausar ambas solo tiene sentido en un mixto: opera las dos mitades. */}
-                {operaRecepcion && operaEntrega && (
-                  <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
-                    Pausar ambas
-                  </button>
-                )}
-                <button onClick={() => pausar("reactivar")} className="btn-ghost text-sm">
-                  Reactivar
-                </button>
-              </div>
-
-              <InventarioNodo nodeId={activo.id} token={token} tipo={activo.tipo} />
-              <SolicitudesNodo nodeId={activo.id} token={token} />
-              <SolicitudesEntreCentros nodeId={activo.id} token={token} />
-              <EditarNodo
-                nodo={activo}
-                estados={estados}
-                token={token}
-                onSaved={() => cargar(token)}
-              />
+              {nodos.length > 1 && (
+                <select
+                  className="field mt-1"
+                  value={selectedNodeId}
+                  onChange={(e) => setActiveNodeId(e.target.value)}
+                >
+                  {nodos.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {n.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
-          )}
-        </>
+
+            {tab === "estado" && (
+              <div className="card flex flex-col gap-3">
+                <p className="text-xs text-muted">Tipo: {activo.tipo}</p>
+                <VerificarNodo
+                  nodeId={activo.id}
+                  token={token}
+                  verificado={activo.verificado}
+                  onVerificado={() => cargar(token)}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  {operaRecepcion && (
+                    <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
+                      Pausar recepcion
+                    </button>
+                  )}
+                  {operaEntrega && (
+                    <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
+                      Pausar entrega
+                    </button>
+                  )}
+                  {/* Pausar ambas solo tiene sentido en un mixto: opera las dos mitades. */}
+                  {operaRecepcion && operaEntrega && (
+                    <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
+                      Pausar ambas
+                    </button>
+                  )}
+                  <button onClick={() => pausar("reactivar")} className="btn-ghost text-sm">
+                    Reactivar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tab === "inventario" && (
+              <div className="card">
+                <InventarioNodo nodeId={activo.id} token={token} tipo={activo.tipo} />
+              </div>
+            )}
+
+            {tab === "pedir" && (
+              <div className="card">
+                <SolicitudesNodo nodeId={activo.id} token={token} />
+              </div>
+            )}
+
+            {tab === "cercanos" && (
+              <div className="card">
+                <SolicitudesEntreCentros nodeId={activo.id} token={token} />
+              </div>
+            )}
+
+            {tab === "ajustes" && (
+              <div className="card">
+                <EditarNodo
+                  nodo={activo}
+                  estados={estados}
+                  token={token}
+                  onSaved={() => cargar(token)}
+                />
+              </div>
+            )}
+
+            <NodoTabBar active={tab} onChange={setTab} alertas={{ estado: noOperativo }} />
+          </>
+        )
       )}
     </main>
   );
