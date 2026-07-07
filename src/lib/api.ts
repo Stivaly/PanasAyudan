@@ -22,8 +22,9 @@ import {
   NodoAdmin,
   TipoPausa,
   SolicitudData,
-  SolicitudDisponible,
+  SolicitudesDisponiblesResp,
   SolicitudNodo,
+  VerificacionUbicacion,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -623,16 +624,59 @@ export async function confirmarEntregaCompromiso(
 }
 
 // Lectura filtrada para el panel de voluntario: las solicitudes que puede
-// atender (filtro de vehículo y sobrante aplicados server-side).
+// atender (filtro de vehículo y sobrante aplicados server-side). Cada solicitud
+// trae en_rango (issue #20); requiere_verificacion es true si el voluntario no
+// tiene una zona vigente y debe verificar su ubicación antes de tomar nada.
 export async function listarSolicitudesDisponibles(
   token: string
-): Promise<SolicitudDisponible[]> {
+): Promise<SolicitudesDisponiblesResp> {
   const { data, error } = await supabaseWithToken(token).rpc(
     "listar_solicitudes_disponibles",
     { p_token_voluntario: token }
   );
   if (error) throw error;
-  return (data ?? []) as SolicitudDisponible[];
+  return (data ?? { requiere_verificacion: true, solicitudes: [] }) as SolicitudesDisponiblesResp;
+}
+
+// Verificación de ubicación del voluntario (issue #20). Pide el GPS UNA sola vez
+// (getCurrentPosition), única excepción permitida al "nunca disparar el prompt":
+// es una acción explícita del voluntario para poder operar. Sin watchPosition ni
+// polling. El servidor resuelve el municipio y DESCARTA las coordenadas: nunca
+// se guardan ni se comparten. La zona resultante vale 24h.
+export async function verificarUbicacionVoluntario(
+  token: string
+): Promise<VerificacionUbicacion> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    throw new Error("Tu dispositivo no permite obtener la ubicación.");
+  }
+
+  const coords = await new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) =>
+        reject(
+          new Error(
+            err.code === err.PERMISSION_DENIED
+              ? "Necesitas permitir el acceso a tu ubicación para operar."
+              : "No se pudo obtener tu ubicación. Intenta de nuevo."
+          )
+        ),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+
+  const { data, error } = await supabaseWithToken(token).rpc("verificar_ubicacion_voluntario", {
+    p_token: token,
+    p_lat: coords.lat,
+    p_lng: coords.lng,
+  });
+  if (error) {
+    if (error.message.includes("fuera_de_venezuela")) {
+      throw new Error("Tu ubicación no coincide con ningún municipio registrado.");
+    }
+    throw error;
+  }
+  return data as VerificacionUbicacion;
 }
 
 // Las solicitudes de un nodo con sus compromisos (panel de admin del nodo origen).

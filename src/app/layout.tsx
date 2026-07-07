@@ -31,7 +31,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      <body className="min-h-dvh bg-bg text-white antialiased">
+      {/* suppressHydrationWarning: extensiones del navegador (p. ej. Bitdefender)
+          inyectan atributos como bis_register/__processed_* en <body> antes de la
+          hidratación. Suprime solo el mismatch de atributos de este nodo, no el
+          contenido ni los componentes hijos. */}
+      <body className="min-h-dvh bg-bg text-white antialiased" suppressHydrationWarning>
         <KeepAlive />
         <RegistrarSW />
         <RecargarEnChunkError />

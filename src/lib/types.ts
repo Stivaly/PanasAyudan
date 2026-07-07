@@ -221,6 +221,26 @@ export interface SolicitudDisponible {
   status: SolicitudStatus;
   sobrante: number;
   created_at: string;
+  // Issue #20: el municipio del nodo origen está en una zona VIGENTE del
+  // voluntario. Las fuera de rango (false) se muestran pero no se pueden tomar.
+  en_rango: boolean;
+}
+
+// Respuesta de listar_solicitudes_disponibles (issue #20). requiere_verificacion
+// es true cuando el voluntario no tiene ninguna zona vigente (nunca verificó o
+// venció el plazo de 24h): el panel debe pedir "Verificar mi ubicación".
+export interface SolicitudesDisponiblesResp {
+  requiere_verificacion: boolean;
+  solicitudes: SolicitudDisponible[];
+}
+
+// Respuesta de verificar_ubicacion_voluntario (issue #20). Nunca incluye
+// coordenadas: el servidor las resuelve a un municipio y las descarta.
+export interface VerificacionUbicacion {
+  municipio: string;
+  municipio_id: string;
+  expira_at: string;
+  adyacentes: string[];
 }
 
 // Forma que devuelve listar_solicitudes_nodo (panel de admin): la solicitud del
