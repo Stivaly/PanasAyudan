@@ -24,10 +24,8 @@ export default function SuperadminPanel() {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  // Crear administrador (issue #17). Solo nombre + apellido son obligatorios;
-  // teléfono, telegram y centro de acopio (nodo) son opcionales, igual que en la
-  // firma de crear_admin. La verificación de teléfono/telegram replica la del
-  // registro de voluntario: opcionales, pero si se ingresan deben ser válidos.
+  // Crear administrador (issue #17). Todo admin debe quedar asociado a un centro;
+  // teléfono y telegram son opcionales, pero si se ingresan deben ser válidos.
   const [adminNombre, setAdminNombre] = useState("");
   const [adminApellido, setAdminApellido] = useState("");
   const [adminTelefono, setAdminTelefono] = useState("");
@@ -103,6 +101,14 @@ export default function SuperadminPanel() {
       setAdminError("Nombre y apellido son obligatorios.");
       return;
     }
+    if (!adminEstadoId) {
+      setAdminError("Elige el estado del centro de acopio.");
+      return;
+    }
+    if (!adminCentroId) {
+      setAdminError("Elige el centro de acopio que administrara esta persona.");
+      return;
+    }
     // El teléfono es opcional, pero si se ingresa debe ser un WhatsApp venezolano
     // válido (mismo criterio que el registro de voluntario).
     let telefonoNormalizado: string | null = null;
@@ -129,7 +135,7 @@ export default function SuperadminPanel() {
           apellido: adminApellido.trim(),
           telefono: telefonoNormalizado,
           telegram: telegramNormalizado,
-          centro_acopio_id: adminCentroId || null,
+          centro_acopio_id: adminCentroId,
         },
         token
       );
@@ -258,12 +264,12 @@ export default function SuperadminPanel() {
               estados={estados}
               estadoId={adminEstadoId}
               onChange={setAdminEstadoId}
-              label="Estado del centro de acopio (opcional)"
-              placeholder="Elige un estado (opcional)"
+              label="Estado del centro de acopio"
+              placeholder="Elige un estado"
             />
             {adminEstadoId && (
               <>
-                <label className="text-sm font-semibold text-muted">Centro de acopio (opcional)</label>
+                <label className="text-sm font-semibold text-muted">Centro de acopio</label>
                 {cargandoCentros ? (
                   <p className="text-muted text-sm">Cargando centros…</p>
                 ) : centros.length === 0 ? (
@@ -276,7 +282,7 @@ export default function SuperadminPanel() {
                     value={adminCentroId}
                     onChange={(e) => setAdminCentroId(e.target.value)}
                   >
-                    <option value="">Seleccionar centro (opcional)</option>
+                    <option value="">Seleccionar centro</option>
                     {centros.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.nombre}
