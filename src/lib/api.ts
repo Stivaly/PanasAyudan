@@ -31,6 +31,7 @@ import {
   NodoMiembro,
   Magnitud,
   SolicitudRegistroNodo,
+  EditarNodoDatos,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -515,6 +516,31 @@ export async function cerrarNodo(nodeId: string, token: string): Promise<void> {
     }
     throw error;
   }
+}
+
+// El admin del nodo edita sus datos (issue #29). Solo viajan los campos que
+// cambian. Devuelve true si se movieron las coordenadas: en ese caso el nodo
+// vuelve a 'inactivo' y hay que re-verificar el GPS con VerificarNodo.
+export async function editarNodo(
+  nodeId: string,
+  datos: EditarNodoDatos,
+  token: string
+): Promise<boolean> {
+  const { data, error } = await supabaseWithToken(token).rpc("editar_nodo", {
+    p_node_id: nodeId,
+    p_datos: datos,
+    p_token: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No eres administrador de este punto.");
+    }
+    if (error.message.includes("nodo_cerrado")) {
+      throw new Error("Este punto está cerrado y no se puede editar.");
+    }
+    throw error;
+  }
+  return data as boolean;
 }
 
 // Los nodos que administra el token, con estado y verificación (panel de admin).

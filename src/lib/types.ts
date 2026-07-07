@@ -69,10 +69,28 @@ export interface NodoAdmin {
   lat: number | null;
   lng: number | null;
   estado_id: string;
+  // horario y descripcion se leen para pre-llenar el formulario de edición (#29).
+  horario: string | null;
+  descripcion: string | null;
   pausado_recepcion: boolean;
   pausado_entrega: boolean;
   verificado: boolean;
   verificado_at: string | null;
+}
+
+// Campos editables de un nodo por su admin (issue #29). Todos opcionales: solo se
+// envían los que cambian. Si se envían lat/lng distintos, la RPC devuelve el nodo
+// a 'inactivo' y exige re-verificar el GPS (ver 0042_editar_nodo.sql).
+export interface EditarNodoDatos {
+  nombre?: string;
+  tipo?: NodeTipo;
+  direccion?: string;
+  estado_id?: string;
+  horario?: string | null;
+  descripcion?: string | null;
+  lat?: number;
+  lng?: number;
+  google_place_id?: string | null;
 }
 
 // Forma que devuelve listar_nodos_miembro(p_token): los nodos donde el token es

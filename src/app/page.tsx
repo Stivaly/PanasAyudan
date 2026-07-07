@@ -67,6 +67,12 @@ export default function Home() {
             Entra como voluntario
           </Link>
         </p>
+        <p className="text-center text-xs text-muted">
+          ¿Tienes un centro de acopio o entrega?{" "}
+          <Link href="/registrar-nodo" className="font-semibold text-accent underline">
+            Regístralo aquí
+          </Link>
+        </p>
       </div>
 
       <SeccionImpacto />

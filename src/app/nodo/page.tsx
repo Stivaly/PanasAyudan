@@ -17,6 +17,7 @@ import {
 import { getVolunteerToken, clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import VerificarNodo from "@/components/VerificarNodo";
+import EditarNodo from "@/components/EditarNodo";
 import SolicitudesNodo from "@/components/SolicitudesNodo";
 import InventarioNodo from "@/components/InventarioNodo";
 import PlacesAutocomplete from "@/components/PlacesAutocomplete";
@@ -218,6 +219,15 @@ export default function NodoAdminPanel() {
                     token={token}
                     verificado={n.verificado}
                     onVerificado={() => cargar(token)}
+                  />
+                )}
+
+                {token && (
+                  <EditarNodo
+                    nodo={n}
+                    estados={estados}
+                    token={token}
+                    onSaved={() => cargar(token)}
                   />
                 )}
 
