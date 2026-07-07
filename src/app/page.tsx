@@ -28,7 +28,7 @@ export default function Home() {
         href="/voluntarios"
         className="absolute right-4 top-4 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-white"
       >
-        Apoyo en traslados
+        Entrar o registrarme
       </Link>
 
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-3">
@@ -55,7 +55,7 @@ export default function Home() {
           </Link>
         ) : (
           <div className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-            Para publicar insumos debes sumarte al apoyo primero.
+            Para publicar insumos primero debes crear una cuenta o entrar con tu código de acceso.
           </div>
         )}
         <Link href="/buscar" className="btn-ghost w-full shadow-lg">
