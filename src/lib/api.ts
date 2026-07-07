@@ -33,6 +33,9 @@ import {
   Magnitud,
   SolicitudRegistroNodo,
   EditarNodoDatos,
+  NodoPublico,
+  NodoPublicoBase,
+  InventarioPublicoItem,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -663,10 +666,11 @@ export async function crearSolicitud(
   return data as string;
 }
 
-// Un voluntario responde a una solicitud comprometiendo magnitud + tiempo.
+// Un voluntario responde a una solicitud comprometiendo magnitud + cantidad + tiempo.
 export async function responderSolicitudVoluntario(
   solicitudId: string,
   magnitud: string,
+  cantidad: number,
   tiempoEstimadoMinutos: number,
   token: string
 ): Promise<string> {
@@ -677,6 +681,7 @@ export async function responderSolicitudVoluntario(
       p_magnitud: magnitud,
       p_tiempo_estimado: tiempoEstimadoMinutos,
       p_token_voluntario: token,
+      p_cantidad: cantidad,
     }
   );
   if (error) {
@@ -697,6 +702,7 @@ export async function responderSolicitudVoluntario(
 export async function responderSolicitudNodo(
   solicitudId: string,
   magnitud: string,
+  cantidad: number,
   tieneTransporte: boolean,
   token: string,
   nodeId?: string
@@ -707,6 +713,7 @@ export async function responderSolicitudNodo(
     p_tiene_transporte: tieneTransporte,
     p_token_admin: token,
     p_node_id: nodeId ?? null,
+    p_cantidad: cantidad,
   });
   if (error) {
     if (error.message.includes("nodo_ambiguo")) {
@@ -952,14 +959,18 @@ export async function marcarAgotado(
 export async function solicitarReposicion(
   inventoryId: string,
   magnitud: Magnitud,
+  cantidad: number,
   requiereVehiculo: boolean,
-  token: string
+  token: string,
+  nota?: string | null
 ): Promise<string> {
   const { data, error } = await supabaseWithToken(token).rpc("solicitar_reposicion", {
     p_token: token,
     p_inventory_id: inventoryId,
     p_magnitud: magnitud,
     p_requiere_vehiculo: requiereVehiculo,
+    p_nota: nota?.trim() || null,
+    p_cantidad: cantidad,
   });
   if (error) {
     if (error.message.includes("no_autorizado")) {
@@ -968,6 +979,74 @@ export async function solicitarReposicion(
     throw error;
   }
   return data as string;
+}
+
+// --- Vista pública de nodos (issue #24) ---
+
+// Lista pública de nodos: solo los VISIBLES (status activo|pausado) y VERIFICADOS,
+// con sus macrocategorías disponibles agregadas desde node_inventory (disponible=
+// true). SELECT explícito sin contacto ni magnitudes (invariante #24). El embed de
+// node_inventory es left-join filtrado: un nodo sin inventario disponible aparece
+// igual, con categorias vacías. La RLS pública de node_inventory (#22) ya acota a
+// nodos visibles/verificados, así que el filtro aquí es defensivo y consistente.
+export async function getNodosPublicos(): Promise<NodoPublico[]> {
+  const { data, error } = await supabase
+    .from("centros_acopio")
+    .select(
+      "id, nombre, tipo, direccion, estado_id, horario, lat, lng, status, pausado_recepcion, pausado_entrega, node_inventory(disponible, category:categories(id, name, slug))"
+    )
+    .in("status", ["activo", "pausado"])
+    .not("verificado_at", "is", null)
+    .eq("node_inventory.disponible", true)
+    .order("nombre");
+  if (error) throw error;
+
+  type Row = NodoPublicoBase & {
+    node_inventory: { disponible: boolean; category: Category | null }[] | null;
+  };
+
+  // Supabase infiere las relaciones anidadas como arrays; el cast por unknown
+  // refleja la cardinalidad real (category es to-one).
+  return (data as unknown as Row[]).map((row) => {
+    const { node_inventory, ...base } = row;
+    const categorias = new Map<string, Category>();
+    for (const inv of node_inventory ?? []) {
+      if (inv.category) categorias.set(inv.category.id, inv.category);
+    }
+    return { ...base, categorias: Array.from(categorias.values()) };
+  });
+}
+
+// Un nodo público por id (detalle). Devuelve null si no es visible/verificado
+// (para que la página muestre "no disponible" en vez de exponer un nodo inactivo).
+export async function getNodoPublico(nodeId: string): Promise<NodoPublicoBase | null> {
+  const { data, error } = await supabase
+    .from("centros_acopio")
+    .select(
+      "id, nombre, tipo, direccion, estado_id, horario, lat, lng, status, pausado_recepcion, pausado_entrega"
+    )
+    .eq("id", nodeId)
+    .in("status", ["activo", "pausado"])
+    .not("verificado_at", "is", null)
+    .maybeSingle();
+  if (error) throw error;
+  return data as NodoPublicoBase | null;
+}
+
+// Inventario visible al público de un nodo (detalle). SIN magnitud: el SELECT no la
+// incluye, así que jamás viaja en el payload de red (criterio de aceptación #24).
+export async function getInventarioPublico(nodeId: string): Promise<InventarioPublicoItem[]> {
+  const { data, error } = await supabase
+    .from("node_inventory")
+    .select(
+      "id, category_id, subcategory_id, condicion, nota, category:categories(id, name, slug), subcategory:subcategories(id, category_id, name, slug)"
+    )
+    .eq("node_id", nodeId)
+    .eq("disponible", true)
+    .order("category_id");
+  if (error) throw error;
+  // Cast por unknown: Supabase infiere category/subcategory como arrays (son to-one).
+  return (data ?? []) as unknown as InventarioPublicoItem[];
 }
 
 export async function obtenerContacto(

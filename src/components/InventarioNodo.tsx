@@ -45,13 +45,17 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   const [fSubcategory, setFSubcategory] = useState("");
   const [fDisponible, setFDisponible] = useState(true);
   const [fMagnitud, setFMagnitud] = useState<Magnitud | "">("");
+  const [fCantidad, setFCantidad] = useState("");
   const [fCondicion, setFCondicion] = useState("");
+  const [fNota, setFNota] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   // --- Prompt "¿Solicitar más?" (ambos modos) ---
   const [solicitarFor, setSolicitarFor] = useState<string | null>(null);
   const [solMagnitud, setSolMagnitud] = useState<Magnitud>("unidades");
+  const [solCantidad, setSolCantidad] = useState("");
   const [solVehiculo, setSolVehiculo] = useState(false);
+  const [solNota, setSolNota] = useState("");
 
   useEffect(() => {
     if (soloColaborador) return;
@@ -81,6 +85,13 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
       setError("Un centro de acopio debe indicar la magnitud del item.");
       return;
     }
+    // La cantidad es obligatoria cuando el item lleva magnitud (acopio | mixto).
+    const magnitudFinal = publicaMagnitud ? (fMagnitud || null) : null;
+    const cant = Number(fCantidad);
+    if (magnitudFinal && (!fCantidad.trim() || !Number.isInteger(cant) || cant <= 0)) {
+      setError("Indica la cantidad (numero entero mayor a cero).");
+      return;
+    }
     setGuardando(true);
     try {
       await upsertInventario(
@@ -90,8 +101,10 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             category_id: fCategory,
             subcategory_id: fSubcategory || null,
             disponible: fDisponible,
-            magnitud: publicaMagnitud ? (fMagnitud || null) : null,
+            magnitud: magnitudFinal,
+            cantidad: magnitudFinal ? cant : null,
             condicion: fCondicion.trim() || null,
+            nota: fNota.trim() || null,
           },
         ],
         token
@@ -101,7 +114,9 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
       setFSubcategory("");
       setFDisponible(true);
       setFCondicion("");
+      setFNota("");
       setFMagnitud("");
+      setFCantidad("");
       setExito("Item guardado.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar el item.");
@@ -127,17 +142,24 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
     async (inventoryId: string) => {
       setError(null);
       setExito(null);
+      const cant = Number(solCantidad);
+      if (!solCantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
+        setError("Indica la cantidad (numero entero mayor a cero).");
+        return;
+      }
       try {
-        await solicitarReposicion(inventoryId, solMagnitud, solVehiculo, token);
+        await solicitarReposicion(inventoryId, solMagnitud, cant, solVehiculo, token, solNota.trim() || null);
         setSolicitarFor(null);
         setSolVehiculo(false);
         setSolMagnitud("unidades");
+        setSolCantidad("");
+        setSolNota("");
         setExito("Solicitud de reposicion creada.");
       } catch (e) {
         setError(e instanceof Error ? e.message : "No se pudo crear la solicitud.");
       }
     },
-    [solMagnitud, solVehiculo, token]
+    [solMagnitud, solCantidad, solVehiculo, solNota, token]
   );
 
   return (
@@ -169,24 +191,40 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             ))}
           </select>
           {publicaMagnitud && (
-            <select
-              className="field"
-              value={fMagnitud}
-              onChange={(e) => setFMagnitud(e.target.value as Magnitud | "")}
-            >
-              <option value="">
-                {tipo === "acopio" ? "Magnitud…" : "Magnitud (opcional)…"}
-              </option>
-              {MAGNITUD_ORDEN.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <input
+                className="field w-1/3"
+                inputMode="numeric"
+                placeholder="Cantidad"
+                value={fCantidad}
+                onChange={(e) => setFCantidad(e.target.value.replace(/[^0-9]/g, ""))}
+              />
+              <select
+                className="field flex-1"
+                value={fMagnitud}
+                onChange={(e) => setFMagnitud(e.target.value as Magnitud | "")}
+              >
+                <option value="">
+                  {tipo === "acopio" ? "Magnitud…" : "Magnitud (opcional)…"}
+                </option>
+                {MAGNITUD_ORDEN.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
           )}
           <input
             className="field"
             placeholder="Condición (ej. Se requiere receta médica)"
             value={fCondicion}
             onChange={(e) => setFCondicion(e.target.value)}
+          />
+          <textarea
+            className="field min-h-[70px]"
+            maxLength={280}
+            placeholder="Comentario: qué hay exactamente (ej. acetaminofén 500mg, botellas de 1L). No incluyas telefonos."
+            value={fNota}
+            onChange={(e) => setFNota(e.target.value)}
           />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={fDisponible} onChange={(e) => setFDisponible(e.target.checked)} />
@@ -211,9 +249,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                   {it.subcategory ? " · " + it.subcategory.name : ""}
                 </p>
                 <p className="text-xs text-muted">
-                  {publicaMagnitud && it.magnitud ? "Magnitud: " + it.magnitud + " · " : ""}
+                  {publicaMagnitud && it.magnitud
+                    ? (it.cantidad ? it.cantidad + " " : "") + it.magnitud + " · "
+                    : ""}
                   {it.disponible ? "Disponible" : "No hay"}
                 </p>
+                {it.nota && <p className="mt-1 text-xs text-white">💬 {it.nota}</p>}
                 {it.condicion && <p className="mt-1 text-xs text-muted">⚠ {it.condicion}</p>}
               </div>
               {it.disponible && (
@@ -234,15 +275,31 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             )}
             {solicitarFor === it.id && (
               <div className="mt-2 flex flex-col gap-2 rounded-lg bg-surface p-2">
-                <select
-                  className="field"
-                  value={solMagnitud}
-                  onChange={(e) => setSolMagnitud(e.target.value as Magnitud)}
-                >
-                  {MAGNITUD_ORDEN.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <input
+                    className="field w-1/3"
+                    inputMode="numeric"
+                    placeholder="Cantidad"
+                    value={solCantidad}
+                    onChange={(e) => setSolCantidad(e.target.value.replace(/[^0-9]/g, ""))}
+                  />
+                  <select
+                    className="field flex-1"
+                    value={solMagnitud}
+                    onChange={(e) => setSolMagnitud(e.target.value as Magnitud)}
+                  >
+                    {MAGNITUD_ORDEN.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <textarea
+                  className="field min-h-[60px]"
+                  maxLength={280}
+                  placeholder="Comentario del pedido (opcional). No incluyas telefonos."
+                  value={solNota}
+                  onChange={(e) => setSolNota(e.target.value)}
+                />
                 <label className="flex items-center gap-2 text-xs">
                   <input type="checkbox" checked={solVehiculo} onChange={(e) => setSolVehiculo(e.target.checked)} />
                   <span>Requiere vehículo</span>

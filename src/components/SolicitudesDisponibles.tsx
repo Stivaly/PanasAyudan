@@ -39,6 +39,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
   // Solicitud en la que el voluntario está respondiendo (formulario abierto).
   const [respondiendoId, setRespondiendoId] = useState<string | null>(null);
   const [magnitud, setMagnitud] = useState<Magnitud>("unidades");
+  const [cantidad, setCantidad] = useState("");
   const [tiempo, setTiempo] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -85,12 +86,18 @@ export default function SolicitudesDisponibles({ token }: Props) {
   const abrir = (id: string) => {
     setRespondiendoId(id);
     setMagnitud("unidades");
+    setCantidad("");
     setTiempo("");
     setError(null);
   };
 
   const responder = async (id: string) => {
     setError(null);
+    const cant = Number(cantidad);
+    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
+      setError("Indica la cantidad (numero entero mayor a cero).");
+      return;
+    }
     const minutos = Number(tiempo);
     if (!tiempo.trim() || !(minutos > 0)) {
       setError("Indica un tiempo estimado en minutos (mayor a cero).");
@@ -98,7 +105,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
     }
     setEnviando(true);
     try {
-      await responderSolicitudVoluntario(id, magnitud, minutos, token);
+      await responderSolicitudVoluntario(id, magnitud, cant, minutos, token);
       setRespondiendoId(null);
       await cargar();
     } catch (e) {
@@ -158,9 +165,10 @@ export default function SolicitudesDisponibles({ token }: Props) {
                 </p>
                 <p className="text-xs text-muted">Punto: {s.nodo_nombre}</p>
                 <p className="mt-1 text-xs text-muted">
-                  Pedido: {s.magnitud}
+                  Pedido: {s.cantidad ? `${s.cantidad} ` : ""}{s.magnitud}
                   {s.requiere_vehiculo ? " · requiere vehículo" : ""}
                 </p>
+                {s.nota && <p className="mt-1 text-xs text-white">💬 {s.nota}</p>}
               </div>
               <span className="badge shrink-0">{s.status}</span>
             </div>
@@ -176,18 +184,27 @@ export default function SolicitudesDisponibles({ token }: Props) {
               </div>
             ) : respondiendoId === s.id ? (
               <div className="flex flex-col gap-2 rounded-xl bg-bg p-3">
-                <label className="text-xs font-semibold text-muted">Magnitud que puedo llevar</label>
-                <select
-                  className="field"
-                  value={magnitud}
-                  onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-                >
-                  {MAGNITUD_ORDEN.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                <label className="text-xs font-semibold text-muted">Cantidad y magnitud que puedo llevar</label>
+                <div className="flex gap-2">
+                  <input
+                    className="field w-1/3"
+                    inputMode="numeric"
+                    placeholder="Cantidad"
+                    value={cantidad}
+                    onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
+                  />
+                  <select
+                    className="field flex-1"
+                    value={magnitud}
+                    onChange={(e) => setMagnitud(e.target.value as Magnitud)}
+                  >
+                    {MAGNITUD_ORDEN.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <input
                   className="field"
                   inputMode="numeric"

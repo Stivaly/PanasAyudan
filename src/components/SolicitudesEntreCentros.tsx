@@ -26,6 +26,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
   const [cargando, setCargando] = useState(true);
   const [respondiendoId, setRespondiendoId] = useState<string | null>(null);
   const [magnitud, setMagnitud] = useState<Magnitud>("unidades");
+  const [cantidad, setCantidad] = useState("");
   const [tieneTransporte, setTieneTransporte] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
@@ -63,15 +64,21 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
   const abrir = (id: string) => {
     setRespondiendoId(id);
     setMagnitud("unidades");
+    setCantidad("");
     setTieneTransporte(false);
     setError(null);
   };
 
   const responder = async (solicitudId: string) => {
     setError(null);
+    const cant = Number(cantidad);
+    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
+      setError("Indica la cantidad (numero entero mayor a cero).");
+      return;
+    }
     setEnviando(true);
     try {
-      await responderSolicitudNodo(solicitudId, magnitud, tieneTransporte, token, nodeId);
+      await responderSolicitudNodo(solicitudId, magnitud, cant, tieneTransporte, token, nodeId);
       setRespondiendoId(null);
       await cargar(false);
     } catch (e) {
@@ -106,28 +113,38 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
                 </p>
                 <p className="text-xs text-muted">Pide: {s.nodo_nombre}</p>
                 <p className="mt-1 text-xs text-muted">
-                  Pedido: {s.magnitud}
+                  Pedido: {s.cantidad ? `${s.cantidad} ` : ""}{s.magnitud}
                   {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
                   {s.distancia_km !== null ? ` - aprox. ${s.distancia_km} km` : ""}
                 </p>
+                {s.nota && <p className="mt-1 text-xs text-white">💬 {s.nota}</p>}
               </div>
               <span className="badge shrink-0">{s.status}</span>
             </div>
 
             {respondiendoId === s.id ? (
               <div className="mt-3 flex flex-col gap-2 rounded-xl bg-surface p-3">
-                <label className="text-xs font-semibold text-muted">Magnitud que puede aportar este punto</label>
-                <select
-                  className="field"
-                  value={magnitud}
-                  onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-                >
-                  {MAGNITUD_ORDEN.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                <label className="text-xs font-semibold text-muted">Cantidad y magnitud que puede aportar este punto</label>
+                <div className="flex gap-2">
+                  <input
+                    className="field w-1/3"
+                    inputMode="numeric"
+                    placeholder="Cantidad"
+                    value={cantidad}
+                    onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
+                  />
+                  <select
+                    className="field flex-1"
+                    value={magnitud}
+                    onChange={(e) => setMagnitud(e.target.value as Magnitud)}
+                  >
+                    {MAGNITUD_ORDEN.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <label className="flex items-center gap-2 text-xs">
                   <input
                     type="checkbox"

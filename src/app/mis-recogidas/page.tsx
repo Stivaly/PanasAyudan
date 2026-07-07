@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import BotonVolver from "@/components/BotonVolver";
 import { supabase } from "@/lib/supabase";
 import {
   getRecogidasDeRecogedor,
@@ -344,9 +345,7 @@ export default function MisRecogidas() {
 
   const header = (
     <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-      <Link href="/buscar" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-        ←
-      </Link>
+      <BotonVolver fallback="/buscar" />
       <h1 className="text-lg font-bold">Mis recogidas</h1>
     </div>
   );

@@ -5,8 +5,8 @@
 // puede pausarlo). El panel de aprobación/gestión completo llega en otro issue.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import BotonVolver from "@/components/BotonVolver";
 import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
 import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import { normalizarTelefonoVe, errorTelegram, normalizarTelegram } from "@/lib/telefono";
@@ -188,9 +188,7 @@ export default function SuperadminPanel() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/voluntarios" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-          ←
-        </Link>
+        <BotonVolver />
         <h1 className="text-lg font-bold">Panel superadmin</h1>
         <button onClick={salir} className="ml-auto text-sm font-semibold text-muted">
           Salir

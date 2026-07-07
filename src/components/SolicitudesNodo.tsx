@@ -33,6 +33,8 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [magnitud, setMagnitud] = useState<Magnitud>("unidades");
+  const [cantidad, setCantidad] = useState("");
+  const [nota, setNota] = useState("");
   const [requiereVehiculo, setRequiereVehiculo] = useState(false);
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState<string | null>(null);
 
@@ -106,6 +108,11 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       setError("Elige una categoria para la solicitud.");
       return;
     }
+    const cant = Number(cantidad);
+    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
+      setError("Indica la cantidad (numero entero mayor a cero).");
+      return;
+    }
     setCreando(true);
     try {
       await crearSolicitud(
@@ -114,13 +121,17 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
           category_id: categoryId,
           subcategory_id: subcategoryId || null,
           magnitud,
+          cantidad: cant,
           requiere_vehiculo: requiereVehiculo,
+          nota: nota.trim() || null,
         },
         token
       );
       setCategoryId("");
       setSubcategoryId("");
       setMagnitud("unidades");
+      setCantidad("");
+      setNota("");
       setRequiereVehiculo(false);
       cargar();
     } catch (e) {
@@ -183,17 +194,33 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             </option>
           ))}
         </select>
-        <select
-          className="field"
-          value={magnitud}
-          onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-        >
-          {MAGNITUD_ORDEN.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
+        <div className="flex gap-2">
+          <input
+            className="field w-1/3"
+            inputMode="numeric"
+            placeholder="Cantidad"
+            value={cantidad}
+            onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
+          />
+          <select
+            className="field flex-1"
+            value={magnitud}
+            onChange={(e) => setMagnitud(e.target.value as Magnitud)}
+          >
+            {MAGNITUD_ORDEN.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+        <textarea
+          className="field min-h-[70px]"
+          maxLength={280}
+          placeholder="Comentario: qué se necesita exactamente (ej. insulina NPH 100UI, guantes talla M). No incluyas telefonos."
+          value={nota}
+          onChange={(e) => setNota(e.target.value)}
+        />
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -223,10 +250,11 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                         {s.subcategoria ? " - " + s.subcategoria : ""}
                       </p>
                       <p className="text-xs text-muted">
-                        Pedido: {s.magnitud}
+                        Pedido: {s.cantidad ? `${s.cantidad} ` : ""}{s.magnitud}
                         {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
                         {s.sobrante > 0 ? " - pendiente por cubrir" : " - cubierto"}
                       </p>
+                      {s.nota && <p className="mt-1 text-xs text-white">💬 {s.nota}</p>}
                     </div>
                     <span className="badge shrink-0">{s.status}</span>
                   </div>
@@ -240,7 +268,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                             <div key={c.id} className="flex flex-col gap-1 rounded-lg bg-surface p-2">
                               <div className="flex items-center justify-between gap-2">
                                 <span>
-                                  {c.magnitud} - {c.tiempo_estimado_minutos} min -{" "}
+                                  {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} - {c.tiempo_estimado_minutos} min -{" "}
                                   <span className="text-muted">{c.status}</span>
                                 </span>
                                 {c.atrasado_24h && (
@@ -295,7 +323,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                           {s.compromisos_nodo.map((c) => (
                             <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface p-2">
                               <span>
-                                {c.magnitud} - {c.tiene_transporte ? "con transporte" : "sin transporte"} -{" "}
+                                {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} - {c.tiene_transporte ? "con transporte" : "sin transporte"} -{" "}
                                 <span className="text-muted">{c.status}</span>
                               </span>
                               {(c.status === "comprometido" || c.status === "en_camino") && (

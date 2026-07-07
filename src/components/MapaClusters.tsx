@@ -5,25 +5,33 @@ import { useRouter } from "next/navigation";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { loadGoogleMaps, MAP_ID } from "@/lib/maps";
 import { Coords } from "@/lib/types";
-import { PuntoMapa } from "@/hooks/useItemsRealtime";
+
+// Marcador de un nodo en el mapa público (issue #24). Sin contador de stock: el
+// modelo de nodos no expone cantidades. Un nodo pausado se pinta en ámbar.
+export interface NodoMapa {
+  id: string;
+  lat: number;
+  lng: number;
+  nombre: string;
+  pausado: boolean;
+}
 
 interface Props {
   centro: Coords;
-  puntos: PuntoMapa[];
+  nodos: NodoMapa[];
 }
 
-// Badge circular verde con la suma de stock disponible del lugar.
-function badge(total: number): HTMLDivElement {
+// Pin circular (sin número). Verde = operativo, ámbar = pausado.
+function pin(pausado: boolean): HTMLDivElement {
   const div = document.createElement("div");
-  div.textContent = String(total);
+  const color = pausado ? "#f59e0b" : "#22c55e";
   div.style.cssText =
-    "background:#22c55e;color:#000;font-weight:700;font-size:13px;" +
-    "width:34px;height:34px;border-radius:9999px;display:flex;" +
-    "align-items:center;justify-content:center;border:2px solid #0a0a0a;cursor:pointer;";
+    `background:${color};width:20px;height:20px;border-radius:9999px;` +
+    "border:3px solid #0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.35);cursor:pointer;";
   return div;
 }
 
-export default function MapaClusters({ centro, puntos }: Props) {
+export default function MapaClusters({ centro, nodos }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
@@ -60,14 +68,14 @@ export default function MapaClusters({ centro, puntos }: Props) {
     const map = mapRef.current;
     if (!mapReady || !map || !google.maps.marker?.AdvancedMarkerElement) return;
 
-    const markers = puntos.map((punto) => {
+    const markers = nodos.map((nodo) => {
       const marker = new google.maps.marker.AdvancedMarkerElement({
-        position: { lat: punto.location.lat, lng: punto.location.lng },
-        content: badge(punto.totalDisponible),
-        title: punto.location.place_name,
+        position: { lat: nodo.lat, lng: nodo.lng },
+        content: pin(nodo.pausado),
+        title: nodo.nombre,
       });
       marker.content?.addEventListener("click", () => {
-        router.push(`/lugar/${punto.location.id}`);
+        router.push(`/nodo/${nodo.id}`);
       });
       return marker;
     });
@@ -75,16 +83,14 @@ export default function MapaClusters({ centro, puntos }: Props) {
     clustererRef.current?.clearMarkers();
     clustererRef.current = new MarkerClusterer({ map, markers });
 
-    // Ajusta el encuadre para que se vean todos los puntos.
+    // Ajusta el encuadre para que se vean todos los nodos.
     let zoomListener: google.maps.MapsEventListener | null = null;
-    if (puntos.length > 0) {
+    if (nodos.length > 0) {
       const bounds = new google.maps.LatLngBounds();
-      puntos.forEach((punto) => {
-        bounds.extend({ lat: punto.location.lat, lng: punto.location.lng });
-      });
+      nodos.forEach((nodo) => bounds.extend({ lat: nodo.lat, lng: nodo.lng }));
       map.fitBounds(bounds);
-      // Con un solo punto, fitBounds acerca demasiado: fija un zoom razonable.
-      if (puntos.length === 1) {
+      // Con un solo nodo, fitBounds acerca demasiado: fija un zoom razonable.
+      if (nodos.length === 1) {
         zoomListener = google.maps.event.addListenerOnce(map, "idle", () => {
           map.setZoom(15);
         });
@@ -96,7 +102,7 @@ export default function MapaClusters({ centro, puntos }: Props) {
       clustererRef.current?.clearMarkers();
       markers.forEach((m) => (m.map = null));
     };
-  }, [puntos, router, mapReady]);
+  }, [nodos, router, mapReady]);
 
   return <div ref={ref} className="h-full w-full" />;
 }

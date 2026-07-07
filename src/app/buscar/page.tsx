@@ -1,146 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+// Vista pública de búsqueda (issue #24): lista de nodos activos y verificados con
+// sus categorías disponibles. Lista primero (definicion.md); el mapa se carga bajo
+// demanda con dynamic import — sin ningún request de mapa hasta tocar "Ver en mapa".
+
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import EstadoCombobox from "@/components/EstadoCombobox";
+import BotonVolver from "@/components/BotonVolver";
 import FiltroCategorias from "@/components/FiltroCategorias";
-import ListaLugares from "@/components/ListaLugares";
-import MisReservasActivas from "@/components/MisReservasActivas";
-import { useItemsRealtime } from "@/hooks/useItemsRealtime";
-import {
-  getCategorias,
-  getEstados,
-  getCentrosAcopioPorEstado,
-  getZonasRescatePorEstado,
-} from "@/lib/api";
+import ListaNodos from "@/components/ListaNodos";
+import type { NodoMapa } from "@/components/MapaClusters";
+import { useNodosPublicos } from "@/hooks/useNodosPublicos";
+import { getCategorias } from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
-import {
-  Category,
-  CentroAcopio,
-  Coords,
-  EstadoVenezuela,
-  ZonaRescate,
-} from "@/lib/types";
+import { Category, Coords, statusVisible } from "@/lib/types";
 
 const MapaClusters = dynamic(() => import("@/components/MapaClusters"), { ssr: false });
 
 export default function Buscar() {
   const [categorias, setCategorias] = useState<Category[]>([]);
-  const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [activa, setActiva] = useState<string | null>(null);
-  const [estadoActivo, setEstadoActivo] = useState<string | null>(null);
-  const [centros, setCentros] = useState<CentroAcopio[]>([]);
-  const [zonas, setZonas] = useState<ZonaRescate[]>([]);
-  const [centroActivo, setCentroActivo] = useState<string | null>(null);
-  const [zonaActiva, setZonaActiva] = useState<string | null>(null);
   const [verMapa, setVerMapa] = useState(false);
   const [centro, setCentro] = useState<Coords>(CARACAS);
-  const { puntos, cargando } = useItemsRealtime(
-    activa ?? undefined,
-    estadoActivo ?? undefined,
-    centroActivo ?? undefined,
-    zonaActiva ?? undefined
-  );
+  const { nodos, cargando } = useNodosPublicos();
 
   useEffect(() => {
     getCategorias()
       .then(setCategorias)
       .catch(() => {});
-    getEstados()
-      .then(setEstados)
-      .catch(() => {});
   }, []);
-
-  // Al cambiar de estado: cargar centros/zonas de ese estado y resetear los
-  // selects de centro y zona a "Todos".
-  useEffect(() => {
-    // Reset de selects dependientes al cambiar de estado + fetch. Efecto
-    // intencional; no es un store síncrono para useSyncExternalStore.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCentroActivo(null);
-    setZonaActiva(null);
-    if (!estadoActivo) {
-      setCentros([]);
-      setZonas([]);
-      return;
-    }
-    let activo = true;
-    Promise.all([
-      getCentrosAcopioPorEstado(estadoActivo),
-      getZonasRescatePorEstado(estadoActivo),
-    ])
-      .then(([cs, zs]) => {
-        if (!activo) return;
-        setCentros(cs);
-        setZonas(zs);
-      })
-      .catch(() => {
-        if (!activo) return;
-        setCentros([]);
-        setZonas([]);
-      });
-    return () => {
-      activo = false;
-    };
-  }, [estadoActivo]);
 
   useEffect(() => {
     if (verMapa) resolverCentro().then(setCentro);
   }, [verMapa]);
 
+  // Filtra por macrocategoría disponible (slug). Sin filtro => todos.
+  const nodosFiltrados = useMemo(() => {
+    if (!activa) return nodos;
+    return nodos.filter((n) => n.categorias.some((c) => c.slug === activa));
+  }, [nodos, activa]);
+
+  // Marcadores del mapa: solo nodos con coordenadas, sin contador de stock.
+  const marcadores = useMemo<NodoMapa[]>(
+    () =>
+      nodosFiltrados
+        .filter((n) => n.lat !== null && n.lng !== null)
+        .map((n) => ({
+          id: n.id,
+          lat: n.lat as number,
+          lng: n.lng as number,
+          nombre: n.nombre,
+          pausado: statusVisible(n) === "pausado",
+        })),
+    [nodosFiltrados]
+  );
+
   const filtros = (
-    <>
-      <FiltroCategorias categorias={categorias} activa={activa} onChange={setActiva} />
-      <EstadoCombobox
-        estados={estados}
-        estadoId={estadoActivo}
-        onChange={setEstadoActivo}
-        includeTodos
-        label="Filtrar por estado"
-        placeholder="Todos los estados"
-      />
-      {estadoActivo && (
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-muted">Centro de acopio</label>
-          <select
-            value={centroActivo ?? ""}
-            onChange={(e) => setCentroActivo(e.target.value || null)}
-            className="field"
-          >
-            <option value="">Todos los centros</option>
-            {centros.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      {estadoActivo && zonas.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-muted">Zona de rescate</label>
-          <select
-            value={zonaActiva ?? ""}
-            onChange={(e) => setZonaActiva(e.target.value || null)}
-            className="field"
-          >
-            <option value="">Todas las zonas</option>
-            {zonas.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-    </>
+    <FiltroCategorias categorias={categorias} activa={activa} onChange={setActiva} />
   );
 
   if (verMapa) {
     return (
       <main className="relative h-dvh w-full overflow-hidden">
-        <MapaClusters centro={centro} puntos={puntos} />
+        <MapaClusters centro={centro} nodos={marcadores} />
         <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-bg/95 to-transparent pb-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2 px-3 pb-2">
             <button
@@ -151,7 +73,7 @@ export default function Buscar() {
             </button>
             <span className="text-sm font-semibold text-muted">Mapa</span>
           </div>
-          <div className="flex flex-col gap-2 px-3">{filtros}</div>
+          <div className="px-3">{filtros}</div>
         </div>
       </main>
     );
@@ -160,10 +82,8 @@ export default function Buscar() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-          ←
-        </Link>
-        <h1 className="text-lg font-bold">Buscar insumos</h1>
+        <BotonVolver />
+        <h1 className="text-lg font-bold">Puntos de ayuda</h1>
       </div>
 
       {filtros}
@@ -172,15 +92,13 @@ export default function Buscar() {
         Ver en mapa
       </button>
 
-      <MisReservasActivas />
-
       {cargando && <p className="text-muted">Cargando...</p>}
 
-      {!cargando && puntos.length === 0 && (
-        <p className="text-muted">No hay insumos disponibles con estos filtros.</p>
+      {!cargando && nodosFiltrados.length === 0 && (
+        <p className="text-muted">No hay puntos de ayuda disponibles con este filtro.</p>
       )}
 
-      {!cargando && puntos.length > 0 && <ListaLugares puntos={puntos} />}
+      {!cargando && nodosFiltrados.length > 0 && <ListaNodos nodos={nodosFiltrados} />}
     </main>
   );
 }

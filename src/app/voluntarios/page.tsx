@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import BotonVolver from "@/components/BotonVolver";
 import {
   registrarVoluntario,
   getCentrosAcopioPorEstado,
@@ -65,14 +66,17 @@ export default function Voluntarios() {
       setCachedRole(t, role);
     }
     switch (role) {
+      // replace (no push): /voluntarios es solo el punto de entrada que enruta por
+      // rol; dejarlo en el historial haría que "volver" desde el panel rebotara
+      // aquí y este efecto redirigiera de nuevo al mismo panel.
       case "superadmin":
-        router.push("/superadmin");
+        router.replace("/superadmin");
         break;
       case "admin":
-        router.push("/nodo");
+        router.replace("/nodo");
         break;
       case "colaborador":
-        router.push("/nodo/colaborador");
+        router.replace("/nodo/colaborador");
         break;
       default:
         // voluntario: panel actual, sin cambios.
@@ -256,9 +260,7 @@ export default function Voluntarios() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-          ←
-        </Link>
+        <BotonVolver />
         <div>
           <h1 className="text-lg font-bold">🇻🇪 Apoyo en traslados</h1>
           {vista === "panel" && <p className="text-xs text-muted">Estas en solicitudes para ayudar</p>}

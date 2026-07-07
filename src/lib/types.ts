@@ -263,6 +263,8 @@ export type CompromisoVoluntarioStatus = "pendiente" | "completado" | "incumplid
 export interface CompromisoVoluntario {
   id: string;
   magnitud: Magnitud;
+  // Conteo concreto comprometido junto a la magnitud (ej. 5 "cajas").
+  cantidad: number | null;
   tiempo_estimado_minutos: number;
   status: CompromisoVoluntarioStatus;
   created_at: string;
@@ -280,6 +282,7 @@ export type CompromisoNodoStatus =
 export interface CompromisoNodo {
   id: string;
   magnitud: Magnitud;
+  cantidad: number | null;
   tiene_transporte: boolean;
   status: CompromisoNodoStatus;
   node_id_compromete: string;
@@ -295,7 +298,13 @@ export interface SolicitudDisponible {
   category_id: string;
   category_name: string;
   subcategoria: string | null;
+  // Comentario libre del pedido: precisa QUÉ se necesita (ej. "insulina NPH").
+  // Público y no sensible; nunca lleva contacto ni ubicación.
+  nota: string | null;
   magnitud: Magnitud;
+  // Conteo concreto del pedido junto a la magnitud (ej. 5 "cajas"). Obligatorio
+  // al crear; puede ser null en filas anteriores a la migración 0049.
+  cantidad: number | null;
   requiere_vehiculo: boolean;
   status: SolicitudStatus;
   sobrante: number;
@@ -312,7 +321,9 @@ export interface SolicitudParaNodo {
   category_id: string;
   category_name: string;
   subcategoria: string | null;
+  nota: string | null;
   magnitud: Magnitud;
+  cantidad: number | null;
   requiere_vehiculo: boolean;
   status: SolicitudStatus;
   sobrante: number;
@@ -344,7 +355,9 @@ export interface SolicitudNodo {
   category_id: string;
   category_name: string;
   subcategoria: string | null;
+  nota: string | null;
   magnitud: Magnitud;
+  cantidad: number | null;
   requiere_vehiculo: boolean;
   status: SolicitudStatus;
   sobrante: number;
@@ -360,7 +373,12 @@ export interface SolicitudData {
   // legado: crear_solicitud lo deriva del nombre de la subcategoría elegida.
   subcategory_id: string | null;
   magnitud: Magnitud;
+  // Conteo concreto del pedido (entero > 0). Obligatorio: crear_solicitud lo exige.
+  cantidad: number;
   requiere_vehiculo: boolean;
+  // Comentario libre opcional del pedido (ej. "insulina NPH 100UI"). Se recorta
+  // a 280 chars server-side. Nunca debe llevar contacto ni ubicación.
+  nota?: string | null;
 }
 
 // --- Inventario por nodo (issue #22) ---
@@ -375,7 +393,14 @@ export interface InventarioItem {
   subcategory_id: string | null;
   disponible: boolean;
   magnitud: Magnitud | null;
+  // Conteo concreto junto a la magnitud (ej. 5 "cajas"). Obligatorio en nodos
+  // acopio | mixto; null en punto de entrega (que no publica magnitud). NO se
+  // expone en lecturas públicas (#24 prohíbe cantidades públicas).
+  cantidad: number | null;
   condicion: string | null;
+  // Comentario libre del item: precisa QUÉ hay/se ofrece (ej. "acetaminofén
+  // 500mg"). Distinto de condicion (condiciones de entrega). Público, sin contacto.
+  nota: string | null;
   updated_at: string;
   category?: Category | null;
   subcategory?: Subcategory | null;
@@ -388,7 +413,9 @@ export interface InventarioUpsertItem {
   subcategory_id: string | null;
   disponible: boolean;
   magnitud: Magnitud | null;
+  cantidad: number | null;
   condicion: string | null;
+  nota: string | null;
 }
 
 // Respuesta de marcar_agotado: los datos para ofrecer la solicitud de reposición.
@@ -398,6 +425,58 @@ export interface AgotadoSugerencia {
   node_id: string;
   category_id: string;
   subcategory_id: string | null;
+}
+
+// --- Vista pública de nodos (issue #24) ---
+// Lo que ve el público en /buscar y /nodo/[id]. NUNCA incluye contacto ni
+// magnitudes/cantidades: la RLS (#22) y los SELECT explícitos lo garantizan.
+export interface NodoPublicoBase {
+  id: string;
+  nombre: string;
+  tipo: NodeTipo;
+  direccion: string;
+  estado_id: string;
+  horario: string | null;
+  lat: number | null;
+  lng: number | null;
+  status: NodeStatus;
+  pausado_recepcion: boolean;
+  pausado_entrega: boolean;
+}
+
+// Nodo de la lista pública con sus macrocategorías disponibles (para las badges).
+export interface NodoPublico extends NodoPublicoBase {
+  categorias: Category[];
+}
+
+// Item de inventario visible al público (detalle): SIN magnitud, porque el issue
+// #24 prohíbe exponer cantidades/magnitudes en lecturas públicas. Solo categoría,
+// subcategoría y la condicion (ej. "Se requiere receta médica").
+export interface InventarioPublicoItem {
+  id: string;
+  category_id: string;
+  subcategory_id: string | null;
+  condicion: string | null;
+  // Comentario libre del item (ej. "acetaminofén 500mg"). Es descriptivo, NO una
+  // cantidad, así que sí puede exponerse públicamente (a diferencia de magnitud).
+  nota: string | null;
+  category: Category | null;
+  subcategory: Subcategory | null;
+}
+
+// Texto de la(s) mitad(es) pausada(s) relevante(s) al tipo del nodo, para la badge
+// pública (ej. "recepción", "entrega", "recepción y entrega"). null si no hay pausa
+// relevante. Comparte criterio con pausadoRelevante/statusVisible (#18).
+export function descripcionPausa(n: {
+  tipo?: NodeTipo | null;
+  pausado_recepcion?: boolean | null;
+  pausado_entrega?: boolean | null;
+}): string | null {
+  if (!pausadoRelevante(n)) return null;
+  const partes: string[] = [];
+  if (n.tipo !== "entrega" && n.pausado_recepcion) partes.push("recepción");
+  if (n.tipo !== "acopio" && n.pausado_entrega) partes.push("entrega");
+  return partes.join(" y ");
 }
 
 export type AporteStatus = "activo" | "cerrado";

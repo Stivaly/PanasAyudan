@@ -80,7 +80,7 @@ export default function ColaboradorPanel() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/voluntarios" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
+        <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
           &larr;
         </Link>
         <h1 className="text-lg font-bold">Panel de colaborador</h1>
