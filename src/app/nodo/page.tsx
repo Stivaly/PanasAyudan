@@ -7,6 +7,7 @@ import { getEstados, listarNodosAdmin, pausarNodo } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
 import EditarNodo from "@/components/EditarNodo";
 import InventarioNodo from "@/components/InventarioNodo";
+import SolicitudesEntreCentros from "@/components/SolicitudesEntreCentros";
 import SolicitudesNodo from "@/components/SolicitudesNodo";
 import VerificarNodo from "@/components/VerificarNodo";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
@@ -196,6 +197,7 @@ export default function NodoAdminPanel() {
 
               <InventarioNodo nodeId={activo.id} token={token} tipo={activo.tipo} />
               <SolicitudesNodo nodeId={activo.id} token={token} />
+              <SolicitudesEntreCentros nodeId={activo.id} token={token} />
               <EditarNodo
                 nodo={activo}
                 estados={estados}

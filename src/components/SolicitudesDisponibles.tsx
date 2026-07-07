@@ -122,6 +122,9 @@ export default function SolicitudesDisponibles({ token }: Props) {
             Confirma dónde estás una sola vez para poder tomar solicitudes cercanas. Tu ubicación
             no se guarda: solo se usa para saber tu municipio, y la verificación vale 24 horas.
           </p>
+          <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-white">
+            Rango operativo: 650 km maximo si tienes vehiculo registrado; 300 km maximo sin vehiculo.
+          </div>
           <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
             Esta verificación debe hacerse desde un celular con ubicación activa.
           </div>
@@ -155,7 +158,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
                 </p>
                 <p className="text-xs text-muted">Punto: {s.nodo_nombre}</p>
                 <p className="mt-1 text-xs text-muted">
-                  Falta cubrir: {s.sobrante} · magnitud pedida: {s.magnitud}
+                  Pedido: {s.magnitud}
                   {s.requiere_vehiculo ? " · requiere vehículo" : ""}
                 </p>
               </div>

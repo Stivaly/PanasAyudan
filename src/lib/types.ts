@@ -286,6 +286,21 @@ export interface SolicitudDisponible {
   en_rango: boolean;
 }
 
+export interface SolicitudParaNodo {
+  id: string;
+  node_id_origen: string;
+  nodo_nombre: string;
+  category_id: string;
+  category_name: string;
+  subcategoria: string | null;
+  magnitud: Magnitud;
+  requiere_vehiculo: boolean;
+  status: SolicitudStatus;
+  sobrante: number;
+  distancia_km: number | null;
+  created_at: string;
+}
+
 // Respuesta de listar_solicitudes_disponibles (issue #20). requiere_verificacion
 // es true cuando el voluntario no tiene ninguna zona vigente (nunca verificó o
 // venció el plazo de 24h): el panel debe pedir "Verificar mi ubicación".

@@ -223,9 +223,9 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                         {s.subcategoria ? " - " + s.subcategoria : ""}
                       </p>
                       <p className="text-xs text-muted">
-                        Magnitud: {s.magnitud}
+                        Pedido: {s.magnitud}
                         {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
-                        {" - sobrante: " + s.sobrante}
+                        {s.sobrante > 0 ? " - pendiente por cubrir" : " - cubierto"}
                       </p>
                     </div>
                     <span className="badge shrink-0">{s.status}</span>

@@ -23,6 +23,7 @@ import {
   TipoPausa,
   SolicitudData,
   SolicitudesDisponiblesResp,
+  SolicitudParaNodo,
   SolicitudNodo,
   VerificacionUbicacion,
   InventarioItem,
@@ -802,6 +803,23 @@ export async function listarSolicitudesDisponibles(
 // es una acción explícita del voluntario para poder operar. Sin watchPosition ni
 // polling. El servidor resuelve el municipio y DESCARTA las coordenadas: nunca
 // se guardan ni se comparten. La zona resultante vale 24h.
+export async function listarSolicitudesParaNodo(
+  nodeId: string,
+  token: string
+): Promise<SolicitudParaNodo[]> {
+  const { data, error } = await supabaseWithToken(token).rpc("listar_solicitudes_para_nodo", {
+    p_node_id: nodeId,
+    p_token_admin: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No administras este punto.");
+    }
+    throw error;
+  }
+  return (data ?? []) as SolicitudParaNodo[];
+}
+
 export async function verificarUbicacionVoluntario(
   token: string
 ): Promise<VerificacionUbicacion> {
