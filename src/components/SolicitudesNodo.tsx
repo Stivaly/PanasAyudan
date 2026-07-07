@@ -115,6 +115,8 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   // (consumiéndolo). Deja de pelear con el reset del efecto de categoría.
   useEffect(() => {
     if (subPendiente && subcategorias.some((s) => s.id === subPendiente)) {
+      // Sincroniza el selector con la subcategoría pendiente ya cargada (intencional).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubcategoryId(subPendiente);
       setSubPendiente(null);
     }
