@@ -49,6 +49,8 @@ export default function Voluntarios() {
   const [cargandoCentros, setCargandoCentros] = useState(false);
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [tokenNuevo, setTokenNuevo] = useState<string | null>(null);
+  // Bug #12: feedback visual al copiar el codigo de acceso.
+  const [copiado, setCopiado] = useState(false);
 
   const [tokenInput, setTokenInput] = useState("");
   const [telegramError, setTelegramError] = useState("");
@@ -246,6 +248,16 @@ export default function Voluntarios() {
     }
   };
 
+  // Bug #10: si el navegador restaura esta pagina desde el cache de historial
+  // (boton atras), el codigo de acceso no debe reaparecer en pantalla.
+  useEffect(() => {
+    const limpiar = (e: PageTransitionEvent) => {
+      if (e.persisted) setTokenNuevo(null);
+    };
+    window.addEventListener("pageshow", limpiar);
+    return () => window.removeEventListener("pageshow", limpiar);
+  }, []);
+
   const guardarYEntrar = () => {
     if (!tokenNuevo) return;
     // El registro libre solo crea voluntarios: vamos directo al panel actual y
@@ -254,6 +266,9 @@ export default function Voluntarios() {
     setCachedRole(tokenNuevo, "voluntario");
     setVolunteerToken(tokenNuevo);
     setToken(tokenNuevo);
+    // Bug #10: el codigo ya quedo guardado; se descarta del estado para que no
+    // pueda volver a mostrarse (ni volviendo atras ni restaurando la pagina).
+    setTokenNuevo(null);
     setVista("panel");
   };
 
@@ -287,11 +302,11 @@ export default function Voluntarios() {
             </p>
           </div>
 
-          <div className="grid gap-2 text-sm text-muted">
-            <p className="rounded-xl bg-surface p-3">Responde solicitudes cercanas.</p>
-            <p className="rounded-xl bg-surface p-3">Apoya traslados entre puntos y zonas que necesitan ayuda.</p>
-            <p className="rounded-xl bg-surface p-3">Ayuda sin exponerte: tú eliges tu zona.</p>
-          </div>
+          <ul className="grid gap-2 text-sm text-muted">
+            <li className="flex items-start gap-2"><span className="text-accent" aria-hidden>✓</span>Responde solicitudes cercanas.</li>
+            <li className="flex items-start gap-2"><span className="text-accent" aria-hidden>✓</span>Apoya traslados entre puntos y zonas que necesitan ayuda.</li>
+            <li className="flex items-start gap-2"><span className="text-accent" aria-hidden>✓</span>Ayuda sin exponerte: tu ubicación siempre es privada.</li>
+          </ul>
 
           <div className="flex flex-col gap-2 rounded-xl border border-accent bg-bg p-4">
             <p className="text-sm font-semibold text-accent">¿Es tu primera vez?</p>
@@ -510,10 +525,14 @@ export default function Voluntarios() {
             />
             <button
               type="button"
-              onClick={() => navigator.clipboard?.writeText(tokenNuevo)}
-              className="btn-ghost mt-3 w-full"
+              onClick={() => {
+                navigator.clipboard?.writeText(tokenNuevo);
+                setCopiado(true);
+                setTimeout(() => setCopiado(false), 2000);
+              }}
+              className={copiado ? "btn-ghost mt-3 w-full border-accent text-accent" : "btn-ghost mt-3 w-full"}
             >
-              Copiar codigo
+              {copiado ? "¡Copiado! ✓" : "Copiar codigo"}
             </button>
           </div>
           <button type="submit" className="btn-primary w-full">
