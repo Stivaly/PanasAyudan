@@ -117,7 +117,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
                   {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
                   {s.distancia_km !== null ? ` - aprox. ${s.distancia_km} km` : ""}
                 </p>
-                {s.nota && <p className="mt-1 text-xs text-white">💬 {s.nota}</p>}
+                {s.nota && <p className="mt-1 text-xs text-fg">💬 {s.nota}</p>}
               </div>
               <span className="badge shrink-0">{s.status}</span>
             </div>

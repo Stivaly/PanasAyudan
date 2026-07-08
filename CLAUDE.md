@@ -26,7 +26,7 @@ issues de GitHub - NO este resumen. Solo ejecutas código.
   MarkerClusterer, Distance Matrix
 - PWA: public/manifest.json + public/sw.js (si tocas sw.js, sube el
   nombre de cache: hoy es "panasayudan-v2")
-- Modo oscuro forzado en layout.tsx (<html className="dark">), sin toggle
+- Modo oscuro por defecto con toggle manual; modo claro disponible para luz solar directa
 
 ## ESTADO ACTUAL - rama feat/rediseno-modelo-nodos
 

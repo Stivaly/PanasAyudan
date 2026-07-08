@@ -210,7 +210,7 @@ function PendienteCard({
                 type="button"
                 onClick={() => setConfirmandoQty(true)}
                 disabled={!qtyValida}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-black shadow-sm disabled:opacity-50"
               >
                 Cambiar
               </button>
@@ -228,7 +228,7 @@ function PendienteCard({
                   type="button"
                   onClick={guardarQty}
                   disabled={guardandoQty}
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-50"
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-black shadow-sm disabled:opacity-50"
                 >
                   {guardandoQty ? "Guardando..." : "Sí, cambiar"}
                 </button>

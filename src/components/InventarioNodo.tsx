@@ -337,7 +337,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                     : ""}
                   {it.disponible ? "Disponible" : "No hay"}
                 </p>
-                {it.nota && <p className="mt-1 text-xs text-white">💬 {it.nota}</p>}
+                {it.nota && <p className="mt-1 text-xs text-fg">💬 {it.nota}</p>}
                 {it.condicion && <p className="mt-1 text-xs text-muted">⚠ {it.condicion}</p>}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">

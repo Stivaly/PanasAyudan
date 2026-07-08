@@ -353,19 +353,19 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                       </p>
                       <div className="mt-2 grid grid-cols-1 gap-1 text-xs">
                         <span className="rounded-lg bg-surface px-2 py-1 text-muted">
-                          Pedido: <strong className="text-white">{s.cantidad ?? 0} {s.magnitud}</strong>
+                          Pedido: <strong className="text-fg">{s.cantidad ?? 0} {s.magnitud}</strong>
                         </span>
                         <span className="rounded-lg bg-surface px-2 py-1 text-muted">
-                          Comprometido: <strong className="text-white">{comprometido(s)} {s.magnitud}</strong>
+                          Comprometido: <strong className="text-fg">{comprometido(s)} {s.magnitud}</strong>
                         </span>
                         <span className="rounded-lg bg-surface px-2 py-1 text-muted">
-                          Falta: <strong className="text-white">{falta(s)} {s.magnitud}</strong>
+                          Falta: <strong className="text-fg">{falta(s)} {s.magnitud}</strong>
                         </span>
                       </div>
                       {s.requiere_vehiculo && (
                         <p className="mt-1 text-xs text-muted">Requiere vehiculo</p>
                       )}
-                      {s.nota && <p className="mt-1 text-xs text-white">{s.nota}</p>}
+                      {s.nota && <p className="mt-1 text-xs text-fg">{s.nota}</p>}
                     </div>
                     <span className="badge shrink-0">{estadoSolicitud(s)}</span>
                   </div>

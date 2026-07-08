@@ -259,7 +259,7 @@ Voluntarios:
 
 ## Estilo de UI
 
-- Modo oscuro forzado desde `layout.tsx` con `<html className="dark">`.
+- Modo oscuro por defecto con toggle manual; modo claro disponible para luz solar directa.
 - Colores extendidos en Tailwind: `bg`, `surface`, `border`, `accent`,
   `danger`, `muted`.
 - Clases globales reutilizables en `globals.css`: `btn`, `btn-primary`,

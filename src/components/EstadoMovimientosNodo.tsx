@@ -111,7 +111,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
                       {mov.cantidad_con_voluntario} con voluntario; {mov.cantidad_sin_voluntario} pendiente.
                     </p>
                   )}
-                  {mov.nota && <p className="mt-1 text-xs text-white">{mov.nota}</p>}
+                  {mov.nota && <p className="mt-1 text-xs text-fg">{mov.nota}</p>}
                 </div>
                 <span className="badge shrink-0">{mov.status}</span>
               </div>
@@ -155,7 +155,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
                   <p className="mt-1 text-xs text-muted">
                     {mov.cantidad ? `${mov.cantidad} ` : ""}{mov.magnitud} - lo trae: {mov.transportista}
                   </p>
-                  {mov.nota && <p className="mt-1 text-xs text-white">{mov.nota}</p>}
+                  {mov.nota && <p className="mt-1 text-xs text-fg">{mov.nota}</p>}
                 </div>
                 <span className="badge shrink-0">{mov.status}</span>
               </div>

@@ -85,7 +85,7 @@ export default function InstalarApp() {
     <div className="fixed inset-x-0 bottom-0 z-40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="mx-auto flex w-full max-w-lg items-center gap-3 rounded-2xl border border-accent bg-surface p-3 shadow-lg">
         <div className="flex-1 text-sm">
-          <p className="font-semibold text-white">Instala la app</p>
+          <p className="font-semibold text-fg">Instala la app</p>
           <p className="text-xs text-muted">
             {esIos
               ? 'En Safari: toca Compartir y luego "Agregar a pantalla de inicio" para usarla sin conexión.'

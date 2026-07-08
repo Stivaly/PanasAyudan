@@ -98,7 +98,7 @@ export default function NodoTabBar({ active, onChange, alertas, disabled }: Prop
                   ? "cursor-not-allowed text-muted/45"
                   : activo
                   ? "text-accent"
-                  : "text-muted active:text-white")
+                  : "text-muted active:text-fg")
               }
             >
               <span className="relative">

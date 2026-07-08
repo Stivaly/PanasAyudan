@@ -70,7 +70,7 @@ export default function ModalBienvenida() {
                 <circle cx="54" cy="54" r="6" fill="currentColor" stroke="none" />
               </svg>
             </div>
-            <h2 className="mt-4 text-2xl font-bold text-white">
+            <h2 className="mt-4 text-2xl font-bold text-fg">
               Coordinamos insumos de emergencia en Venezuela
             </h2>
             <p className="mt-3 text-base text-muted">
@@ -88,12 +88,12 @@ export default function ModalBienvenida() {
         {/* Slide 2 — Para quién es */}
         {slide === 1 ? (
           <div>
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-fg">
               ¿Para quién es esta app?
             </h2>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <div className="card flex-1 border-green-700">
-                <p className="font-semibold text-white">✓ Es para ti si...</p>
+                <p className="font-semibold text-fg">✓ Es para ti si...</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
                   <li>Buscas insumos: entra sin registro y encuentra el punto más cercano</li>
                   <li>Administras o colaboras en un centro de acopio o punto de entrega</li>
@@ -101,7 +101,7 @@ export default function ModalBienvenida() {
                 </ul>
               </div>
               <div className="card flex-1">
-                <p className="font-semibold text-white">Esta app no es para...</p>
+                <p className="font-semibold text-fg">Esta app no es para...</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
                   <li>Recibir insumos en tu casa o negocio</li>
                   <li>Donaciones sin coordinar con un centro</li>
@@ -115,14 +115,14 @@ export default function ModalBienvenida() {
         {/* Slide 3 — Cómo funciona */}
         {slide === 2 ? (
           <div>
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-fg">
               Cómo funciona en 4 pasos
             </h2>
             <div className="mt-4 flex flex-col gap-4 border-l-2 border-accent pl-4">
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">01</span>
                 <div>
-                  <p className="font-bold text-white">Busca un punto de ayuda</p>
+                  <p className="font-bold text-fg">Busca un punto de ayuda</p>
                   <p className="text-sm text-muted">
                     Sin registro: abre la app y ve la lista de puntos
                     verificados, con lo que tienen disponible, su horario y su
@@ -133,7 +133,7 @@ export default function ModalBienvenida() {
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">02</span>
                 <div>
-                  <p className="font-bold text-white">Los centros se coordinan entre sí</p>
+                  <p className="font-bold text-fg">Los centros se coordinan entre sí</p>
                   <p className="text-sm text-muted">
                     Cada centro aprobado administra su inventario y solicita lo
                     que le falta. Otro centro puede comprometer su stock — y si
@@ -145,7 +145,7 @@ export default function ModalBienvenida() {
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">03</span>
                 <div>
-                  <p className="font-bold text-white">Voluntarios solo donde faltan</p>
+                  <p className="font-bold text-fg">Voluntarios solo donde faltan</p>
                   <p className="text-sm text-muted">
                     Solo los envíos que necesitan transporte aparecen a los
                     voluntarios — y únicamente a quienes están cerca y tienen la
@@ -157,7 +157,7 @@ export default function ModalBienvenida() {
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">04</span>
                 <div>
-                  <p className="font-bold text-white">Emergencia y seguridad</p>
+                  <p className="font-bold text-fg">Emergencia y seguridad</p>
                   <p className="text-sm text-muted">
                     Si ya abriste la app una vez, funciona sin internet y puedes
                     compartir puntos por SMS. Coordina con desconocidos solo lo
@@ -174,7 +174,7 @@ export default function ModalBienvenida() {
         {/* Slide 4 — Llamado a la acción */}
         {slide === 3 ? (
           <div>
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-fg">
               Construido sobre el compromiso
             </h2>
             <p className="mt-3 text-base text-muted">

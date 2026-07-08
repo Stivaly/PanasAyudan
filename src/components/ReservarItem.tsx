@@ -289,7 +289,7 @@ export default function ReservarItem({ item, onReservada }: Props) {
         )}
 
         {centroDestinoSel && (
-          <div className="rounded-xl border border-accent bg-surface p-3 text-white">
+          <div className="rounded-xl border border-accent bg-surface p-3 text-fg">
             <p className="text-lg font-bold">{centroDestinoSel.nombre}</p>
             <p className="mt-1 text-sm">{centroDestinoSel.direccion}</p>
             {centroDestinoSel.horario && (
@@ -306,7 +306,7 @@ export default function ReservarItem({ item, onReservada }: Props) {
         )}
 
         {zonaDestinoSel && (
-          <div className="rounded-xl border border-accent bg-surface p-3 text-white">
+          <div className="rounded-xl border border-accent bg-surface p-3 text-fg">
             <p className="text-lg font-bold">{zonaDestinoSel.nombre}</p>
             {zonaDestinoSel.descripcion && (
               <p className="mt-1 text-sm">{zonaDestinoSel.descripcion}</p>

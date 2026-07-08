@@ -48,7 +48,7 @@ export default function SeccionImpacto() {
             key={c.etiqueta}
             className="card flex min-h-24 flex-col items-center justify-center bg-surface/80 text-center"
           >
-            <p className="text-2xl font-bold text-white">{c.valor}</p>
+            <p className="text-2xl font-bold text-fg">{c.valor}</p>
             <p className="mt-1 text-xs text-muted">{c.etiqueta}</p>
           </div>
         ))}

@@ -156,7 +156,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
             Confirma donde estas una sola vez para poder tomar traslados cercanos. Tu ubicacion
             no se guarda: solo se usa para saber tu municipio, y la verificacion vale 24 horas.
           </p>
-          <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-white">
+          <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-fg">
             Rango operativo: 650 km maximo si tienes vehiculo registrado; 300 km maximo sin vehiculo.
           </div>
           <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
@@ -260,7 +260,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   {s.cantidad ? ` de ${s.cantidad}` : ""}
                   {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
                 </p>
-                {s.nota && <p className="mt-1 text-xs text-white">{s.nota}</p>}
+                {s.nota && <p className="mt-1 text-xs text-fg">{s.nota}</p>}
               </div>
               <span className="badge shrink-0">{s.compromiso_status}</span>
             </div>

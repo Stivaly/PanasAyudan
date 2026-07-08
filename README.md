@@ -10,7 +10,7 @@ zona de rescate.
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS
 - Supabase (PostgreSQL + Realtime + RLS + pg_cron)
 - Google Maps JS API (Places Autocomplete + MarkerClusterer + Distance Matrix)
-- PWA (manifest + service worker), modo oscuro forzado
+- PWA (manifest + service worker), modo oscuro por defecto con toggle manual
 
 ## Requisitos
 
@@ -98,7 +98,7 @@ artefacto.
 
 ## Notas
 
-- Modo oscuro siempre activo; no hay toggle de tema.
+- Modo oscuro por defecto con toggle manual; modo claro disponible para luz solar directa.
 - Hay dos identidades, ninguna con login:
   - **Voluntario**: publica en `/dar`, gestiona sus aportes y solicitudes, y
     confirma entregas. Se identifica con un token que se muestra una sola vez al
