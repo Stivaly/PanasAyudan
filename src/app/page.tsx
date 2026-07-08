@@ -72,7 +72,10 @@ export default function Home() {
 
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-3">
         <header className="mb-5 text-center">
-          <p className="mb-3 text-sm font-semibold text-accent" aria-label="Venezuela">
+          <p className="mb-3 inline-flex items-center justify-center gap-2 text-sm font-semibold text-accent" aria-label="Venezuela">
+            <span className="text-xl" aria-hidden="true">
+              🇻🇪
+            </span>
             Venezuela se ayuda
           </p>
           <h1 className="text-3xl font-bold text-white">Panas Ayudan</h1>
@@ -100,12 +103,14 @@ export default function Home() {
         <Link href="/buscar" className="btn-ghost w-full shadow-lg">
           Necesito buscar algo
         </Link>
-        <p className="mt-1 text-center text-xs text-muted">
-          Coordinas recogidas en tu zona?{" "}
-          <Link href="/voluntarios" className="font-semibold text-accent underline">
-            Usa tu codigo de acceso
-          </Link>
-        </p>
+        {!tieneToken && (
+          <p className="mt-1 text-center text-xs text-muted">
+            Coordinas recogidas en tu zona?{" "}
+            <Link href="/voluntarios" className="font-semibold text-accent underline">
+              Usa tu codigo de acceso
+            </Link>
+          </p>
+        )}
         <p className="text-center text-xs text-muted">
           Tienes un centro de acopio o entrega?{" "}
           <Link href="/registrar-nodo" className="font-semibold text-accent underline">
