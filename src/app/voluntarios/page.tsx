@@ -260,7 +260,7 @@ export default function Voluntarios() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <BotonVolver />
+        <BotonVolver destinoFijo="/" />
         <div>
           <h1 className="text-lg font-bold">🇻🇪 Apoyo en traslados</h1>
           {vista === "panel" && <p className="text-xs text-muted">Estas en solicitudes para ayudar</p>}

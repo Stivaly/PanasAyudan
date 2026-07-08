@@ -10,10 +10,12 @@ import { useRouter } from "next/navigation";
 // muerto. Reemplaza a los `<Link href="...">` y a la navegación por estado que
 // hacían que "volver" regresara a un estado anterior de la misma pantalla.
 export default function BotonVolver({
+  destinoFijo,
   fallback = "/",
   className = "rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold",
   children = "←",
 }: {
+  destinoFijo?: string;
   fallback?: string;
   className?: string;
   children?: ReactNode;
@@ -21,6 +23,10 @@ export default function BotonVolver({
   const router = useRouter();
 
   const volver = () => {
+    if (destinoFijo) {
+      router.replace(destinoFijo);
+      return;
+    }
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {

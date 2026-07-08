@@ -258,16 +258,21 @@ export interface Solicitud {
   created_at: string;
 }
 
-export type CompromisoVoluntarioStatus = "pendiente" | "completado" | "incumplido";
+export type CompromisoVoluntarioStatus = "pendiente" | "retirado" | "completado" | "incumplido";
 
 export interface CompromisoVoluntario {
   id: string;
+  compromiso_nodo_id?: string | null;
   magnitud: Magnitud;
   // Conteo concreto comprometido junto a la magnitud (ej. 5 "cajas").
   cantidad: number | null;
   tiempo_estimado_minutos: number;
   status: CompromisoVoluntarioStatus;
   created_at: string;
+  reservado_until?: string | null;
+  retirado_at?: string | null;
+  entrega_deadline?: string | null;
+  atrasado_4h?: boolean;
   // Aviso de 24h (issue #23): compromiso 'pendiente' cuya llegada estimada
   // venció hace más de 24h sin confirmación. Alimenta la badge roja del panel.
   atrasado_24h: boolean;
@@ -283,6 +288,7 @@ export interface CompromisoNodo {
   id: string;
   magnitud: Magnitud;
   cantidad: number | null;
+  cantidad_disponible_transporte?: number | null;
   tiene_transporte: boolean;
   status: CompromisoNodoStatus;
   node_id_compromete: string;
@@ -293,8 +299,12 @@ export interface CompromisoNodo {
 // sobrante calculado, sin detalle de quién comprometió qué ni ubicación alguna.
 export interface SolicitudDisponible {
   id: string;
+  solicitud_id: string;
+  compromiso_nodo_id: string;
   node_id_origen: string;
   nodo_nombre: string;
+  node_id_compromete: string;
+  nodo_origen_nombre: string;
   category_id: string;
   category_name: string;
   subcategoria: string | null;
@@ -305,13 +315,39 @@ export interface SolicitudDisponible {
   // Conteo concreto del pedido junto a la magnitud (ej. 5 "cajas"). Obligatorio
   // al crear; puede ser null en filas anteriores a la migración 0049.
   cantidad: number | null;
+  cantidad_disponible: number;
+  cantidad_solicitada: number | null;
   requiere_vehiculo: boolean;
   status: SolicitudStatus;
+  compromiso_status: CompromisoNodoStatus;
   sobrante: number;
   created_at: string;
   // Issue #20: el municipio del nodo origen está en una zona VIGENTE del
   // voluntario. Las fuera de rango (false) se muestran pero no se pueden tomar.
   en_rango: boolean;
+}
+
+export interface CompromisoVoluntarioActivo {
+  id: string;
+  solicitud_id: string;
+  compromiso_nodo_id: string | null;
+  node_id_origen: string;
+  nodo_nombre: string;
+  node_id_compromete: string | null;
+  nodo_origen_nombre: string | null;
+  category_id: string;
+  category_name: string;
+  subcategoria: string | null;
+  nota: string | null;
+  magnitud: Magnitud;
+  cantidad: number | null;
+  status: "pendiente" | "retirado";
+  created_at: string;
+  reservado_until: string | null;
+  retirado_at: string | null;
+  entrega_deadline: string | null;
+  atrasado_4h: boolean;
+  atrasado_24h: boolean;
 }
 
 export interface SolicitudParaNodo {
@@ -337,6 +373,7 @@ export interface SolicitudParaNodo {
 export interface SolicitudesDisponiblesResp {
   requiere_verificacion: boolean;
   solicitudes: SolicitudDisponible[];
+  compromisos?: CompromisoVoluntarioActivo[];
 }
 
 // Respuesta de verificar_ubicacion_voluntario (issue #20). Nunca incluye

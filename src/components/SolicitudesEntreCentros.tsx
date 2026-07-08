@@ -61,9 +61,9 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
     Boolean(nodeId && token)
   );
 
-  const abrir = (id: string) => {
-    setRespondiendoId(id);
-    setMagnitud("unidades");
+  const abrir = (s: SolicitudParaNodo) => {
+    setRespondiendoId(s.id);
+    setMagnitud(s.magnitud);
     setCantidad("");
     setTieneTransporte(false);
     setError(null);
@@ -129,7 +129,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
                   <input
                     className="field w-1/3"
                     inputMode="numeric"
-                    placeholder="Cantidad"
+                    placeholder={s.sobrante > 0 ? `Max ${s.sobrante}` : "Cantidad"}
                     value={cantidad}
                     onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
                   />
@@ -167,7 +167,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
                 </div>
               </div>
             ) : (
-              <button onClick={() => abrir(s.id)} className="btn-primary mt-3 w-full text-sm">
+              <button onClick={() => abrir(s)} className="btn-primary mt-3 w-full text-sm">
                 Ofrecer apoyo desde este punto
               </button>
             )}

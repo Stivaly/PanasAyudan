@@ -721,7 +721,8 @@ export async function responderSolicitudVoluntario(
   magnitud: string,
   cantidad: number,
   tiempoEstimadoMinutos: number,
-  token: string
+  token: string,
+  compromisoNodoId?: string
 ): Promise<string> {
   const { data, error } = await supabaseWithToken(token).rpc(
     "responder_solicitud_voluntario",
@@ -731,6 +732,7 @@ export async function responderSolicitudVoluntario(
       p_tiempo_estimado: tiempoEstimadoMinutos,
       p_token_voluntario: token,
       p_cantidad: cantidad,
+      p_compromiso_nodo_id: compromisoNodoId ?? null,
     }
   );
   if (error) {
@@ -742,9 +744,28 @@ export async function responderSolicitudVoluntario(
     if (error.message.includes("solicitud_no_disponible")) {
       throw new Error("Esta solicitud ya no admite respuestas.");
     }
+    if (error.message.includes("cantidad_no_disponible")) {
+      throw new Error("La cantidad ya no esta disponible. Revisa la cantidad actualizada.");
+    }
     throw error;
   }
   return data as string;
+}
+
+export async function marcarRetiroCompromiso(
+  compromisoId: string,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("marcar_retiro_compromiso", {
+    p_compromiso_id: compromisoId,
+    p_token: token,
+  });
+  if (error) {
+    if (error.message.includes("compromiso_no_disponible")) {
+      throw new Error("Este traslado ya vencio o fue resuelto.");
+    }
+    throw error;
+  }
 }
 
 // Un admin/colaborador compromete stock de su nodo hacia una solicitud.
@@ -770,6 +791,9 @@ export async function responderSolicitudNodo(
     }
     if (error.message.includes("no_autorizado")) {
       throw new Error("No tienes permiso para comprometer stock de este punto.");
+    }
+    if (error.message.includes("cantidad_no_disponible")) {
+      throw new Error("La solicitud ya no tiene esa cantidad pendiente por cubrir.");
     }
     throw error;
   }

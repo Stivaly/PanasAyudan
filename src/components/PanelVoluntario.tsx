@@ -20,7 +20,7 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-accent">Codigo de acceso activo</p>
-          <h2 className="text-lg font-bold">Solicitudes para ayudar</h2>
+          <h2 className="text-lg font-bold">Traslados para ayudar</h2>
         </div>
         <button onClick={salir} className="text-sm font-semibold text-muted">
           Salir
@@ -28,7 +28,7 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
       </div>
 
       <div className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-        Aqui veras solicitudes de puntos que necesitan apoyo de traslado dentro de tu zona permitida.
+        Aqui veras inventario que otro centro ya ofrecio, pero que necesita transporte voluntario.
       </div>
 
       <SolicitudesDisponibles token={token} />

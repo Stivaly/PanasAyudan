@@ -365,7 +365,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                                   </span>
                                 )}
                               </div>
-                              {c.status === "pendiente" &&
+                              {c.atrasado_4h && (
+                                <span className="text-xs font-semibold text-danger">
+                                  Retiro vencido +4h
+                                </span>
+                              )}
+                              {(c.status === "pendiente" || c.status === "retirado") &&
                                 (confirmandoNoLlego === c.id ? (
                                   <div className="flex flex-wrap items-center gap-2">
                                     <span className="text-xs text-danger">
@@ -412,9 +417,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                             <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface p-2">
                               <span>
                                 {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} - {c.tiene_transporte ? "con transporte" : "sin transporte"} -{" "}
+                                {!c.tiene_transporte && typeof c.cantidad_disponible_transporte === "number"
+                                  ? `${c.cantidad_disponible_transporte} sin voluntario - `
+                                  : ""}
                                 <span className="text-muted">{c.status}</span>
                               </span>
-                              {(c.status === "comprometido" || c.status === "en_camino") && (
+                              {c.tiene_transporte && (c.status === "comprometido" || c.status === "en_camino") && (
                                 <button onClick={() => confirmar(c.id)} className="text-xs font-semibold text-accent">
                                   Confirmar
                                 </button>
