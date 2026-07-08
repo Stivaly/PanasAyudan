@@ -24,10 +24,12 @@ interface Props {
 // Pin circular (sin número). Verde = operativo, ámbar = pausado.
 function pin(pausado: boolean): HTMLDivElement {
   const div = document.createElement("div");
-  const color = pausado ? "#f59e0b" : "#22c55e";
+  const fondo = pausado
+    ? "linear-gradient(135deg,#fbbf24 0%,#f97316 100%)"
+    : "linear-gradient(135deg,#38bdf8 0%,#2563eb 100%)";
   div.style.cssText =
-    `background:${color};width:20px;height:20px;border-radius:9999px;` +
-    "border:3px solid #0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.35);cursor:pointer;";
+    `background:${fondo};width:22px;height:22px;border-radius:9999px;` +
+    "border:3px solid #0a0a0a;box-shadow:0 0 0 1px rgba(255,255,255,.45),0 8px 18px rgba(37,99,235,.35);cursor:pointer;";
   return div;
 }
 
@@ -81,7 +83,35 @@ export default function MapaClusters({ centro, nodos }: Props) {
     });
 
     clustererRef.current?.clearMarkers();
-    clustererRef.current = new MarkerClusterer({ map, markers });
+    clustererRef.current = new MarkerClusterer({
+      map,
+      markers,
+      renderer: {
+        render: ({ count, position }) =>
+          new google.maps.Marker({
+            position,
+            icon: {
+              url:
+                "data:image/svg+xml;charset=UTF-8," +
+                encodeURIComponent(
+                  `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+                    <defs>
+                      <linearGradient id="g" x1="8" y1="6" x2="36" y2="38" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#38bdf8"/>
+                        <stop offset="1" stop-color="#2563eb"/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="22" cy="22" r="18" fill="url(#g)" stroke="#0a0a0a" stroke-width="4"/>
+                    <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1"/>
+                    <text x="22" y="27" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#fff">${count}</text>
+                  </svg>`
+                ),
+              scaledSize: new google.maps.Size(44, 44),
+            },
+            zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+          }),
+      },
+    });
 
     // Ajusta el encuadre para que se vean todos los nodos.
     let zoomListener: google.maps.MapsEventListener | null = null;

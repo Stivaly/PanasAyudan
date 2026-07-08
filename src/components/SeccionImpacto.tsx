@@ -31,10 +31,10 @@ export default function SeccionImpacto() {
   if (!stats) return null;
 
   const cards = [
-    { valor: stats.total_qty_coordinada, etiqueta: "insumos coordinados" },
+    { valor: stats.total_qty_coordinada, etiqueta: "insumos entregados" },
     { valor: stats.total_recogidas_completadas, etiqueta: "entregas completadas" },
-    { valor: stats.lugares_activos, etiqueta: "lugares activos ahora" },
-    { valor: stats.total_aportes_activos, etiqueta: "aportes publicados" },
+    { valor: stats.lugares_activos, etiqueta: "puntos activos" },
+    { valor: stats.total_aportes_activos, etiqueta: "solicitudes activas" },
   ];
 
   return (

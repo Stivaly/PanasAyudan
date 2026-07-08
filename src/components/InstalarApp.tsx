@@ -34,13 +34,12 @@ export default function InstalarApp() {
     localStorage.setItem(KEY_VISITA, "1");
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- detección de plataforma intencional en el montaje
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- se deriva del navegador al montar el banner
     setEsIos(ios);
 
     let timer: ReturnType<typeof setTimeout> | null = null;
     const activar = () => {
       if (segundaVisita) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- el banner en segunda visita se decide al montar, por diseño
         setMostrar(true);
       } else {
         timer = setTimeout(() => setMostrar(true), 30000);

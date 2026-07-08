@@ -1116,31 +1116,9 @@ export async function solicitarReposicion(
 // igual, con categorias vacías. La RLS pública de node_inventory (#22) ya acota a
 // nodos visibles/verificados, así que el filtro aquí es defensivo y consistente.
 export async function getNodosPublicos(): Promise<NodoPublico[]> {
-  const { data, error } = await supabase
-    .from("centros_acopio")
-    .select(
-      "id, nombre, tipo, direccion, estado_id, horario, lat, lng, status, pausado_recepcion, pausado_entrega, node_inventory(disponible, category:categories(id, name, slug))"
-    )
-    .in("status", ["activo", "pausado"])
-    .not("verificado_at", "is", null)
-    .eq("node_inventory.disponible", true)
-    .order("nombre");
+  const { data, error } = await supabase.rpc("listar_nodos_publicos");
   if (error) throw error;
-
-  type Row = NodoPublicoBase & {
-    node_inventory: { disponible: boolean; category: Category | null }[] | null;
-  };
-
-  // Supabase infiere las relaciones anidadas como arrays; el cast por unknown
-  // refleja la cardinalidad real (category es to-one).
-  return (data as unknown as Row[]).map((row) => {
-    const { node_inventory, ...base } = row;
-    const categorias = new Map<string, Category>();
-    for (const inv of node_inventory ?? []) {
-      if (inv.category) categorias.set(inv.category.id, inv.category);
-    }
-    return { ...base, categorias: Array.from(categorias.values()) };
-  });
+  return (data ?? []) as NodoPublico[];
 }
 
 // Un nodo público por id (detalle). Devuelve null si no es visible/verificado

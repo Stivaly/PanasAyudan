@@ -46,7 +46,9 @@ textarea {
     @apply inline-flex items-center justify-center rounded-xl px-5 py-4 text-lg font-semibold transition-colors;
   }
   .btn-primary {
-    @apply btn bg-accent text-black active:bg-green-600;
+    @apply btn bg-accent text-black active:bg-sky-600;
+    background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+    color: #f8fafc;
   }
   .btn-danger {
     @apply btn bg-danger text-white active:bg-red-600;
@@ -61,8 +63,9 @@ textarea {
     @apply rounded-2xl border border-border bg-surface p-4;
   }
   .badge {
-    background: #62A04D;
-    color: #fff;
+    background: rgba(37, 99, 235, 0.18);
+    color: #bfdbfe;
+    border: 1px solid rgba(96, 165, 250, 0.35);
     font-size: 0.75rem;
     padding: 2px 8px;
     border-radius: 9999px;

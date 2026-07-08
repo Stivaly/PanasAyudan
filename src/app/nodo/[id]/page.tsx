@@ -123,11 +123,13 @@ export default function NodoDetalle() {
           {TIPO_LABEL[nodo.tipo] ?? nodo.tipo}
         </span>
         {pausado ? (
-          <span className="badge border-amber-500 text-amber-400">
+          <span className="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-200">
             Pausado{pausa ? `: ${pausa}` : ""}
           </span>
         ) : (
-          <span className="badge border-accent text-accent">Operativo</span>
+          <span className="rounded-full border border-sky-400/40 bg-sky-500/15 px-2 py-0.5 text-xs font-semibold text-sky-100">
+            Operativo
+          </span>
         )}
       </div>
 

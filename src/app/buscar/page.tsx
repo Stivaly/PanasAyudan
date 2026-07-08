@@ -37,12 +37,16 @@ export default function Buscar() {
 
   // Filtra por estado (estado_id) y por macrocategoría disponible (slug).
   const nodosFiltrados = useMemo(() => {
+    const categoriaSeleccionada = categorias.find((c) => c.slug === activa);
     return nodos.filter(
       (n) =>
         (!estadoId || n.estado_id === estadoId) &&
-        (!activa || n.categorias.some((c) => c.slug === activa))
+        (!activa ||
+          n.categorias.some(
+            (c) => c.slug === activa || (categoriaSeleccionada && c.id === categoriaSeleccionada.id)
+          ))
     );
-  }, [nodos, activa, estadoId]);
+  }, [nodos, activa, estadoId, categorias]);
 
   // Marcadores del mapa: solo nodos con coordenadas, sin contador de stock.
   const marcadores = useMemo<NodoMapa[]>(
@@ -104,7 +108,11 @@ export default function Buscar() {
   if (verMapa) {
     return (
       <main className="relative h-dvh w-full overflow-hidden">
-        <MapaClusters centro={centro} nodos={marcadores} />
+        <MapaClusters
+          key={`${estadoId ?? "todos"}-${activa ?? "todas"}-${marcadores.map((m) => m.id).join("|")}`}
+          centro={centro}
+          nodos={marcadores}
+        />
         <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-bg/95 to-transparent pb-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2 px-3 pb-2">
             <button
