@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatEstadoNombre } from "@/lib/estados";
 import { PuntoMapa } from "@/hooks/useItemsRealtime";
 
 interface Props {
@@ -35,7 +36,7 @@ export default function ListaLugares({ puntos }: Props) {
                 ))}
               </div>
               {p.location.estado && (
-                <span className="badge self-start">{p.location.estado.nombre}</span>
+                <span className="badge self-start">{formatEstadoNombre(p.location.estado.nombre)}</span>
               )}
               {p.location.address && (
                 <span className="text-xs text-muted">{p.location.address}</span>

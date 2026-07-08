@@ -10,6 +10,7 @@ import {
   modificarQtyRecogida,
 } from "@/lib/api";
 import { getRecogedorToken } from "@/lib/recogedor";
+import { formatEstadoNombre } from "@/lib/estados";
 import { RecogidaConDetalle } from "@/lib/types";
 import Countdown from "@/components/Countdown";
 
@@ -160,7 +161,7 @@ function PendienteCard({
         <div>
           <p className="font-semibold">{r.aporte_item?.descripcion ?? "Insumo"}</p>
           <p className="text-xs text-muted">{lugar?.place_name ?? "Lugar"}</p>
-          {lugar?.estado && <span className="badge mt-1 inline-block">{lugar.estado}</span>}
+          {lugar?.estado && <span className="badge mt-1 inline-block">{formatEstadoNombre(lugar.estado)}</span>}
           {lugar?.descripcion_libre && (
             <p className="mt-1 text-sm">{lugar.descripcion_libre}</p>
           )}
@@ -431,7 +432,7 @@ export default function MisRecogidas() {
                       {r.aporte_item?.descripcion ?? "Insumo"}
                     </p>
                     <p className="text-xs text-muted">{lugar?.place_name ?? "Lugar"}</p>
-                    {lugar?.estado && <span className="badge mt-1 inline-block">{lugar.estado}</span>}
+                    {lugar?.estado && <span className="badge mt-1 inline-block">{formatEstadoNombre(lugar.estado)}</span>}
                     {lugar?.descripcion_libre && (
                       <p className="mt-1 text-sm">{lugar.descripcion_libre}</p>
                     )}

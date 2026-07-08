@@ -10,6 +10,7 @@ import {
   getZonasRescatePorEstado,
 } from "@/lib/api";
 import { getRecogedorLocal, getRecogedorToken, saveRecogedorLocal } from "@/lib/recogedor";
+import { formatEstadoNombre } from "@/lib/estados";
 import {
   validarCedula,
   formatearCedula,
@@ -247,7 +248,7 @@ export default function ReservarItem({ item, onReservada }: Props) {
           </option>
           {estados.map((e) => (
             <option key={e.id} value={e.id}>
-              {e.nombre}
+              {formatEstadoNombre(e.nombre)}
             </option>
           ))}
         </select>

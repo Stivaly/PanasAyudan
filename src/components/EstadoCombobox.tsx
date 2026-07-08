@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEstadoNombre } from "@/lib/estados";
 import { EstadoVenezuela } from "@/lib/types";
 
 interface Props {
@@ -39,7 +40,7 @@ export default function EstadoCombobox({
         )}
         {estados.map((estado) => (
           <option key={estado.id} value={estado.id}>
-            {estado.nombre}
+            {formatEstadoNombre(estado.nombre)}
           </option>
         ))}
       </select>

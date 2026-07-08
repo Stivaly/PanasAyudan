@@ -7,38 +7,42 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import BotonVolver from "@/components/BotonVolver";
-import FiltroCategorias from "@/components/FiltroCategorias";
+import FiltrosBuscar from "@/components/FiltrosBuscar";
 import ListaNodos from "@/components/ListaNodos";
 import type { NodoMapa } from "@/components/MapaClusters";
 import { useNodosPublicos } from "@/hooks/useNodosPublicos";
-import { getCategorias } from "@/lib/api";
+import { getCategorias, getEstados } from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
-import { Category, Coords, statusVisible } from "@/lib/types";
+import { Category, Coords, EstadoVenezuela, statusVisible } from "@/lib/types";
 
 const MapaClusters = dynamic(() => import("@/components/MapaClusters"), { ssr: false });
 
+// Nodos por página en la lista: acota la altura para que no baje infinito.
+const POR_PAGINA = 8;
+
 export default function Buscar() {
   const [categorias, setCategorias] = useState<Category[]>([]);
+  const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [activa, setActiva] = useState<string | null>(null);
+  const [estadoId, setEstadoId] = useState<string | null>(null);
   const [verMapa, setVerMapa] = useState(false);
-  const [centro, setCentro] = useState<Coords>(CARACAS);
+  const [pagina, setPagina] = useState(1);
+  const [centroUsuario, setCentroUsuario] = useState<Coords>(CARACAS);
   const { nodos, cargando } = useNodosPublicos();
 
   useEffect(() => {
-    getCategorias()
-      .then(setCategorias)
-      .catch(() => {});
+    getCategorias().then(setCategorias).catch(() => {});
+    getEstados().then(setEstados).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (verMapa) resolverCentro().then(setCentro);
-  }, [verMapa]);
-
-  // Filtra por macrocategoría disponible (slug). Sin filtro => todos.
+  // Filtra por estado (estado_id) y por macrocategoría disponible (slug).
   const nodosFiltrados = useMemo(() => {
-    if (!activa) return nodos;
-    return nodos.filter((n) => n.categorias.some((c) => c.slug === activa));
-  }, [nodos, activa]);
+    return nodos.filter(
+      (n) =>
+        (!estadoId || n.estado_id === estadoId) &&
+        (!activa || n.categorias.some((c) => c.slug === activa))
+    );
+  }, [nodos, activa, estadoId]);
 
   // Marcadores del mapa: solo nodos con coordenadas, sin contador de stock.
   const marcadores = useMemo<NodoMapa[]>(
@@ -55,8 +59,46 @@ export default function Buscar() {
     [nodosFiltrados]
   );
 
+  // El mapa lleva a la persona hacia los puntos disponibles: el centro inicial es
+  // el centroide de los marcadores (MapaClusters luego ajusta el encuadre con
+  // fitBounds). Solo si no hay puntos se recurre a la ubicación del usuario.
+  const centroPuntos = useMemo<Coords | null>(() => {
+    if (marcadores.length === 0) return null;
+    const suma = marcadores.reduce(
+      (acc, m) => ({ lat: acc.lat + m.lat, lng: acc.lng + m.lng }),
+      { lat: 0, lng: 0 }
+    );
+    return { lat: suma.lat / marcadores.length, lng: suma.lng / marcadores.length };
+  }, [marcadores]);
+
+  useEffect(() => {
+    if (verMapa && !centroPuntos) resolverCentro().then(setCentroUsuario);
+  }, [verMapa, centroPuntos]);
+
+  const centro = centroPuntos ?? centroUsuario;
+
+  // Reinicia a la primera página cuando cambian los filtros o la lista.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPagina(1);
+  }, [activa, estadoId, nodosFiltrados.length]);
+
+  const totalPaginas = Math.max(1, Math.ceil(nodosFiltrados.length / POR_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const visibles = nodosFiltrados.slice(
+    (paginaActual - 1) * POR_PAGINA,
+    paginaActual * POR_PAGINA
+  );
+
   const filtros = (
-    <FiltroCategorias categorias={categorias} activa={activa} onChange={setActiva} />
+    <FiltrosBuscar
+      estados={estados}
+      categorias={categorias}
+      estadoId={estadoId}
+      categoria={activa}
+      onEstado={setEstadoId}
+      onCategoria={setActiva}
+    />
   );
 
   if (verMapa) {
@@ -71,7 +113,9 @@ export default function Buscar() {
             >
               ← Lista
             </button>
-            <span className="text-sm font-semibold text-muted">Mapa</span>
+            <span className="text-sm font-semibold text-muted">
+              Mapa · {marcadores.length} punto{marcadores.length === 1 ? "" : "s"}
+            </span>
           </div>
           <div className="px-3">{filtros}</div>
         </div>
@@ -98,7 +142,33 @@ export default function Buscar() {
         <p className="text-muted">No hay puntos de ayuda disponibles con este filtro.</p>
       )}
 
-      {!cargando && nodosFiltrados.length > 0 && <ListaNodos nodos={nodosFiltrados} />}
+      {!cargando && nodosFiltrados.length > 0 && (
+        <>
+          <ListaNodos nodos={visibles} />
+
+          {totalPaginas > 1 && (
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <button
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                disabled={paginaActual === 1}
+                className="btn-ghost text-sm disabled:opacity-40"
+              >
+                ← Anterior
+              </button>
+              <span className="text-xs font-semibold text-muted">
+                Página {paginaActual} de {totalPaginas}
+              </span>
+              <button
+                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                disabled={paginaActual === totalPaginas}
+                className="btn-ghost text-sm disabled:opacity-40"
+              >
+                Siguiente →
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </main>
   );
 }
