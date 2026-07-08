@@ -42,11 +42,11 @@ export default function SeccionImpacto() {
       <h2 className="mb-3 text-center text-sm font-semibold text-muted">
         Lo que hemos logrado juntos
       </h2>
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+      <div className="grid grid-cols-2 gap-3">
         {cards.map((c) => (
           <div
             key={c.etiqueta}
-            className="card min-w-[8.5rem] shrink-0 bg-surface/80 text-center"
+            className="card flex min-h-24 flex-col items-center justify-center bg-surface/80 text-center"
           >
             <p className="text-2xl font-bold text-white">{c.valor}</p>
             <p className="mt-1 text-xs text-muted">{c.etiqueta}</p>

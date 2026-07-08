@@ -88,15 +88,6 @@ export default function Home() {
           </p>
         </div>
 
-        {tieneToken && (
-          <div className="rounded-xl border border-green-400/40 bg-green-500/10 p-3 text-sm">
-            <p className="font-semibold text-green-100">Sesion activa</p>
-            <Link href={panel.href} className="mt-1 inline-block font-semibold text-accent underline">
-              {panel.label}
-            </Link>
-          </div>
-        )}
-
         {tieneToken ? (
           <Link href={panel.href} className="btn-primary w-full shadow-lg">
             {panel.label}
