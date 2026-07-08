@@ -305,8 +305,10 @@ export interface SolicitudDisponible {
   compromiso_nodo_id: string;
   node_id_origen: string;
   nodo_nombre: string;
+  nodo_direccion: string | null;
   node_id_compromete: string;
   nodo_origen_nombre: string;
+  nodo_origen_direccion: string | null;
   category_id: string;
   category_name: string;
   subcategoria: string | null;
@@ -335,8 +337,10 @@ export interface CompromisoVoluntarioActivo {
   compromiso_nodo_id: string | null;
   node_id_origen: string;
   nodo_nombre: string;
+  nodo_direccion: string | null;
   node_id_compromete: string | null;
   nodo_origen_nombre: string | null;
+  nodo_origen_direccion: string | null;
   category_id: string;
   category_name: string;
   subcategoria: string | null;

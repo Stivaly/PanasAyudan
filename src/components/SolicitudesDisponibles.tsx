@@ -139,6 +139,9 @@ export default function SolicitudesDisponibles({ token }: Props) {
     }).format(new Date(valor));
   };
 
+  const retiroTexto = (direccion?: string | null, nombre?: string | null) =>
+    direccion?.trim() || nombre?.trim() || "Direccion de retiro no disponible";
+
   return (
     <section className="flex flex-col gap-3">
       <h3 className="text-lg font-bold">Traslados disponibles</h3>
@@ -181,8 +184,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
                     {c.subcategoria ? " - " + c.subcategoria : ""}
                   </p>
                   <p className="text-xs text-muted">
-                    Retiro: {c.nodo_origen_nombre ?? "Centro de origen"} - Entrega: {c.nodo_nombre}
+                    Retiro: {retiroTexto(c.nodo_origen_direccion, c.nodo_origen_nombre)}
                   </p>
+                  {c.nodo_origen_nombre && (
+                    <p className="text-xs text-muted">Centro: {c.nodo_origen_nombre}</p>
+                  )}
+                  <p className="text-xs text-muted">Entrega: {c.nodo_nombre}</p>
                   <p className="mt-1 text-xs text-muted">
                     Reservado: {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud}
                   </p>
@@ -242,8 +249,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   {s.subcategoria ? " - " + s.subcategoria : ""}
                 </p>
                 <p className="text-xs text-muted">
-                  Retiro: {s.nodo_origen_nombre} - Entrega: {s.nodo_nombre}
+                  Retiro: {retiroTexto(s.nodo_origen_direccion, s.nodo_origen_nombre)}
                 </p>
+                {s.nodo_origen_nombre && (
+                  <p className="text-xs text-muted">Centro: {s.nodo_origen_nombre}</p>
+                )}
+                <p className="text-xs text-muted">Entrega: {s.nodo_nombre}</p>
                 <p className="mt-1 text-xs text-muted">
                   Disponible para transportar: {s.cantidad_disponible} {s.magnitud}
                   {s.cantidad ? ` de ${s.cantidad}` : ""}
