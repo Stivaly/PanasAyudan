@@ -74,12 +74,13 @@ export default function ModalBienvenida() {
               Coordinamos insumos de emergencia en Venezuela
             </h2>
             <p className="mt-3 text-base text-muted">
-              Los centros de acopio reciben más de lo que pueden distribuir.
-              PanasAyudan conecta esos excedentes con otros centros o zonas de
-              rescate que los necesitan — con voluntarios que los llevan.
+              Los puntos de ayuda aprobados y verificados publican lo que
+              tienen y solicitan lo que les falta. La app los conecta entre sí
+              — y con voluntarios cuando un envío necesita transporte.
+              Cualquier persona puede consultar los puntos sin registrarse.
             </p>
             <p className="mt-3 border-l-2 border-accent pl-3 text-sm text-muted">
-              No es entrega a domicilio. Es logística entre puntos de acopio.
+              No es entrega a domicilio: acércate al punto en su horario y retira.
             </p>
           </div>
         ) : null}
@@ -94,20 +95,17 @@ export default function ModalBienvenida() {
               <div className="card flex-1 border-green-700">
                 <p className="font-semibold text-white">✓ Es para ti si...</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-                  <li>
-                    Tienes vehículo y puedes mover cajas entre puntos de la
-                    ciudad
-                  </li>
-                  <li>Coordinas o apoyas en un centro de acopio o zona de rescate</li>
-                  <li>Puedes comprometerte a completar lo que reservas</li>
+                  <li>Buscas insumos: entra sin registro y encuentra el punto más cercano</li>
+                  <li>Administras o colaboras en un centro de acopio o punto de entrega</li>
+                  <li>Puedes transportar ayuda entre puntos, con o sin vehículo</li>
                 </ul>
               </div>
               <div className="card flex-1">
                 <p className="font-semibold text-white">Esta app no es para...</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
                   <li>Recibir insumos en tu casa o negocio</li>
-                  <li>Donaciones sin coordinación previa</li>
-                  <li>Quienes no puedan comprometerse con la recogida</li>
+                  <li>Donaciones sin coordinar con un centro</li>
+                  <li>Publicar sin ser un punto aprobado y verificado</li>
                 </ul>
               </div>
             </div>
@@ -135,22 +133,24 @@ export default function ModalBienvenida() {
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">02</span>
                 <div>
-                  <p className="font-bold text-white">Los centros publican y piden</p>
+                  <p className="font-bold text-white">Los centros se coordinan entre sí</p>
                   <p className="text-sm text-muted">
-                    Cada centro aprobado carga su inventario y solicita lo que
-                    le falta. Otros centros pueden comprometer stock para
-                    enviárselo.
+                    Cada centro aprobado administra su inventario y solicita lo
+                    que le falta. Otro centro puede comprometer su stock — y si
+                    ya tiene quién lo lleve (alguien de su confianza, sin
+                    registro), el envío queda en camino.
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">03</span>
                 <div>
-                  <p className="font-bold text-white">Un voluntario lo lleva</p>
+                  <p className="font-bold text-white">Voluntarios solo donde faltan</p>
                   <p className="text-sm text-muted">
-                    Los voluntarios verifican su ubicación una sola vez y ven
-                    las solicitudes cercanas que necesitan transporte. Responden
-                    &quot;yo lo llevo&quot; con hora estimada y cantidad.
+                    Solo los envíos que necesitan transporte aparecen a los
+                    voluntarios — y únicamente a quienes están cerca y tienen la
+                    capacidad necesaria. Responden &quot;yo lo llevo&quot; con
+                    hora estimada y cantidad.
                   </p>
                 </div>
               </div>
@@ -178,10 +178,11 @@ export default function ModalBienvenida() {
               Construido sobre el compromiso
             </h2>
             <p className="mt-3 text-base text-muted">
-              Sabemos que en una emergencia hay personas que actúan de buena fe
-              y otras que no. Por eso la app bloquea automáticamente a quienes
-              reservan y no cumplen — protegiendo el tiempo y los recursos de
-              quienes sí están ayudando.
+              En una emergencia hay quien actúa de buena fe y quien no. Cada
+              compromiso de transporte se confirma al llegar: si el centro
+              marca que no llegó, esa cédula queda bloqueada de forma
+              permanente — protegiendo el tiempo y los recursos de quienes sí
+              están ayudando.
             </p>
             <div className="mt-5 flex flex-col gap-4 min-[360px]:flex-row">
               <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
@@ -198,7 +199,7 @@ export default function ModalBienvenida() {
                 >
                   <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
                 </svg>
-                <span className="mt-1">Cédula verificada al reservar</span>
+                <span className="mt-1">Cédula al registrarte de voluntario</span>
               </div>
               <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
                 <svg
@@ -215,7 +216,7 @@ export default function ModalBienvenida() {
                   <circle cx="12" cy="12" r="9" />
                   <path d="M12 12V6M12 12h5" />
                 </svg>
-                <span className="mt-1">4 horas para recoger</span>
+                <span className="mt-1">Llegadas confirmadas por el centro</span>
               </div>
               <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
                 <svg
@@ -232,7 +233,7 @@ export default function ModalBienvenida() {
                   <rect x="5" y="11" width="14" height="9" rx="1.5" />
                   <path d="M8 11V7a4 4 0 018 0v4" />
                 </svg>
-                <span className="mt-1">Contacto protegido hasta confirmar</span>
+                <span className="mt-1">Contactos solo entre coordinadores</span>
               </div>
             </div>
             <div className="mt-5 flex flex-col gap-3">
@@ -241,7 +242,7 @@ export default function ModalBienvenida() {
                 onClick={cerrar}
                 className="btn-primary min-h-[44px] w-full"
               >
-                Explorar insumos disponibles
+                Ver puntos de ayuda
               </button>
               <button
                 type="button"
