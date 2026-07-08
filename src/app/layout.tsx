@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import KeepAlive from "@/components/KeepAlive";
 import RegistrarSW from "@/components/RegistrarSW";
+import InstalarApp from "@/components/InstalarApp";
 import RecargarEnChunkError from "@/components/RecargarEnChunkError";
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body className="min-h-dvh bg-bg text-white antialiased" suppressHydrationWarning>
         <KeepAlive />
         <RegistrarSW />
+        <InstalarApp />
         <RecargarEnChunkError />
         {children}
       </body>
