@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getEstados, listarNodosAdmin, pausarNodo } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
 import EditarNodo from "@/components/EditarNodo";
+import EstadoMovimientosNodo from "@/components/EstadoMovimientosNodo";
 import InventarioNodo from "@/components/InventarioNodo";
 import NodoTabBar, { NodoTab } from "@/components/NodoTabBar";
 import SolicitudesEntreCentros from "@/components/SolicitudesEntreCentros";
@@ -218,6 +219,7 @@ export default function NodoAdminPanel() {
                     </button>
                   </div>
                 )}
+                {!pendienteVerificacion && <EstadoMovimientosNodo nodeId={activo.id} token={token} />}
               </div>
             )}
 

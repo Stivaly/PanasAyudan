@@ -405,6 +405,61 @@ export interface SolicitudNodo {
   compromisos_nodo: CompromisoNodo[];
 }
 
+export interface MovimientoNodoSaliente {
+  id: string;
+  solicitud_id: string;
+  node_id_compromete: string;
+  node_id_destino: string;
+  destino_nombre: string;
+  category_name: string;
+  subcategoria: string | null;
+  nota: string | null;
+  magnitud: Magnitud;
+  cantidad: number | null;
+  tiene_transporte: boolean;
+  status: CompromisoNodoStatus;
+  created_at: string;
+  cantidad_con_voluntario: number;
+  cantidad_sin_voluntario: number;
+  puede_cancelar: boolean;
+  puede_editar: boolean;
+  puede_marcar_enviado: boolean;
+}
+
+export interface MovimientoNodoVoluntario {
+  id: string;
+  nombre: string;
+  cantidad: number | null;
+  magnitud: Magnitud;
+  status: CompromisoVoluntarioStatus;
+  reservado_until: string | null;
+  retirado_at: string | null;
+  entrega_deadline: string | null;
+}
+
+export interface MovimientoNodoEntrante {
+  id: string;
+  solicitud_id: string;
+  node_id_compromete: string;
+  origen_nombre: string;
+  category_name: string;
+  subcategoria: string | null;
+  nota: string | null;
+  magnitud: Magnitud;
+  cantidad: number | null;
+  tiene_transporte: boolean;
+  status: CompromisoNodoStatus;
+  created_at: string;
+  transportista: string;
+  voluntarios: MovimientoNodoVoluntario[];
+  puede_confirmar_recepcion: boolean;
+}
+
+export interface MovimientosNodoResp {
+  salientes: MovimientoNodoSaliente[];
+  entrantes: MovimientoNodoEntrante[];
+}
+
 // Datos que viajan a crear_solicitud (p_datos jsonb).
 export interface SolicitudData {
   category_id: string;

@@ -57,20 +57,24 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     () => [
       {
         titulo: "Abiertas",
+        descripcion: "Pedidos publicados que aun nadie tomo.",
         solicitudes: solicitudes.filter((s) => s.status === "abierta"),
       },
       {
         titulo: "Con compromiso",
+        descripcion: "Alguien ya prometio inventario o transporte, pero aun no esta marcado como enviado.",
         solicitudes: solicitudes.filter(
           (s) => s.status === "parcial" || s.status === "inventario_asegurado"
         ),
       },
       {
         titulo: "En camino",
+        descripcion: "El centro que transporta ya marco Enviado.",
         solicitudes: solicitudes.filter((s) => s.status === "en_camino"),
       },
       {
         titulo: "Recibidas/cerradas",
+        descripcion: "Pedidos confirmados como recibidos.",
         solicitudes: solicitudes.filter((s) => s.status === "cerrada"),
       },
     ],
@@ -328,7 +332,10 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
         grupos.map((grupo) =>
           grupo.solicitudes.length > 0 ? (
             <div key={grupo.titulo} className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase text-muted">{grupo.titulo}</p>
+              <div>
+                <p className="text-xs font-semibold uppercase text-muted">{grupo.titulo}</p>
+                <p className="text-xs text-muted">{grupo.descripcion}</p>
+              </div>
               {grupo.solicitudes.map((s) => (
                 <div key={s.id} className="rounded-xl bg-bg p-3 text-sm">
                   <div className="flex items-start justify-between gap-2">
@@ -422,7 +429,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                                   : ""}
                                 <span className="text-muted">{c.status}</span>
                               </span>
-                              {c.tiene_transporte && (c.status === "comprometido" || c.status === "en_camino") && (
+                              {c.tiene_transporte && c.status === "en_camino" && (
                                 <button onClick={() => confirmar(c.id)} className="text-xs font-semibold text-accent">
                                   Confirmar
                                 </button>

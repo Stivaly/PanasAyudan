@@ -36,6 +36,7 @@ import {
   NodoPublico,
   NodoPublicoBase,
   InventarioPublicoItem,
+  MovimientosNodoResp,
 } from "./types";
 
 export async function getCategorias(): Promise<Category[]> {
@@ -798,6 +799,66 @@ export async function responderSolicitudNodo(
     throw error;
   }
   return data as string;
+}
+
+export async function listarMovimientosNodo(
+  nodeId: string,
+  token: string
+): Promise<MovimientosNodoResp> {
+  const { data, error } = await supabaseWithToken(token).rpc("listar_movimientos_nodo", {
+    p_node_id: nodeId,
+    p_token: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No administras este punto.");
+    }
+    throw error;
+  }
+  return (data ?? { salientes: [], entrantes: [] }) as MovimientosNodoResp;
+}
+
+export async function marcarCompromisoNodoEnviado(
+  compromisoId: string,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("marcar_compromiso_nodo_enviado", {
+    p_compromiso_id: compromisoId,
+    p_token: token,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No puedes marcar este envio.");
+    }
+    if (error.message.includes("compromiso_no_enviable")) {
+      throw new Error("Este compromiso ya no puede marcarse como enviado.");
+    }
+    throw error;
+  }
+}
+
+export async function editarCompromisoNodo(
+  compromisoId: string,
+  cantidad: number,
+  token: string
+): Promise<void> {
+  const { error } = await supabaseWithToken(token).rpc("editar_compromiso_nodo", {
+    p_compromiso_id: compromisoId,
+    p_token: token,
+    p_cantidad: cantidad,
+  });
+  if (error) {
+    if (error.message.includes("no_autorizado")) {
+      throw new Error("No puedes editar este compromiso.");
+    }
+    if (error.message.includes("compromiso_no_editable")) {
+      throw new Error("Solo puedes editar antes de enviarlo o asignarle transporte.");
+    }
+    if (error.message.includes("cantidad_no_disponible")) {
+      throw new Error("Esa cantidad ya no esta disponible.");
+    }
+    throw error;
+  }
 }
 
 // Cancela un compromiso (de voluntario o de nodo). p_motivo opcional:
