@@ -37,7 +37,6 @@ export default function Voluntarios() {
   const [cedula, setCedula] = useState("");
   const [telefono, setTelefono] = useState("");
   const [telegram, setTelegram] = useState("");
-  const [zona, setZona] = useState("");
   // Capacidad de vehículo (issue #19): al registrarse se pregunta si tiene
   // vehículo; si sí, se pide peso y volumen aproximado que puede transportar.
   const [tieneVehiculo, setTieneVehiculo] = useState(false);
@@ -203,7 +202,6 @@ export default function Voluntarios() {
         cedula: limpiarCedula(cedula),
         telefono: telefonoNormalizado,
         telegram: telegramNormalizado || null,
-        zona_descripcion: zona.trim() || null,
         centro_acopio_id: centroAcopioId || null,
         tiene_vehiculo: tieneVehiculo,
         capacidad_peso_kg: pesoNum,
@@ -421,12 +419,6 @@ export default function Voluntarios() {
             }}
           />
           {telegramError && <p className="text-sm font-semibold text-danger">{telegramError}</p>}
-          <textarea
-            className="field min-h-24"
-            placeholder="Tu zona de cobertura (texto libre, ej: Chacao y alrededores)"
-            value={zona}
-            onChange={(e) => setZona(e.target.value)}
-          />
           <label className="flex items-center gap-2 rounded-xl border border-border bg-bg p-3 text-sm">
             <input
               type="checkbox"

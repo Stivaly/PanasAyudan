@@ -344,7 +344,6 @@ export async function registrarVoluntario(input: {
   cedula: string;
   telefono: string | null;
   telegram: string | null;
-  zona_descripcion: string | null;
   centro_acopio_id: string | null;
   // Capacidad de vehículo (issue #19). Opcionales: la RPC los toma con default
   // false/null, así que omitirlos mantiene el registro libre sin vehículo.
@@ -362,7 +361,6 @@ export async function registrarVoluntario(input: {
       // así que no se requiere migración para la nulabilidad de las columnas.
       p_telefono: input.telefono?.trim() || null,
       p_telegram: input.telegram?.trim() || null,
-      p_zona: input.zona_descripcion,
       p_centro_acopio_id: input.centro_acopio_id,
       p_tiene_vehiculo: input.tiene_vehiculo ?? false,
       p_capacidad_peso_kg: input.capacidad_peso_kg ?? null,

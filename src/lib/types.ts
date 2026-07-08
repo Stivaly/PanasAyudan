@@ -216,7 +216,6 @@ export interface Volunteer {
   apellido: string;
   telefono: string | null;
   telegram: string | null;
-  zona_descripcion: string | null;
   centro_acopio_id?: string | null;
   role?: VolunteerRole;
   token: string;
