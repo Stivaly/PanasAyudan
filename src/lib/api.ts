@@ -837,30 +837,6 @@ export async function marcarCompromisoNodoEnviado(
   }
 }
 
-export async function editarCompromisoNodo(
-  compromisoId: string,
-  cantidad: number,
-  token: string
-): Promise<void> {
-  const { error } = await supabaseWithToken(token).rpc("editar_compromiso_nodo", {
-    p_compromiso_id: compromisoId,
-    p_token: token,
-    p_cantidad: cantidad,
-  });
-  if (error) {
-    if (error.message.includes("no_autorizado")) {
-      throw new Error("No puedes editar este compromiso.");
-    }
-    if (error.message.includes("compromiso_no_editable")) {
-      throw new Error("Solo puedes editar antes de enviarlo o asignarle transporte.");
-    }
-    if (error.message.includes("cantidad_no_disponible")) {
-      throw new Error("Esa cantidad ya no esta disponible.");
-    }
-    throw error;
-  }
-}
-
 // Cancela un compromiso (de voluntario o de nodo). p_motivo opcional:
 // 'incumplimiento' para que el admin del nodo origen marque no-cumplimiento.
 export async function cancelarCompromiso(

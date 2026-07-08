@@ -263,6 +263,7 @@ export type CompromisoVoluntarioStatus = "pendiente" | "retirado" | "completado"
 export interface CompromisoVoluntario {
   id: string;
   compromiso_nodo_id?: string | null;
+  nombre?: string | null;
   magnitud: Magnitud;
   // Conteo concreto comprometido junto a la magnitud (ej. 5 "cajas").
   cantidad: number | null;
@@ -286,6 +287,7 @@ export type CompromisoNodoStatus =
 
 export interface CompromisoNodo {
   id: string;
+  nodo_nombre?: string | null;
   magnitud: Magnitud;
   cantidad: number | null;
   cantidad_disponible_transporte?: number | null;

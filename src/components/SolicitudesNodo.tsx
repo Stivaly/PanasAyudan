@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  confirmarEntregaCompromiso,
-  confirmarLlegadaCompromiso,
   crearSolicitud,
   editarSolicitud,
   eliminarSolicitud,
@@ -38,12 +36,8 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [cantidad, setCantidad] = useState("");
   const [nota, setNota] = useState("");
   const [requiereVehiculo, setRequiereVehiculo] = useState(false);
-  const [confirmandoNoLlego, setConfirmandoNoLlego] = useState<string | null>(null);
-  // id de la solicitud en edición (null = el formulario crea una nueva).
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
-  // Subcategoría a pre-seleccionar al editar: se aplica cuando sus opciones ya
-  // cargaron (el efecto de categoría limpia subcategoryId primero). null = nada.
   const [subPendiente, setSubPendiente] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -61,16 +55,14 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
         solicitudes: solicitudes.filter((s) => s.status === "abierta"),
       },
       {
-        titulo: "Con compromiso",
-        descripcion: "Alguien ya prometio inventario o transporte, pero aun no esta marcado como enviado.",
+        titulo: "Compromisos recibidos",
+        descripcion: "Centros o voluntarios ya ofrecieron ayuda; aqui ves cuanto falta.",
         solicitudes: solicitudes.filter(
-          (s) => s.status === "parcial" || s.status === "inventario_asegurado"
+          (s) =>
+            s.status === "parcial" ||
+            s.status === "inventario_asegurado" ||
+            s.status === "en_camino"
         ),
-      },
-      {
-        titulo: "En camino",
-        descripcion: "El centro que transporta ya marco Enviado.",
-        solicitudes: solicitudes.filter((s) => s.status === "en_camino"),
       },
       {
         titulo: "Recibidas/cerradas",
@@ -103,7 +95,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   );
 
   useEffect(() => {
-    // Reset del selector dependiente al cambiar categoria (intencional).
+    // Reset del selector dependiente al cambiar categoria.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSubcategoryId("");
     if (!categoryId) {
@@ -115,18 +107,15 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       .catch(() => setSubcategorias([]));
   }, [categoryId]);
 
-  // Al editar se fija subPendiente; cuando sus opciones ya cargaron, se aplica
-  // (consumiéndolo). Deja de pelear con el reset del efecto de categoría.
   useEffect(() => {
     if (subPendiente && subcategorias.some((s) => s.id === subPendiente)) {
-      // Sincroniza el selector con la subcategoría pendiente ya cargada (intencional).
+      // Sincroniza el selector con la subcategoria pendiente ya cargada.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubcategoryId(subPendiente);
       setSubPendiente(null);
     }
   }, [subPendiente, subcategorias]);
 
-  // Traer el formulario a la vista al empezar a editar.
   useEffect(() => {
     if (editandoId) formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [editandoId]);
@@ -192,8 +181,6 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     setNota(s.nota ?? "");
     setRequiereVehiculo(s.requiere_vehiculo);
     setCategoryId(s.category_id);
-    // La subcategoría se aplica vía subPendiente cuando sus opciones cargan; si
-    // la categoría no cambia, el efecto también la resuelve contra las ya cargadas.
     setSubcategoryId("");
     setSubPendiente(s.subcategory_id);
   };
@@ -210,25 +197,49 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     }
   };
 
-  const confirmar = async (compromisoId: string) => {
-    setError(null);
-    try {
-      await confirmarEntregaCompromiso(compromisoId, token);
-      cargar();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo confirmar la entrega.");
-    }
+  const cantidadActivaNodo = (s: SolicitudNodo) =>
+    s.compromisos_nodo
+      .filter((c) => c.status === "comprometido" || c.status === "en_camino" || c.status === "entregado")
+      .reduce((total, c) => total + (c.cantidad ?? 0), 0);
+
+  const cantidadActivaVoluntarioDirecto = (s: SolicitudNodo) =>
+    s.compromisos_voluntario
+      .filter(
+        (c) =>
+          !c.compromiso_nodo_id &&
+          (c.status === "pendiente" || c.status === "retirado" || c.status === "completado")
+      )
+      .reduce((total, c) => total + (c.cantidad ?? 0), 0);
+
+  const comprometido = (s: SolicitudNodo) =>
+    cantidadActivaNodo(s) + cantidadActivaVoluntarioDirecto(s);
+
+  const falta = (s: SolicitudNodo) => Math.max(0, (s.cantidad ?? 0) - comprometido(s));
+
+  const estadoSolicitud = (s: SolicitudNodo) => {
+    if (s.status === "abierta") return "Abierta";
+    if (s.status === "cerrada") return "Recibida";
+    if (s.status === "en_camino") return "Con envios en camino";
+    return "Con compromisos";
   };
 
-  const registrarLlegada = async (compromisoId: string, llego: boolean) => {
-    setError(null);
-    try {
-      await confirmarLlegadaCompromiso(compromisoId, llego, token);
-      setConfirmandoNoLlego(null);
-      cargar();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo registrar la llegada.");
+  const estadoVoluntario = (c: SolicitudNodo["compromisos_voluntario"][number]) => {
+    if (c.status === "completado") return "recibido";
+    if (c.status === "incumplido") return "incumplido";
+    if (c.status === "retirado") {
+      return c.atrasado_24h ? "retirado, confirmacion vencida" : "retirado, esperando confirmacion";
     }
+    if (c.atrasado_4h) return "retiro vencido";
+    return "pendiente de retiro";
+  };
+
+  const estadoNodo = (c: SolicitudNodo["compromisos_nodo"][number]) => {
+    if (c.status === "entregado") return "recibido";
+    if (c.status === "cancelado") return "cancelado";
+    if (c.status === "en_camino") return "enviado";
+    if (c.tiene_transporte) return "pendiente de envio";
+    if ((c.cantidad_disponible_transporte ?? 0) > 0) return "esperando voluntario";
+    return "transporte asignado";
   };
 
   return (
@@ -240,7 +251,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
         <p className="mt-1 text-xs text-muted">
           {editandoId
             ? "Corrige los datos del pedido. Solo se pueden editar solicitudes abiertas sin compromisos."
-            : "Crea pedidos para este punto y revisa compromisos de voluntarios o de otros puntos."}
+            : "Crea pedidos para este punto y revisa quien ya prometio ayuda."}
         </p>
       </div>
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
@@ -290,7 +301,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
         <textarea
           className="field min-h-[70px]"
           maxLength={280}
-          placeholder="Comentario: qué se necesita exactamente (ej. insulina NPH 100UI, guantes talla M). No incluyas telefonos."
+          placeholder="Comentario: que se necesita exactamente. No incluyas telefonos."
           value={nota}
           onChange={(e) => setNota(e.target.value)}
         />
@@ -308,11 +319,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             disabled={creando}
             className="btn-primary flex-1 text-sm disabled:opacity-50"
           >
-            {creando
-              ? "Guardando..."
-              : editandoId
-              ? "Guardar cambios"
-              : "Crear solicitud"}
+            {creando ? "Guardando..." : editandoId ? "Guardar cambios" : "Crear solicitud"}
           </button>
           {editandoId && (
             <button
@@ -339,19 +346,28 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
               {grupo.solicitudes.map((s) => (
                 <div key={s.id} className="rounded-xl bg-bg p-3 text-sm">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold">
                         {s.category_name}
                         {s.subcategoria ? " - " + s.subcategoria : ""}
                       </p>
-                      <p className="text-xs text-muted">
-                        Pedido: {s.cantidad ? `${s.cantidad} ` : ""}{s.magnitud}
-                        {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
-                        {s.sobrante > 0 ? " - pendiente por cubrir" : " - cubierto"}
-                      </p>
-                      {s.nota && <p className="mt-1 text-xs text-white">💬 {s.nota}</p>}
+                      <div className="mt-2 grid grid-cols-1 gap-1 text-xs">
+                        <span className="rounded-lg bg-surface px-2 py-1 text-muted">
+                          Pedido: <strong className="text-white">{s.cantidad ?? 0} {s.magnitud}</strong>
+                        </span>
+                        <span className="rounded-lg bg-surface px-2 py-1 text-muted">
+                          Comprometido: <strong className="text-white">{comprometido(s)} {s.magnitud}</strong>
+                        </span>
+                        <span className="rounded-lg bg-surface px-2 py-1 text-muted">
+                          Falta: <strong className="text-white">{falta(s)} {s.magnitud}</strong>
+                        </span>
+                      </div>
+                      {s.requiere_vehiculo && (
+                        <p className="mt-1 text-xs text-muted">Requiere vehiculo</p>
+                      )}
+                      {s.nota && <p className="mt-1 text-xs text-white">{s.nota}</p>}
                     </div>
-                    <span className="badge shrink-0">{s.status}</span>
+                    <span className="badge shrink-0">{estadoSolicitud(s)}</span>
                   </div>
 
                   {(s.compromisos_voluntario.length > 0 || s.compromisos_nodo.length > 0) && (
@@ -360,58 +376,13 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                         <div className="flex flex-col gap-1">
                           <p className="text-xs font-semibold text-muted">Voluntarios</p>
                           {s.compromisos_voluntario.map((c) => (
-                            <div key={c.id} className="flex flex-col gap-1 rounded-lg bg-surface p-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <span>
-                                  {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} - {c.tiempo_estimado_minutos} min -{" "}
-                                  <span className="text-muted">{c.status}</span>
-                                </span>
-                                {c.atrasado_24h && (
-                                  <span className="shrink-0 rounded-full bg-danger px-2 py-0.5 text-xs font-semibold text-white">
-                                    Sin confirmar +24h
-                                  </span>
-                                )}
-                              </div>
-                              {c.atrasado_4h && (
-                                <span className="text-xs font-semibold text-danger">
-                                  Retiro vencido +4h
-                                </span>
-                              )}
-                              {(c.status === "pendiente" || c.status === "retirado") &&
-                                (confirmandoNoLlego === c.id ? (
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs text-danger">
-                                      Bloqueara su cedula de forma permanente. Confirmas?
-                                    </span>
-                                    <button
-                                      onClick={() => registrarLlegada(c.id, false)}
-                                      className="text-xs font-semibold text-danger"
-                                    >
-                                      Si, no llego
-                                    </button>
-                                    <button
-                                      onClick={() => setConfirmandoNoLlego(null)}
-                                      className="text-xs font-semibold text-muted"
-                                    >
-                                      Cancelar
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="flex gap-2">
-                                    <button
-                                      onClick={() => registrarLlegada(c.id, true)}
-                                      className="text-xs font-semibold text-accent"
-                                    >
-                                      Llego
-                                    </button>
-                                    <button
-                                      onClick={() => setConfirmandoNoLlego(c.id)}
-                                      className="text-xs font-semibold text-danger"
-                                    >
-                                      No llego
-                                    </button>
-                                  </span>
-                                ))}
+                            <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface p-2">
+                              <span className="min-w-0">
+                                {c.nombre || "Voluntario"} - {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud}
+                              </span>
+                              <span className="shrink-0 text-right text-xs font-semibold text-muted">
+                                {estadoVoluntario(c)}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -419,21 +390,16 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
 
                       {s.compromisos_nodo.length > 0 && (
                         <div className="flex flex-col gap-1">
-                          <p className="text-xs font-semibold text-muted">Otros puntos</p>
+                          <p className="text-xs font-semibold text-muted">Centros</p>
                           {s.compromisos_nodo.map((c) => (
                             <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface p-2">
-                              <span>
-                                {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} - {c.tiene_transporte ? "con transporte" : "sin transporte"} -{" "}
-                                {!c.tiene_transporte && typeof c.cantidad_disponible_transporte === "number"
-                                  ? `${c.cantidad_disponible_transporte} sin voluntario - `
-                                  : ""}
-                                <span className="text-muted">{c.status}</span>
+                              <span className="min-w-0">
+                                {c.nodo_nombre || "Otro centro"} - {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} -{" "}
+                                {c.tiene_transporte ? "transporte propio" : "sin transporte propio"}
                               </span>
-                              {c.tiene_transporte && c.status === "en_camino" && (
-                                <button onClick={() => confirmar(c.id)} className="text-xs font-semibold text-accent">
-                                  Confirmar
-                                </button>
-                              )}
+                              <span className="shrink-0 text-right text-xs font-semibold text-muted">
+                                {estadoNodo(c)}
+                              </span>
                             </div>
                           ))}
                         </div>

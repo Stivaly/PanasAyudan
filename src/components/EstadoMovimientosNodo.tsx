@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   cancelarCompromiso,
   confirmarEntregaCompromiso,
-  editarCompromisoNodo,
   listarMovimientosNodo,
   marcarCompromisoNodoEnviado,
 } from "@/lib/api";
@@ -29,8 +28,6 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accionId, setAccionId] = useState<string | null>(null);
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [cantidadEditada, setCantidadEditada] = useState("");
 
   const cargar = useCallback(async (mostrarCarga = true) => {
     if (mostrarCarga) setCargando(true);
@@ -68,29 +65,12 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
     setAccionId(id);
     try {
       await accion();
-      setEditandoId(null);
-      setCantidadEditada("");
       await cargar(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo completar la accion.");
     } finally {
       setAccionId(null);
     }
-  };
-
-  const empezarEdicion = (mov: MovimientoNodoSaliente) => {
-    setError(null);
-    setEditandoId(mov.id);
-    setCantidadEditada(mov.cantidad ? String(mov.cantidad) : "");
-  };
-
-  const guardarEdicion = (mov: MovimientoNodoSaliente) => {
-    const cant = Number(cantidadEditada);
-    if (!cantidadEditada.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica una cantidad valida.");
-      return;
-    }
-    void ejecutar(mov.id, () => editarCompromisoNodo(mov.id, cant, token));
   };
 
   const descripcion = (mov: { category_name: string; subcategoria: string | null }) =>
@@ -136,52 +116,26 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
                 <span className="badge shrink-0">{mov.status}</span>
               </div>
 
-              {editandoId === mov.id ? (
-                <div className="mt-3 flex gap-2">
-                  <input
-                    className="field min-w-0 flex-1"
-                    inputMode="numeric"
-                    value={cantidadEditada}
-                    onChange={(e) => setCantidadEditada(e.target.value.replace(/[^0-9]/g, ""))}
-                  />
+              <div className="mt-3 flex flex-wrap gap-2">
+                {mov.puede_cancelar && (
                   <button
-                    onClick={() => guardarEdicion(mov)}
+                    onClick={() => ejecutar(mov.id, () => cancelarCompromiso(mov.id, token))}
+                    disabled={accionId === mov.id}
+                    className="btn-ghost text-sm text-danger disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                )}
+                {mov.puede_marcar_enviado && (
+                  <button
+                    onClick={() => ejecutar(mov.id, () => marcarCompromisoNodoEnviado(mov.id, token))}
                     disabled={accionId === mov.id}
                     className="btn-primary text-sm disabled:opacity-50"
                   >
-                    Guardar
+                    Enviado
                   </button>
-                  <button onClick={() => setEditandoId(null)} className="btn-ghost text-sm">
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {mov.puede_editar && (
-                    <button onClick={() => empezarEdicion(mov)} className="btn-ghost text-sm">
-                      Editar
-                    </button>
-                  )}
-                  {mov.puede_cancelar && (
-                    <button
-                      onClick={() => ejecutar(mov.id, () => cancelarCompromiso(mov.id, token))}
-                      disabled={accionId === mov.id}
-                      className="btn-ghost text-sm text-danger disabled:opacity-50"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                  {mov.puede_marcar_enviado && (
-                    <button
-                      onClick={() => ejecutar(mov.id, () => marcarCompromisoNodoEnviado(mov.id, token))}
-                      disabled={accionId === mov.id}
-                      className="btn-primary text-sm disabled:opacity-50"
-                    >
-                      Enviado
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ))
         )}
