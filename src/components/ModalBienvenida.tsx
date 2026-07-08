@@ -118,39 +118,52 @@ export default function ModalBienvenida() {
         {slide === 2 ? (
           <div>
             <h2 className="text-2xl font-bold text-white">
-              Cómo funciona en 3 pasos
+              Cómo funciona en 4 pasos
             </h2>
             <div className="mt-4 flex flex-col gap-4 border-l-2 border-accent pl-4">
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">01</span>
                 <div>
-                  <p className="font-bold text-white">Alguien publica</p>
+                  <p className="font-bold text-white">Busca un punto de ayuda</p>
                   <p className="text-sm text-muted">
-                    Un voluntario registrado carga los excedentes disponibles en
-                    su centro de acopio o zona de rescate: qué hay, cuánto y
-                    dónde.
+                    Sin registro: abre la app y ve la lista de puntos
+                    verificados, con lo que tienen disponible, su horario y su
+                    dirección. Acércate y retira.
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">02</span>
                 <div>
-                  <p className="font-bold text-white">Alguien reserva</p>
+                  <p className="font-bold text-white">Los centros publican y piden</p>
                   <p className="text-sm text-muted">
-                    Cualquier persona busca insumos disponibles en la lista,
-                    elige lo que puede recoger y reserva una cantidad. Tiene 4
-                    horas para buscarlos antes de que se libere la reserva.
+                    Cada centro aprobado carga su inventario y solicita lo que
+                    le falta. Otros centros pueden comprometer stock para
+                    enviárselo.
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">03</span>
                 <div>
-                  <p className="font-bold text-white">Se confirma la entrega</p>
+                  <p className="font-bold text-white">Un voluntario lo lleva</p>
                   <p className="text-sm text-muted">
-                    El voluntario confirma por WhatsApp que la persona recogió
-                    los insumos y que los entregó en el destino. Sin esa
-                    confirmación, la reserva no se cierra.
+                    Los voluntarios verifican su ubicación una sola vez y ven
+                    las solicitudes cercanas que necesitan transporte. Responden
+                    &quot;yo lo llevo&quot; con hora estimada y cantidad.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-2xl font-bold text-muted">04</span>
+                <div>
+                  <p className="font-bold text-white">Emergencia y seguridad</p>
+                  <p className="text-sm text-muted">
+                    Si ya abriste la app una vez, funciona sin internet y puedes
+                    compartir puntos por SMS. Coordina con desconocidos solo lo
+                    necesario: tu ubicación es privada, el centro confirma cada
+                    llegada y quien no cumple queda bloqueado por su cédula de
+                    forma permanente.
                   </p>
                 </div>
               </div>
