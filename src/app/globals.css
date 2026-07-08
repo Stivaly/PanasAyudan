@@ -11,8 +11,8 @@ html {
   --color-surface: 255 255 255;
   --color-border: 203 213 225;
   --color-fg: 15 23 42;
-  --color-accent: 34 197 94;
-  --color-badge: 74 124 55;
+  --color-accent: 22 101 52;
+  --color-badge: 22 101 52;
   --color-danger: 220 38 38;
   --color-muted: 71 85 105;
 }
@@ -69,7 +69,7 @@ textarea {
     @apply inline-flex items-center justify-center rounded-xl px-5 py-4 text-lg font-semibold transition-colors;
   }
   .btn-primary {
-    @apply btn border border-green-700 bg-accent text-black active:bg-green-600;
+    @apply btn border border-green-800 bg-accent text-white active:bg-green-900 dark:border-green-700 dark:text-black dark:active:bg-green-600;
   }
   .btn-danger {
     @apply btn bg-danger text-white active:bg-red-600;

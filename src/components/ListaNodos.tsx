@@ -36,7 +36,7 @@ export default function ListaNodos({ nodos }: Props) {
                     Pausado{pausa ? `: ${pausa}` : ""}
                   </span>
                 ) : (
-                  <span className="shrink-0 rounded-full border border-green-400/40 bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-100">
+                  <span className="shrink-0 rounded-full border border-green-300 bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:border-green-400/40 dark:bg-green-500/15 dark:text-green-100">
                     Operativo
                   </span>
                 )}

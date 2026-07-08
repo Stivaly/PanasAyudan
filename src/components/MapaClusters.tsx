@@ -20,11 +20,12 @@ interface Props {
 }
 
 const MAPA_SOLO_BASE: google.maps.MapTypeStyle[] = [
-  { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative", elementType: "all", stylers: [{ visibility: "off" }] },
+  { featureType: "all", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
   { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.business", elementType: "all", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.medical", elementType: "all", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.school", elementType: "all", stylers: [{ visibility: "off" }] },
   { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ saturation: -65 }, { lightness: 18 }] },
   { featureType: "landscape", elementType: "geometry", stylers: [{ saturation: -55 }, { lightness: 28 }] },
   { featureType: "water", elementType: "geometry", stylers: [{ saturation: -45 }, { lightness: 10 }] },
