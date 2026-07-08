@@ -32,7 +32,7 @@ export default function ListaNodos({ nodos }: Props) {
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold">{n.nombre}</span>
                 {pausado ? (
-                  <span className="shrink-0 rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-200">
+                  <span className="shrink-0 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200">
                     Pausado{pausa ? `: ${pausa}` : ""}
                   </span>
                 ) : (

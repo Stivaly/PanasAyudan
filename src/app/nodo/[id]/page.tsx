@@ -123,7 +123,7 @@ export default function NodoDetalle() {
           {TIPO_LABEL[nodo.tipo] ?? nodo.tipo}
         </span>
         {pausado ? (
-          <span className="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-200">
+          <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200">
             Pausado{pausa ? `: ${pausa}` : ""}
           </span>
         ) : (
@@ -164,7 +164,9 @@ export default function NodoDetalle() {
               </span>
               {it.nota && <span className="text-xs text-muted">💬 {it.nota}</span>}
               {it.condicion && (
-                <span className="text-xs text-amber-400">⚠️ {it.condicion}</span>
+                <span className="text-xs font-semibold text-amber-800 dark:text-amber-400">
+                  ⚠️ {it.condicion}
+                </span>
               )}
             </div>
           ))}
