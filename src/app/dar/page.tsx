@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import BotonVolver from "@/components/BotonVolver";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import ItemsForm, { ItemDraft, draftVacio, draftsValidos, QTY_MAX } from "@/components/ItemsForm";
 import {
@@ -48,6 +49,8 @@ export default function Dar() {
 
   useEffect(() => {
     const token = getVolunteerToken();
+    // Lectura de token + carga inicial en el mismo efecto (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVolunteerTokenState(token);
     setVerificandoVoluntario(false);
 
@@ -66,6 +69,8 @@ export default function Dar() {
 
   // Al cambiar de estado, cargar centros y zonas de ese estado en paralelo.
   useEffect(() => {
+    // Reset de selects dependientes al cambiar de estado + fetch (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCentroAcopioId("");
     setZonaRescateId("");
     setCentros([]);
@@ -179,19 +184,17 @@ export default function Dar() {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-          <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-            ←
-          </Link>
+          <BotonVolver />
           <h1 className="text-lg font-bold">Publicar insumos</h1>
         </div>
         <div className="card border-accent">
-          <p className="font-semibold text-accent">Solo voluntarios registrados</p>
+          <p className="font-semibold text-accent">Necesitas una cuenta</p>
           <p className="mt-2 text-sm text-muted">
-            Para publicar algo para dar debes registrarte o entrar con tu token de voluntario.
+            Para publicar algo para dar debes crear una cuenta o entrar con tu codigo de acceso.
           </p>
         </div>
         <Link href="/voluntarios" className="btn-primary w-full">
-          Registrarme o entrar como voluntario
+          Crear cuenta o entrar con mi codigo
         </Link>
         <Link href="/buscar" className="btn-ghost w-full">
           Necesito buscar algo
@@ -203,9 +206,7 @@ export default function Dar() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-          ←
-        </Link>
+        <BotonVolver />
         <h1 className="text-lg font-bold">Tengo algo para dar</h1>
       </div>
 

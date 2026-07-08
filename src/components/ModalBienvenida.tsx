@@ -13,6 +13,8 @@ export default function ModalBienvenida() {
   useEffect(() => {
     try {
       if (!localStorage.getItem(STORAGE_KEY)) {
+        // Primera visita (según localStorage): mostrar el modal al montar.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setVisible(true);
       }
     } catch {
@@ -68,16 +70,17 @@ export default function ModalBienvenida() {
                 <circle cx="54" cy="54" r="6" fill="currentColor" stroke="none" />
               </svg>
             </div>
-            <h2 className="mt-4 text-2xl font-bold text-white">
+            <h2 className="mt-4 text-2xl font-bold text-fg">
               Coordinamos insumos de emergencia en Venezuela
             </h2>
             <p className="mt-3 text-base text-muted">
-              Los centros de acopio reciben más de lo que pueden distribuir.
-              PanasAyudan conecta esos excedentes con otros centros o zonas de
-              rescate que los necesitan — con voluntarios que los llevan.
+              Los puntos de ayuda aprobados y verificados publican lo que
+              tienen y solicitan lo que les falta. La app los conecta entre sí
+              — y con voluntarios cuando un envío necesita transporte.
+              Cualquier persona puede consultar los puntos sin registrarse.
             </p>
             <p className="mt-3 border-l-2 border-accent pl-3 text-sm text-muted">
-              No es entrega a domicilio. Es logística entre puntos de acopio.
+              No es entrega a domicilio: acércate al punto en su horario y retira.
             </p>
           </div>
         ) : null}
@@ -85,27 +88,24 @@ export default function ModalBienvenida() {
         {/* Slide 2 — Para quién es */}
         {slide === 1 ? (
           <div>
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-fg">
               ¿Para quién es esta app?
             </h2>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <div className="card flex-1 border-green-700">
-                <p className="font-semibold text-white">✓ Es para ti si...</p>
+                <p className="font-semibold text-fg">✓ Es para ti si...</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-                  <li>
-                    Tienes vehículo y puedes mover cajas entre puntos de la
-                    ciudad
-                  </li>
-                  <li>Coordinas o apoyas en un centro de acopio o zona de rescate</li>
-                  <li>Puedes comprometerte a completar lo que reservas</li>
+                  <li>Buscas insumos: entra sin registro y encuentra el punto más cercano</li>
+                  <li>Administras o colaboras en un centro de acopio o punto de entrega</li>
+                  <li>Puedes transportar ayuda entre puntos, con o sin vehículo</li>
                 </ul>
               </div>
               <div className="card flex-1">
-                <p className="font-semibold text-white">Esta app no es para...</p>
+                <p className="font-semibold text-fg">Esta app no es para...</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
                   <li>Recibir insumos en tu casa o negocio</li>
-                  <li>Donaciones sin coordinación previa</li>
-                  <li>Quienes no puedan comprometerse con la recogida</li>
+                  <li>Donaciones sin coordinar con un centro</li>
+                  <li>Publicar sin ser un punto aprobado y verificado</li>
                 </ul>
               </div>
             </div>
@@ -115,40 +115,55 @@ export default function ModalBienvenida() {
         {/* Slide 3 — Cómo funciona */}
         {slide === 2 ? (
           <div>
-            <h2 className="text-2xl font-bold text-white">
-              Cómo funciona en 3 pasos
+            <h2 className="text-2xl font-bold text-fg">
+              Cómo funciona en 4 pasos
             </h2>
             <div className="mt-4 flex flex-col gap-4 border-l-2 border-accent pl-4">
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">01</span>
                 <div>
-                  <p className="font-bold text-white">Alguien publica</p>
+                  <p className="font-bold text-fg">Busca un punto de ayuda</p>
                   <p className="text-sm text-muted">
-                    Un voluntario registrado carga los excedentes disponibles en
-                    su centro de acopio o zona de rescate: qué hay, cuánto y
-                    dónde.
+                    Sin registro: abre la app y ve la lista de puntos
+                    verificados, con lo que tienen disponible, su horario y su
+                    dirección. Acércate y retira.
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">02</span>
                 <div>
-                  <p className="font-bold text-white">Alguien reserva</p>
+                  <p className="font-bold text-fg">Los centros se coordinan entre sí</p>
                   <p className="text-sm text-muted">
-                    Cualquier persona busca insumos disponibles en la lista,
-                    elige lo que puede recoger y reserva una cantidad. Tiene 4
-                    horas para buscarlos antes de que se libere la reserva.
+                    Cada centro aprobado administra su inventario y solicita lo
+                    que le falta. Otro centro puede comprometer su stock — y si
+                    ya tiene quién lo lleve (alguien de su confianza, sin
+                    registro), el envío queda en camino.
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="text-2xl font-bold text-muted">03</span>
                 <div>
-                  <p className="font-bold text-white">Se confirma la entrega</p>
+                  <p className="font-bold text-fg">Voluntarios solo donde faltan</p>
                   <p className="text-sm text-muted">
-                    El voluntario confirma por WhatsApp que la persona recogió
-                    los insumos y que los entregó en el destino. Sin esa
-                    confirmación, la reserva no se cierra.
+                    Solo los envíos que necesitan transporte aparecen a los
+                    voluntarios — y únicamente a quienes están cerca y tienen la
+                    capacidad necesaria. Responden &quot;yo lo llevo&quot; con
+                    hora estimada y cantidad.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-2xl font-bold text-muted">04</span>
+                <div>
+                  <p className="font-bold text-fg">Emergencia y seguridad</p>
+                  <p className="text-sm text-muted">
+                    Si ya abriste la app una vez, funciona sin internet y puedes
+                    compartir puntos por SMS. Coordina con desconocidos solo lo
+                    necesario: tu ubicación es privada, el centro confirma cada
+                    llegada y quien no cumple queda bloqueado por su cédula de
+                    forma permanente.
                   </p>
                 </div>
               </div>
@@ -159,14 +174,15 @@ export default function ModalBienvenida() {
         {/* Slide 4 — Llamado a la acción */}
         {slide === 3 ? (
           <div>
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-fg">
               Construido sobre el compromiso
             </h2>
             <p className="mt-3 text-base text-muted">
-              Sabemos que en una emergencia hay personas que actúan de buena fe
-              y otras que no. Por eso la app bloquea automáticamente a quienes
-              reservan y no cumplen — protegiendo el tiempo y los recursos de
-              quienes sí están ayudando.
+              En una emergencia hay quien actúa de buena fe y quien no. Cada
+              compromiso de transporte se confirma al llegar: si el centro
+              marca que no llegó, esa cédula queda bloqueada de forma
+              permanente — protegiendo el tiempo y los recursos de quienes sí
+              están ayudando.
             </p>
             <div className="mt-5 flex flex-col gap-4 min-[360px]:flex-row">
               <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
@@ -183,7 +199,7 @@ export default function ModalBienvenida() {
                 >
                   <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
                 </svg>
-                <span className="mt-1">Cédula verificada al reservar</span>
+                <span className="mt-1">Cédula al registrarte de voluntario</span>
               </div>
               <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
                 <svg
@@ -200,7 +216,7 @@ export default function ModalBienvenida() {
                   <circle cx="12" cy="12" r="9" />
                   <path d="M12 12V6M12 12h5" />
                 </svg>
-                <span className="mt-1">4 horas para recoger</span>
+                <span className="mt-1">Llegadas confirmadas por el centro</span>
               </div>
               <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
                 <svg
@@ -217,7 +233,7 @@ export default function ModalBienvenida() {
                   <rect x="5" y="11" width="14" height="9" rx="1.5" />
                   <path d="M8 11V7a4 4 0 018 0v4" />
                 </svg>
-                <span className="mt-1">Contacto protegido hasta confirmar</span>
+                <span className="mt-1">Contactos solo entre coordinadores</span>
               </div>
             </div>
             <div className="mt-5 flex flex-col gap-3">
@@ -226,7 +242,7 @@ export default function ModalBienvenida() {
                 onClick={cerrar}
                 className="btn-primary min-h-[44px] w-full"
               >
-                Explorar insumos disponibles
+                Ver puntos de ayuda
               </button>
               <button
                 type="button"
@@ -236,7 +252,7 @@ export default function ModalBienvenida() {
                 }}
                 className="btn-ghost min-h-[44px] w-full"
               >
-                Registrarme como voluntario
+                Sumarme al apoyo
               </button>
             </div>
           </div>

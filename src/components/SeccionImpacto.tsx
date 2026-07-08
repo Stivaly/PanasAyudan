@@ -31,10 +31,10 @@ export default function SeccionImpacto() {
   if (!stats) return null;
 
   const cards = [
-    { valor: stats.total_qty_coordinada, etiqueta: "insumos coordinados" },
+    { valor: stats.total_qty_coordinada, etiqueta: "insumos entregados" },
     { valor: stats.total_recogidas_completadas, etiqueta: "entregas completadas" },
-    { valor: stats.lugares_activos, etiqueta: "lugares activos ahora" },
-    { valor: stats.total_aportes_activos, etiqueta: "aportes publicados" },
+    { valor: stats.lugares_activos, etiqueta: "puntos activos" },
+    { valor: stats.total_aportes_activos, etiqueta: "solicitudes activas" },
   ];
 
   return (
@@ -42,13 +42,13 @@ export default function SeccionImpacto() {
       <h2 className="mb-3 text-center text-sm font-semibold text-muted">
         Lo que hemos logrado juntos
       </h2>
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+      <div className="grid grid-cols-2 gap-3">
         {cards.map((c) => (
           <div
             key={c.etiqueta}
-            className="card min-w-[8.5rem] shrink-0 bg-surface/80 text-center"
+            className="card flex min-h-24 flex-col items-center justify-center bg-surface/80 text-center"
           >
-            <p className="text-2xl font-bold text-white">{c.valor}</p>
+            <p className="text-2xl font-bold text-fg">{c.valor}</p>
             <p className="mt-1 text-xs text-muted">{c.etiqueta}</p>
           </div>
         ))}

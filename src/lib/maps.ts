@@ -13,14 +13,15 @@ export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("Google Maps solo carga en el cliente."));
   }
-  if ((window as any).google?.maps) {
-    return Promise.resolve((window as any).google);
+  const w = window as unknown as { google?: typeof google } & Record<string, unknown>;
+  if (w.google?.maps) {
+    return Promise.resolve(w.google);
   }
   if (loaderPromise) return loaderPromise;
 
   loaderPromise = new Promise((resolve, reject) => {
     const cbName = "__panas_gmaps_cb";
-    (window as any)[cbName] = () => resolve((window as any).google);
+    w[cbName] = () => resolve(w.google as typeof google);
 
     const script = document.createElement("script");
     script.src =

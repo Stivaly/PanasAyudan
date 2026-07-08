@@ -79,6 +79,9 @@ export function useItemsRealtime(
   }, [cargar]);
 
   useEffect(() => {
+    // Fetch en efecto intencional: al montar / cambiar filtros marcamos "cargando"
+    // y disparamos la carga. No aplica useSyncExternalStore (no es un store síncrono).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCargando(true);
     void cargar();
 

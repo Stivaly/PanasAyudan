@@ -57,6 +57,8 @@ export default function AccionesRecogidaVoluntario({
 
   if (!recogida.confirmation_deadline) return null;
 
+  // Lectura intencional de la hora actual en render para el aviso de vencimiento.
+  // eslint-disable-next-line react-hooks/purity
   const vencido = new Date(recogida.confirmation_deadline).getTime() < Date.now();
   if (vencido) {
     return (

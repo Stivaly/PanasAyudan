@@ -10,6 +10,7 @@ import {
   getZonasRescatePorEstado,
 } from "@/lib/api";
 import { getRecogedorLocal, getRecogedorToken, saveRecogedorLocal } from "@/lib/recogedor";
+import { formatEstadoNombre } from "@/lib/estados";
 import {
   validarCedula,
   formatearCedula,
@@ -56,6 +57,8 @@ export default function ReservarItem({ item, onReservada }: Props) {
   useEffect(() => {
     const guardado = getRecogedorLocal();
     if (!guardado) return;
+    // Pre-relleno del formulario desde localStorage al montar (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNombre(guardado.nombre);
     setApellido(guardado.apellido);
     setCedula(formatearCedula(guardado.cedula));
@@ -73,6 +76,8 @@ export default function ReservarItem({ item, onReservada }: Props) {
 
   // Al cambiar el estado de destino, carga centros y zonas y resetea selección.
   useEffect(() => {
+    // Reset de selects de destino al cambiar de estado + fetch (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCentroDestinoId("");
     setZonaDestinoId("");
     if (!estadoDestinoId) {
@@ -243,7 +248,7 @@ export default function ReservarItem({ item, onReservada }: Props) {
           </option>
           {estados.map((e) => (
             <option key={e.id} value={e.id}>
-              {e.nombre}
+              {formatEstadoNombre(e.nombre)}
             </option>
           ))}
         </select>
@@ -284,7 +289,7 @@ export default function ReservarItem({ item, onReservada }: Props) {
         )}
 
         {centroDestinoSel && (
-          <div className="rounded-xl border border-accent bg-surface p-3 text-white">
+          <div className="rounded-xl border border-accent bg-surface p-3 text-fg">
             <p className="text-lg font-bold">{centroDestinoSel.nombre}</p>
             <p className="mt-1 text-sm">{centroDestinoSel.direccion}</p>
             {centroDestinoSel.horario && (
@@ -301,7 +306,7 @@ export default function ReservarItem({ item, onReservada }: Props) {
         )}
 
         {zonaDestinoSel && (
-          <div className="rounded-xl border border-accent bg-surface p-3 text-white">
+          <div className="rounded-xl border border-accent bg-surface p-3 text-fg">
             <p className="text-lg font-bold">{zonaDestinoSel.nombre}</p>
             {zonaDestinoSel.descripcion && (
               <p className="mt-1 text-sm">{zonaDestinoSel.descripcion}</p>

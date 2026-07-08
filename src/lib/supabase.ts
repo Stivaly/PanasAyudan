@@ -33,6 +33,36 @@ export function clearVolunteerToken(): void {
   window.localStorage.removeItem(TOKEN_KEY);
 }
 
+// Cache de rol de la sesión (issue #17). Se resuelve UNA sola vez al ingresar el
+// token y se guarda en sessionStorage (no en localStorage: vive solo mientras la
+// pestaña esté abierta), separado del token persistente de arriba. Si el token
+// guardado no coincide con el ingresado, el cache se considera inválido y el
+// llamador debe volver a pedir el rol con obtenerRol().
+const SESSION_ROLE_KEY = "panas_session_role";
+
+export function getCachedRole(token: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_ROLE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { token?: string; role?: string };
+    // El cache solo vale si es del mismo token; si cambió, se invalida.
+    return parsed.token === token && parsed.role ? parsed.role : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedRole(token: string, role: string): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(SESSION_ROLE_KEY, JSON.stringify({ token, role }));
+}
+
+export function clearCachedRole(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(SESSION_ROLE_KEY);
+}
+
 // Cliente autenticado por token: envía el header 'volunteer-token' en cada request.
 // Las policies RLS y las RPC con token lo leen desde request.headers.
 export function supabaseWithToken(token: string): SupabaseClient {

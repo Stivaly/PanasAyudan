@@ -113,6 +113,9 @@ export function useRecogidasPendientes(token: string | null) {
 
   useEffect(() => {
     if (!token) return;
+    // Fetch en efecto intencional (cargar() marca "cargando" antes del await).
+    // No aplica useSyncExternalStore: es una carga async, no un store síncrono.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargar();
 
     const canal = supabase

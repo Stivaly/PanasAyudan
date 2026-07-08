@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import BotonVolver from "@/components/BotonVolver";
 import { supabase } from "@/lib/supabase";
 import {
   getRecogidasDeRecogedor,
@@ -9,6 +10,7 @@ import {
   modificarQtyRecogida,
 } from "@/lib/api";
 import { getRecogedorToken } from "@/lib/recogedor";
+import { formatEstadoNombre } from "@/lib/estados";
 import { RecogidaConDetalle } from "@/lib/types";
 import Countdown from "@/components/Countdown";
 
@@ -96,6 +98,8 @@ function PendienteCard({
   const [errorQty, setErrorQty] = useState<string | null>(null);
 
   // La reserva vence dentro de las próximas 2 horas (y aún no ha vencido).
+  // Lectura intencional de la hora actual en render para decidir el aviso.
+  // eslint-disable-next-line react-hooks/purity
   const msHastaVencer = new Date(r.reserved_until).getTime() - Date.now();
   const venceProximo = msHastaVencer > 0 && msHastaVencer <= 2 * 60 * 60 * 1000;
 
@@ -157,7 +161,7 @@ function PendienteCard({
         <div>
           <p className="font-semibold">{r.aporte_item?.descripcion ?? "Insumo"}</p>
           <p className="text-xs text-muted">{lugar?.place_name ?? "Lugar"}</p>
-          {lugar?.estado && <span className="badge mt-1 inline-block">{lugar.estado}</span>}
+          {lugar?.estado && <span className="badge mt-1 inline-block">{formatEstadoNombre(lugar.estado)}</span>}
           {lugar?.descripcion_libre && (
             <p className="mt-1 text-sm">{lugar.descripcion_libre}</p>
           )}
@@ -206,7 +210,7 @@ function PendienteCard({
                 type="button"
                 onClick={() => setConfirmandoQty(true)}
                 disabled={!qtyValida}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-50 dark:text-black"
               >
                 Cambiar
               </button>
@@ -224,7 +228,7 @@ function PendienteCard({
                   type="button"
                   onClick={guardarQty}
                   disabled={guardandoQty}
-                  className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-50"
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-50 dark:text-black"
                 >
                   {guardandoQty ? "Guardando..." : "Sí, cambiar"}
                 </button>
@@ -293,6 +297,8 @@ export default function MisRecogidas() {
 
   useEffect(() => {
     const t = typeof window === "undefined" ? null : window.localStorage.getItem(TOKEN_KEY);
+    // Lectura de token cliente-only al montar (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToken(t);
     setVerificando(false);
   }, []);
@@ -312,6 +318,7 @@ export default function MisRecogidas() {
 
   useEffect(() => {
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCargando(false);
       return;
     }
@@ -339,9 +346,7 @@ export default function MisRecogidas() {
 
   const header = (
     <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-      <Link href="/buscar" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-        ←
-      </Link>
+      <BotonVolver fallback="/buscar" />
       <h1 className="text-lg font-bold">Mis recogidas</h1>
     </div>
   );
@@ -427,7 +432,7 @@ export default function MisRecogidas() {
                       {r.aporte_item?.descripcion ?? "Insumo"}
                     </p>
                     <p className="text-xs text-muted">{lugar?.place_name ?? "Lugar"}</p>
-                    {lugar?.estado && <span className="badge mt-1 inline-block">{lugar.estado}</span>}
+                    {lugar?.estado && <span className="badge mt-1 inline-block">{formatEstadoNombre(lugar.estado)}</span>}
                     {lugar?.descripcion_libre && (
                       <p className="mt-1 text-sm">{lugar.descripcion_libre}</p>
                     )}

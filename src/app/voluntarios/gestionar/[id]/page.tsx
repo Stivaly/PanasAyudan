@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import BotonVolver from "@/components/BotonVolver";
 import { useRecogidasPendientes, RecogidaDetallada } from "@/hooks/useRecogidasPendientes";
 import {
   getAportesVoluntario,
@@ -51,6 +52,8 @@ export default function GestionarLugar() {
   const { recogidas, error, recargar } = useRecogidasPendientes(token);
 
   useEffect(() => {
+    // Lectura de token cliente-only al montar (intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToken(getVolunteerToken());
     setVerificando(false);
   }, []);
@@ -76,6 +79,8 @@ export default function GestionarLugar() {
   }, [token, locationId]);
 
   useEffect(() => {
+    // Carga inicial async en efecto (cargarAportes marca "cargando"; intencional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargarAportes();
   }, [cargarAportes]);
 
@@ -221,19 +226,17 @@ export default function GestionarLugar() {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-          <Link href="/voluntarios" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-            ←
-          </Link>
+          <BotonVolver fallback="/voluntarios" />
           <h1 className="text-lg font-bold">Gestionar mis aportes</h1>
         </div>
         <div className="card border-accent">
-          <p className="font-semibold text-accent">Solo voluntarios registrados</p>
+          <p className="font-semibold text-accent">Necesitas un codigo de acceso</p>
           <p className="mt-2 text-sm text-muted">
-            Para gestionar tus aportes y completar solicitudes debes entrar con tu token de voluntario.
+            Para gestionar tus aportes y completar solicitudes debes entrar con tu codigo de acceso.
           </p>
         </div>
         <Link href="/voluntarios" className="btn-primary w-full">
-          Entrar como voluntario
+          Entrar con mi codigo de acceso
         </Link>
       </main>
     );
@@ -242,9 +245,7 @@ export default function GestionarLugar() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/voluntarios" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-          ←
-        </Link>
+        <BotonVolver fallback="/voluntarios" />
         <div>
           <h1 className="text-lg font-bold">{placeName ?? "Gestionar mis aportes"}</h1>
           <p className="text-xs text-muted">Tus insumos y sus solicitudes pendientes</p>
