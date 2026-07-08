@@ -11,6 +11,7 @@ interface Props {
   onChange: (tab: NodoTab) => void;
   // Marca visual opcional sobre una pestaña (p. ej. punto no operativo en Estado).
   alertas?: Partial<Record<NodoTab, boolean>>;
+  disabled?: Partial<Record<NodoTab, boolean>>;
 }
 
 type Item = { key: NodoTab; label: string; icon: React.ReactNode };
@@ -76,20 +77,28 @@ const ITEMS: Item[] = [
   },
 ];
 
-export default function NodoTabBar({ active, onChange, alertas }: Props) {
+export default function NodoTabBar({ active, onChange, alertas, disabled }: Props) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex w-full max-w-lg">
         {ITEMS.map((item) => {
           const activo = item.key === active;
+          const bloqueado = Boolean(disabled?.[item.key]);
           return (
             <button
               key={item.key}
-              onClick={() => onChange(item.key)}
+              onClick={() => {
+                if (!bloqueado) onChange(item.key);
+              }}
+              disabled={bloqueado}
               aria-current={activo ? "page" : undefined}
               className={
                 "relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors " +
-                (activo ? "text-accent" : "text-muted active:text-white")
+                (bloqueado
+                  ? "cursor-not-allowed text-muted/45"
+                  : activo
+                  ? "text-accent"
+                  : "text-muted active:text-white")
               }
             >
               <span className="relative">

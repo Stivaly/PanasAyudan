@@ -75,6 +75,7 @@ export default function NodoAdminPanel() {
     () => nodos.find((n) => n.id === selectedNodeId) ?? null,
     [selectedNodeId, nodos]
   );
+  const pendienteVerificacion = Boolean(activo && !activo.verificado);
 
   const salir = () => {
     clearVolunteerToken();
@@ -101,6 +102,8 @@ export default function NodoAdminPanel() {
   }
 
   const vis = activo ? statusVisible(activo) : null;
+  const estadoLabel = pendienteVerificacion ? "pendiente GPS" : vis;
+  const tabVisible = pendienteVerificacion && !["estado", "ajustes"].includes(tab) ? "estado" : tab;
   // Un acopio solo recibe y una entrega solo da: cada tipo opera una mitad (o
   // ambas, si es mixto). Los controles y avisos se acotan a lo que aplica.
   const operaRecepcion = activo ? activo.tipo !== "entrega" : false;
@@ -144,16 +147,23 @@ export default function NodoAdminPanel() {
                 <span
                   className={
                     "shrink-0 rounded-full px-2 py-1 text-xs font-semibold " +
-                    (vis === "activo"
+                    (pendienteVerificacion
+                      ? "bg-danger/15 text-danger"
+                      : vis === "activo"
                       ? "bg-accent/15 text-accent"
                       : vis === "pausado"
                       ? "bg-danger/15 text-danger"
                       : "bg-surface text-muted")
                   }
                 >
-                  {vis}
+                  {estadoLabel}
                 </span>
               </div>
+              {pendienteVerificacion && (
+                <p className="text-xs font-semibold text-danger">
+                  Verifica la ubicación del punto para habilitar inventario, pedidos y coordinación con centros cercanos.
+                </p>
+              )}
               {noOperativo && (
                 <p className="text-xs font-semibold text-danger">
                   No operativo
@@ -176,7 +186,7 @@ export default function NodoAdminPanel() {
               )}
             </div>
 
-            {tab === "estado" && (
+            {tabVisible === "estado" && (
               <div className="card flex flex-col gap-3">
                 <p className="text-xs text-muted">Tipo: {activo.tipo}</p>
                 <VerificarNodo
@@ -185,49 +195,51 @@ export default function NodoAdminPanel() {
                   verificado={activo.verificado}
                   onVerificado={() => cargar(token)}
                 />
-                <div className="grid grid-cols-2 gap-2">
-                  {operaRecepcion && (
-                    <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
-                      Pausar recepcion
+                {!pendienteVerificacion && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {operaRecepcion && (
+                      <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
+                        Pausar recepcion
+                      </button>
+                    )}
+                    {operaEntrega && (
+                      <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
+                        Pausar entrega
+                      </button>
+                    )}
+                    {/* Pausar ambas solo tiene sentido en un mixto: opera las dos mitades. */}
+                    {operaRecepcion && operaEntrega && (
+                      <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
+                        Pausar ambas
+                      </button>
+                    )}
+                    <button onClick={() => pausar("reactivar")} className="btn-ghost text-sm">
+                      Reactivar
                     </button>
-                  )}
-                  {operaEntrega && (
-                    <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
-                      Pausar entrega
-                    </button>
-                  )}
-                  {/* Pausar ambas solo tiene sentido en un mixto: opera las dos mitades. */}
-                  {operaRecepcion && operaEntrega && (
-                    <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
-                      Pausar ambas
-                    </button>
-                  )}
-                  <button onClick={() => pausar("reactivar")} className="btn-ghost text-sm">
-                    Reactivar
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {tab === "inventario" && (
+            {tabVisible === "inventario" && (
               <div className="card">
                 <InventarioNodo nodeId={activo.id} token={token} tipo={activo.tipo} />
               </div>
             )}
 
-            {tab === "pedir" && (
+            {tabVisible === "pedir" && (
               <div className="card">
                 <SolicitudesNodo nodeId={activo.id} token={token} />
               </div>
             )}
 
-            {tab === "cercanos" && (
+            {tabVisible === "cercanos" && (
               <div className="card">
                 <SolicitudesEntreCentros nodeId={activo.id} token={token} />
               </div>
             )}
 
-            {tab === "ajustes" && (
+            {tabVisible === "ajustes" && (
               <div className="card">
                 <EditarNodo
                   nodo={activo}
@@ -238,7 +250,16 @@ export default function NodoAdminPanel() {
               </div>
             )}
 
-            <NodoTabBar active={tab} onChange={setTab} alertas={{ estado: noOperativo }} />
+            <NodoTabBar
+              active={tabVisible}
+              onChange={setTab}
+              alertas={{ estado: noOperativo || pendienteVerificacion }}
+              disabled={{
+                inventario: pendienteVerificacion,
+                pedir: pendienteVerificacion,
+                cercanos: pendienteVerificacion,
+              }}
+            />
           </>
         )
       )}
