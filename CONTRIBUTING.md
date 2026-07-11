@@ -21,27 +21,40 @@ Este documento define el flujo de trabajo obligatorio para contribuir a este rep
 
 ## Flujograma
 
+**Fase QA — Colaboradores**
+ 
 ```mermaid
-flowchart TD
-    A[Issue creado] --> B["Crear rama: issue-N desde development"]
-    B --> C[Commits en la rama del issue]
-    C --> D["Abrir Pull Request hacia development"]
-    D --> E{"¿Aprobado por\nCode Owner?"}
-    E -- No --> C
-    E -- Sí --> F["Merge a development"]
-    F --> G["Deploy automático a Vercel (QA)"]
-    G --> H{"¿Admin valida\nque está estable?"}
-    H -- No --> C
-    H -- Sí --> I["Admin pasa development → main"]
-    I --> J["Deploy automático a Vercel (Producción)"]
+flowchart LR
+    A[Issue creado] --> B["Rama: issue-N"]
+    B --> C["PR hacia development"]
+    C --> D{"¿Aprobado?"}
+    D -- No --> B
+    D -- Sí --> E["Merge a development"]
+    E --> F["Deploy QA (Vercel)"]
+ 
+    style A fill:#1f6feb,color:#fff
+    style D fill:#9e6a03,color:#fff
 ```
+ 
+**Fase Producción — Solo Admin**
+ 
+```mermaid
+flowchart LR
+    G{"¿Listo para producción?"} -- No --> B["Volver a la rama del issue"]
+    G -- Sí --> H["development → main"]
+    H --> I["Deploy Producción (Vercel)"]
+ 
+    style I fill:#2ea043,color:#fff
+    style G fill:#9e6a03,color:#f
+```
+
 
 ## Resumen de restricciones por rama
 
 | Rama | Quién puede apuntar PR aquí | Requiere aprobación | Push directo |
 |---|---|---|---|
 | `development` | Todos los colaboradores | Sí, 1 Code Owner | No |
-| `main` | Solo el administrador | N/A (gestión manual) | No |
+| `main` | Solo el administrador | No | No |
 
 ## Buenas prácticas
 
