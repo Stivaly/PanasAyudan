@@ -165,7 +165,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
             no se guarda: solo se usa para saber tu municipio, y la verificacion vale 24 horas.
           </p>
           <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-fg">
-            Rango operativo: 650 km maximo si tienes vehiculo registrado; 300 km maximo sin vehiculo.
+            Rango operativo: 40 km maximo si tienes vehiculo registrado; 15 km maximo sin vehiculo.
           </div>
           <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
             Esta verificacion debe hacerse desde un celular con ubicacion activa.
