@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   listarSolicitudesDisponibles,
   marcarRetiroCompromiso,
@@ -13,21 +13,16 @@ import {
   MAGNITUD_ORDEN,
   SolicitudDisponible,
 } from "@/lib/types";
-import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { RealtimeTable, useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 
 interface Props {
   token: string;
 }
 
-const REALTIME_TABLES = [
-  { table: "solicitudes" },
-  { table: "compromisos_voluntario" },
-  { table: "compromisos_nodo" },
-];
-
 export default function SolicitudesDisponibles({ token }: Props) {
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
   const [compromisos, setCompromisos] = useState<CompromisoVoluntarioActivo[]>([]);
+  const [volunteerId, setVolunteerId] = useState<string | null>(null);
   const [requiereVerificacion, setRequiereVerificacion] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +39,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
       const resp = await listarSolicitudesDisponibles(token);
       setSolicitudes(resp.solicitudes);
       setCompromisos(resp.compromisos ?? []);
+      setVolunteerId(resp.volunteer_id);
       setRequiereVerificacion(resp.requiere_verificacion);
       setError(null);
     } catch (e) {
@@ -59,11 +55,23 @@ export default function SolicitudesDisponibles({ token }: Props) {
     void cargar();
   }, [cargar]);
 
+  const realtimeTables = useMemo<RealtimeTable[]>(
+    () => [
+      { table: "solicitudes" },
+      { table: "compromisos_nodo" },
+      {
+        table: "compromisos_voluntario",
+        ...(volunteerId ? { filter: `volunteer_id=eq.${volunteerId}` } : {}),
+      },
+    ],
+    [volunteerId]
+  );
+
   useRealtimeRefresh(
     "solicitudes_disponibles_changes",
-    REALTIME_TABLES,
+    realtimeTables,
     () => void cargar(false),
-    Boolean(token)
+    Boolean(token) && Boolean(volunteerId)
   );
 
   const verificar = async () => {
