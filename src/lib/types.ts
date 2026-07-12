@@ -378,6 +378,7 @@ export interface SolicitudParaNodo {
 export interface SolicitudesDisponiblesResp {
   requiere_verificacion: boolean;
   volunteer_id: string;
+  nodos_en_rango: string[];
   solicitudes: SolicitudDisponible[];
   compromisos?: CompromisoVoluntarioActivo[];
 }

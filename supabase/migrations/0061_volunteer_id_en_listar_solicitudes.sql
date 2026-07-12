@@ -16,6 +16,26 @@
 --    de cuanto puede recorrer una persona para retirar/entregar insumos hace
 --    que la lista de nodos relevantes sea efectivamente chica, que es
 --    precondicion para que el filtro de Realtime reduzca trafico de verdad.
+--
+-- 3) Agrega nodos_en_rango a la respuesta de listar_solicitudes_disponibles:
+--    los IDs de centros_acopio cuyo municipio esta en la zona vigente del
+--    voluntario. El frontend usa esta lista para filtrar su suscripcion
+--    Realtime de la tabla `solicitudes` por node_id_origen=in.(...), en vez
+--    de escuchar cambios de solicitudes de cualquier nodo del pais.
+--
+-- 4) Agrega compromisos_nodo.node_id_destino (copia de solicitudes.node_id_origen
+--    al momento de crear el compromiso). MOTIVO: sin esta columna, filtrar
+--    Realtime de compromisos_nodo por "el nodo que pidio esta en mi rango"
+--    solo era posible de forma indirecta, via el UPDATE que
+--    recalcular_status_solicitud hace sobre `solicitudes` como efecto
+--    secundario. Eso funciona hoy porque todas las rutas que tocan
+--    compromisos_nodo llaman esa funcion, pero es una convencion implicita,
+--    no una garantia estructural. Con node_id_destino, compromisos_nodo puede
+--    filtrarse directamente por cualquiera de sus dos lados (quien surte,
+--    quien pidio), igual que las otras dos tablas. node_id_origen de
+--    solicitudes nunca se actualiza tras crearse (no hay ningun UPDATE que la
+--    toque en todo el proyecto), asi que copiarla una sola vez al insertar el
+--    compromiso es suficiente: nunca queda desactualizada.
 
 set search_path = public, extensions;
 
@@ -27,11 +47,12 @@ set search_path = public
 stable
 as $$
 declare
-  v_vol_id       uuid;
-  v_tiene_veh    boolean;
-  v_tiene_zona   boolean;
-  v_solicitudes  json;
-  v_compromisos  json;
+  v_vol_id         uuid;
+  v_tiene_veh      boolean;
+  v_tiene_zona     boolean;
+  v_solicitudes    json;
+  v_compromisos    json;
+  v_nodos_en_rango json;
 begin
   select id, tiene_vehiculo into v_vol_id, v_tiene_veh
   from volunteers where token = p_token_voluntario and activo = true;
@@ -43,6 +64,14 @@ begin
     select 1 from voluntario_zonas vz
     where vz.volunteer_id = v_vol_id and vz.expira_at > now()
   ) into v_tiene_zona;
+
+  select coalesce(json_agg(ca.id), '[]'::json)
+  into v_nodos_en_rango
+  from centros_acopio ca
+  where ca.municipio_id in (
+    select vz.municipio_id from voluntario_zonas vz
+    where vz.volunteer_id = v_vol_id and vz.expira_at > now()
+  );
 
   select coalesce(json_agg(to_json(t) order by t.created_at desc), '[]'::json)
   into v_solicitudes
@@ -133,6 +162,7 @@ begin
   return json_build_object(
     'requiere_verificacion', not v_tiene_zona,
     'volunteer_id', v_vol_id,
+    'nodos_en_rango', v_nodos_en_rango,
     'solicitudes', v_solicitudes,
     'compromisos', v_compromisos
   );
@@ -212,3 +242,118 @@ end;
 $$;
 
 grant execute on function verificar_ubicacion_voluntario(uuid, float, float) to anon, authenticated;
+
+-- --- compromisos_nodo.node_id_destino ---------------------------------------
+alter table compromisos_nodo
+  add column if not exists node_id_destino uuid references centros_acopio(id);
+
+update compromisos_nodo cn
+set node_id_destino = s.node_id_origen
+from solicitudes s
+where s.id = cn.solicitud_id
+  and cn.node_id_destino is null;
+
+create or replace function responder_solicitud_nodo(
+  p_solicitud_id     uuid,
+  p_magnitud         text,
+  p_tiene_transporte boolean,
+  p_token_admin      uuid,
+  p_node_id          uuid default null,
+  p_cantidad         int  default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_vol_id           uuid;
+  v_node_id          uuid := p_node_id;
+  v_sol_status       text;
+  v_sol_magnitud     text;
+  v_sol_cantidad     int;
+  v_sol_node_destino uuid;
+  v_disponible       int;
+  v_compromiso_id    uuid;
+  v_n_nodos          int;
+begin
+  select id into v_vol_id from volunteers where token = p_token_admin and activo = true;
+  if v_vol_id is null then
+    raise exception 'token_invalido';
+  end if;
+
+  if p_magnitud is null or magnitud_orden(p_magnitud) = 0 then
+    raise exception 'La magnitud comprometida no es valida.';
+  end if;
+  if p_tiene_transporte is null then
+    raise exception 'Debes indicar si el nodo aporta transporte.';
+  end if;
+  if p_cantidad is null or p_cantidad <= 0 then
+    raise exception 'La cantidad es obligatoria y debe ser un numero entero mayor a cero.';
+  end if;
+
+  if v_node_id is null then
+    select count(distinct node_id) into v_n_nodos
+    from (
+      select na.node_id from node_admins na
+        join volunteers v on v.id = na.volunteer_id
+        where v.token = p_token_admin and v.activo = true
+      union
+      select nc.node_id from node_collaborators nc
+        join volunteers v on v.id = nc.volunteer_id
+        where v.token = p_token_admin and v.activo = true
+    ) m;
+    if v_n_nodos = 0 then
+      raise exception 'no_autorizado';
+    elsif v_n_nodos > 1 then
+      raise exception 'nodo_ambiguo: Administras varios nodos; indica con cual te comprometes.';
+    end if;
+    select node_id into v_node_id
+    from (
+      select na.node_id from node_admins na
+        join volunteers v on v.id = na.volunteer_id
+        where v.token = p_token_admin and v.activo = true
+      union
+      select nc.node_id from node_collaborators nc
+        join volunteers v on v.id = nc.volunteer_id
+        where v.token = p_token_admin and v.activo = true
+    ) m
+    limit 1;
+  elsif not es_miembro_nodo_token(v_node_id, p_token_admin) then
+    raise exception 'no_autorizado';
+  end if;
+
+  select status, magnitud, cantidad, node_id_origen
+    into v_sol_status, v_sol_magnitud, v_sol_cantidad, v_sol_node_destino
+  from solicitudes
+  where id = p_solicitud_id
+  for update;
+
+  if v_sol_status is null then
+    raise exception 'solicitud_inexistente';
+  end if;
+  if v_sol_status = 'cerrada' then
+    raise exception 'solicitud_no_disponible: Esta solicitud ya esta cerrada.';
+  end if;
+  if p_magnitud <> v_sol_magnitud then
+    raise exception 'La magnitud comprometida debe coincidir con la solicitud.';
+  end if;
+
+  v_disponible := greatest(0, coalesce(v_sol_cantidad, 0) - cantidad_comprometida_nodos(p_solicitud_id));
+  if p_cantidad > v_disponible then
+    raise exception 'cantidad_no_disponible: Solo quedan % disponibles para cubrir esta solicitud.', v_disponible;
+  end if;
+
+  insert into compromisos_nodo
+    (solicitud_id, node_id_compromete, node_id_destino, magnitud_comprometida, cantidad, tiene_transporte, status)
+  values
+    (p_solicitud_id, v_node_id, v_sol_node_destino, p_magnitud, p_cantidad, p_tiene_transporte, 'comprometido')
+  returning id into v_compromiso_id;
+
+  perform recalcular_status_solicitud(p_solicitud_id);
+
+  return v_compromiso_id;
+end;
+$$;
+
+grant execute on function responder_solicitud_nodo(uuid, text, boolean, uuid, uuid, int) to anon, authenticated;

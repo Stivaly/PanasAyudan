@@ -23,6 +23,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
   const [compromisos, setCompromisos] = useState<CompromisoVoluntarioActivo[]>([]);
   const [volunteerId, setVolunteerId] = useState<string | null>(null);
+  const [nodosEnRango, setNodosEnRango] = useState<string[]>([]);
   const [requiereVerificacion, setRequiereVerificacion] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
       setSolicitudes(resp.solicitudes);
       setCompromisos(resp.compromisos ?? []);
       setVolunteerId(resp.volunteer_id);
+      setNodosEnRango(resp.nodos_en_rango ?? []);
       setRequiereVerificacion(resp.requiere_verificacion);
       setError(null);
     } catch (e) {
@@ -55,17 +57,32 @@ export default function SolicitudesDisponibles({ token }: Props) {
     void cargar();
   }, [cargar]);
 
-  const realtimeTables = useMemo<RealtimeTable[]>(
-    () => [
-      { table: "solicitudes" },
-      { table: "compromisos_nodo" },
-      {
+  const realtimeTables = useMemo<RealtimeTable[]>(() => {
+    const tables: RealtimeTable[] = [];
+
+    // Solo nos importan cambios en solicitudes/compromisos de nodos dentro de
+    // nuestro rango (issue #83); si no hay ninguno, no hace falta suscribirse.
+    if (nodosEnRango.length > 0) {
+      const filtroNodos = `in.(${nodosEnRango.join(",")})`;
+      tables.push(
+        { table: "solicitudes", filter: `node_id_origen=${filtroNodos}` },
+        // compromisos_nodo tiene dos lados relevantes (quien surte, quien
+        // pidio); Realtime no soporta un OR entre columnas en un solo filtro,
+        // asi que se suscribe la misma tabla dos veces, una por cada lado.
+        { table: "compromisos_nodo", filter: `node_id_compromete=${filtroNodos}` },
+        { table: "compromisos_nodo", filter: `node_id_destino=${filtroNodos}` }
+      );
+    }
+
+    if (volunteerId) {
+      tables.push({
         table: "compromisos_voluntario",
-        ...(volunteerId ? { filter: `volunteer_id=eq.${volunteerId}` } : {}),
-      },
-    ],
-    [volunteerId]
-  );
+        filter: `volunteer_id=eq.${volunteerId}`,
+      });
+    }
+
+    return tables;
+  }, [volunteerId, nodosEnRango]);
 
   useRealtimeRefresh(
     "solicitudes_disponibles_changes",
