@@ -65,9 +65,18 @@ export function clearCachedRole(): void {
 
 // Cliente autenticado por token: envía el header 'volunteer-token' en cada request.
 // Las policies RLS y las RPC con token lo leen desde request.headers.
+// Memoizado por token (issue #85): evita instanciar un SupabaseClient nuevo en
+// cada llamada cuando el token no cambió.
+const clientsPorToken = new Map<string, SupabaseClient>();
+
 export function supabaseWithToken(token: string): SupabaseClient {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const existente = clientsPorToken.get(token);
+  if (existente) return existente;
+
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
     global: { headers: { "volunteer-token": token } },
   });
+  clientsPorToken.set(token, client);
+  return client;
 }
