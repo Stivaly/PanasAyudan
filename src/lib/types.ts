@@ -210,6 +210,19 @@ export interface Location {
 
 export type VolunteerRole = "superadmin" | "admin" | "colaborador" | "voluntario";
 
+const VOLUNTEER_ROLES: readonly VolunteerRole[] = [
+  "superadmin",
+  "admin",
+  "colaborador",
+  "voluntario",
+];
+
+// Type guard para validar un valor de origen no tipado (ej. sessionStorage)
+// como VolunteerRole, sin recurrir a un type casting que no verifica nada.
+export function esVolunteerRole(value: string): value is VolunteerRole {
+  return (VOLUNTEER_ROLES as readonly string[]).includes(value);
+}
+
 export interface Volunteer {
   id: string;
   nombre: string;

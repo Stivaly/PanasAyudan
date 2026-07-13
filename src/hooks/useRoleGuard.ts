@@ -10,7 +10,7 @@ import {
   getVolunteerToken,
   setCachedRole,
 } from "@/lib/supabase";
-import { VolunteerRole } from "@/lib/types";
+import { esVolunteerRole, VolunteerRole } from "@/lib/types";
 
 interface RoleGuardState {
   token: string | null;
@@ -83,8 +83,8 @@ export function useRoleGuard(allowed: VolunteerRole[]): RoleGuardState {
     }
 
     const rolCacheado = getCachedRole(token);
-    if (rolCacheado) {
-      aplicarRol(token, rolCacheado as VolunteerRole);
+    if (rolCacheado && esVolunteerRole(rolCacheado)) {
+      aplicarRol(token, rolCacheado);
     }
 
     void validar(token);
