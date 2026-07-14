@@ -2,12 +2,14 @@
 // referencia sus chunks /_next/static/* con hash de contenido; se extraen del
 // propio HTML precacheado y se agregan al cache en el install, para que la
 // hidratación funcione offline en frío. /dar sale del shell (modelo viejo).
-const CACHE = "panasayudan-v4";
+const CACHE = "panasayudan-v5";
 const SHELL = ["/", "/buscar", "/voluntarios", "/manifest.json"];
 
 async function precache() {
   const cache = await caches.open(CACHE);
-  await cache.addAll(SHELL);
+  // Por URL, no addAll: un 404 (ruta renombrada, deploy parcial) no debe
+  // impedir la instalación del SW (issue #40).
+  await Promise.allSettled(SHELL.map((url) => cache.add(url)));
   const assets = new Set();
   for (const ruta of SHELL) {
     const res = await cache.match(ruta);
