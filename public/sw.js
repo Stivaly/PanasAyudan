@@ -1,9 +1,21 @@
-// v4 (issue #39): el precache incluye los assets del build. El HTML del shell
-// referencia sus chunks /_next/static/* con hash de contenido; se extraen del
-// propio HTML precacheado y se agregan al cache en el install, para que la
-// hidratación funcione offline en frío. /dar sale del shell (modelo viejo).
-const CACHE = "panasayudan-v4";
-const SHELL = ["/", "/buscar", "/dar", "/voluntarios", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+// v6 (issue #38): los iconos maskable (#38) se separan de los `any` para que
+// Android no los recorte al aplicar la máscara; ambos se precachean junto al
+// shell. v5 (issue #24): vista pública de nodos. /buscar ya es parte del
+// shell; las fichas /nodo/[id] son dinámicas y las cachea el handler de
+// navegación (network-first) al visitarlas, habilitando el compartir por SMS
+// offline desde datos ya renderizados.
+const CACHE = "panasayudan-v6";
+const SHELL = [
+  "/",
+  "/buscar",
+  "/dar",
+  "/voluntarios",
+  "/manifest.json",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/icon-maskable-192.png",
+  "/icon-maskable-512.png",
+];
 
 async function precache() {
   const cache = await caches.open(CACHE);
