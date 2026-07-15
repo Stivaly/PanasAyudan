@@ -41,7 +41,17 @@ export default function SolicitudesDisponibles({ token }: Props) {
       setSolicitudes(resp.solicitudes);
       setCompromisos(resp.compromisos ?? []);
       setVolunteerId(resp.volunteer_id);
-      setNodosEnRango(resp.nodos_en_rango ?? []);
+      // Reusa la referencia anterior si el conjunto de nodos no cambio: el RPC
+      // no garantiza el mismo orden entre llamadas, y json_agg() en la
+      // migracion no tiene ORDER BY, asi que comparamos como conjunto (no por
+      // posicion) para no disparar un re-render/resuscripcion de Realtime
+      // innecesaria cuando el contenido es identico (issue #83).
+      setNodosEnRango((prev) => {
+        const next = resp.nodos_en_rango ?? [];
+        const mismoConjunto =
+          prev.length === next.length && new Set([...prev, ...next]).size === prev.length;
+        return mismoConjunto ? prev : next;
+      });
       setRequiereVerificacion(resp.requiere_verificacion);
       setError(null);
     } catch (e) {
