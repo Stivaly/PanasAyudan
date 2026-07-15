@@ -1,8 +1,8 @@
 // v3 (issue #24): vista pública de nodos. /buscar ya es parte del shell; las fichas
 // /nodo/[id] son dinámicas y las cachea el handler de navegación (network-first) al
 // visitarlas, habilitando el compartir por SMS offline desde datos ya renderizados.
-const CACHE = "panasayudan-v3";
-const SHELL = ["/", "/buscar", "/dar", "/voluntarios", "/manifest.json"];
+const CACHE = "panasayudan-v4";
+const SHELL = ["/", "/buscar", "/dar", "/voluntarios", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

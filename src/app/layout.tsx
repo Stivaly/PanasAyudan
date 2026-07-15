@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description: "Distribución de insumos de emergencia en Venezuela.",
   manifest: "/manifest.json",
   applicationName: "PanasAyudan",
+  icons: { icon: "/icon-192.png", apple: "/icon-192.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
