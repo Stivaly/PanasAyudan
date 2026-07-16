@@ -31,6 +31,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
+# configuración local de agentes IA (ver SECURITY.md §4)
+.claude/settings.local.json
+.claude/launch.json
+
+# supabase
+supabase/.temp/
+
 # graphify
 graphify-out/*
 !graphify-out/graph.html
