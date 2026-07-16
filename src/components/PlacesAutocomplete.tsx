@@ -20,10 +20,12 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
   const montadoRef = useRef(false);
   const [cargando, setCargando] = useState(false);
   const [activo, setActivo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const iniciar = async () => {
     if (montadoRef.current || cargando || !contRef.current) return;
     setCargando(true);
+    setError(null);
     try {
       await loadGoogleMaps();
       const { PlaceAutocompleteElement } = (await google.maps.importLibrary(
@@ -58,6 +60,8 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
       montadoRef.current = true;
       setActivo(true);
       (el as unknown as HTMLElement).focus?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cargar el buscador de lugares.");
     } finally {
       setCargando(false);
     }
@@ -65,7 +69,7 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
 
   return (
     <div>
-      {!activo && (
+      {!activo && !error && (
         <input
           type="text"
           readOnly
@@ -73,6 +77,14 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
           className="field"
           onFocus={iniciar}
         />
+      )}
+      {error && (
+        <div className="card border-danger flex flex-col gap-2">
+          <p className="text-sm font-semibold text-danger">{error}</p>
+          <button onClick={() => void iniciar()} className="btn-ghost text-sm">
+            Reintentar
+          </button>
+        </div>
       )}
       <div ref={contRef} />
     </div>
