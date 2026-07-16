@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { fetchConTimeout } from "./fetchConTimeout";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -13,7 +14,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 export const supabase: SupabaseClient = createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false }, global: { fetch: fetchConTimeout } }
 );
 
 const TOKEN_KEY = "panas_volunteer_token";
@@ -75,7 +76,7 @@ export function supabaseWithToken(token: string): SupabaseClient {
 
   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
-    global: { headers: { "volunteer-token": token } },
+    global: { headers: { "volunteer-token": token }, fetch: fetchConTimeout },
   });
   clientsPorToken.set(token, client);
   return client;

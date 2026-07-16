@@ -123,7 +123,14 @@ export default function NodoAdminPanel() {
         </button>
       </div>
 
-      {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+      {error && (
+        <div className="card border-danger">
+          <p className="text-sm font-semibold text-danger">{error}</p>
+          <button onClick={() => cargar(token)} className="btn-ghost mt-2 w-full text-sm">
+            Reintentar
+          </button>
+        </div>
+      )}
 
       {cargando ? (
         <p className="text-sm text-muted">Cargando puntos...</p>
