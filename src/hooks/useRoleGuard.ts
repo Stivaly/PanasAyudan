@@ -10,7 +10,7 @@ import {
   getVolunteerToken,
   setCachedRole,
 } from "@/lib/supabase";
-import { esVolunteerRole, VolunteerRole } from "@/lib/types";
+import { VolunteerRole } from "@/lib/types";
 
 interface RoleGuardState {
   token: string | null;
@@ -80,6 +80,12 @@ export function useRoleGuard(allowed: VolunteerRole[]): RoleGuardState {
         });
         router.replace("/voluntarios?sesion=invalida");
       }
+    }
+
+    function esVolunteerRole(value: string): value is VolunteerRole {
+      return (["superadmin", "admin", "colaborador", "voluntario"] as readonly string[]).includes(
+        value
+      );
     }
 
     const rolCacheado = getCachedRole(token);
