@@ -6,6 +6,7 @@ import { obtenerRol } from "@/lib/api";
 import {
   clearCachedRole,
   clearVolunteerToken,
+  getCachedRole,
   getVolunteerToken,
   setCachedRole,
 } from "@/lib/supabase";
@@ -51,19 +52,22 @@ export function useRoleGuard(allowed: VolunteerRole[]): RoleGuardState {
       return;
     }
 
+    function aplicarRol(tokenActual: string, role: VolunteerRole) {
+      if (!activo) return;
+
+      if (!permitidos.includes(role)) {
+        router.replace(rutaPorRol(role));
+        return;
+      }
+
+      setState({ token: tokenActual, role, loading: false, error: null });
+    }
+
     async function validar(tokenActual: string) {
       try {
         const role = await obtenerRol(tokenActual);
         setCachedRole(tokenActual, role);
-
-        if (!activo) return;
-
-        if (!permitidos.includes(role)) {
-          router.replace(rutaPorRol(role));
-          return;
-        }
-
-        setState({ token: tokenActual, role, loading: false, error: null });
+        aplicarRol(tokenActual, role);
       } catch {
         if (!activo) return;
         clearVolunteerToken();
@@ -76,6 +80,17 @@ export function useRoleGuard(allowed: VolunteerRole[]): RoleGuardState {
         });
         router.replace("/voluntarios?sesion=invalida");
       }
+    }
+
+    function esVolunteerRole(value: string): value is VolunteerRole {
+      return (["superadmin", "admin", "colaborador", "voluntario"] as readonly string[]).includes(
+        value
+      );
+    }
+
+    const rolCacheado = getCachedRole(token);
+    if (rolCacheado && esVolunteerRole(rolCacheado)) {
+      aplicarRol(token, rolCacheado);
     }
 
     void validar(token);

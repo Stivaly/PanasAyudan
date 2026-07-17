@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
-interface RealtimeTable {
+export interface RealtimeTable {
   table: string;
   filter?: string;
 }
