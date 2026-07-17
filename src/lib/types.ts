@@ -377,6 +377,8 @@ export interface SolicitudParaNodo {
 // venció el plazo de 24h): el panel debe pedir "Verificar mi ubicación".
 export interface SolicitudesDisponiblesResp {
   requiere_verificacion: boolean;
+  volunteer_id: string;
+  nodos_en_rango: string[];
   solicitudes: SolicitudDisponible[];
   compromisos?: CompromisoVoluntarioActivo[];
 }

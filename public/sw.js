@@ -3,7 +3,7 @@
 // propio HTML precacheado y se agregan al cache en el install, para que la
 // hidratación funcione offline en frío. /dar sale del shell (modelo viejo).
 const CACHE = "panasayudan-v4";
-const SHELL = ["/", "/buscar", "/voluntarios", "/manifest.json"];
+const SHELL = ["/", "/buscar", "/dar", "/voluntarios", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 async function precache() {
   const cache = await caches.open(CACHE);
