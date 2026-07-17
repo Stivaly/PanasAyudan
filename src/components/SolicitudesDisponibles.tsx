@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   listarSolicitudesDisponibles,
   marcarRetiroCompromiso,
@@ -13,21 +13,33 @@ import {
   MAGNITUD_ORDEN,
   SolicitudDisponible,
 } from "@/lib/types";
-import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { RealtimeTable, useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 
 interface Props {
   token: string;
 }
 
-const REALTIME_TABLES = [
-  { table: "solicitudes" },
-  { table: "compromisos_voluntario" },
-  { table: "compromisos_nodo" },
-];
+// Realtime limita el operador "in." a 100 valores por filtro (documentado en
+// https://supabase.com/docs/guides/realtime/postgres-changes). Se parte
+// nodosEnRango en grupos de este tamano para no depender de que el rango del
+// voluntario (hoy 40/15 km) se mantenga chico: si crece en el futuro y supera
+// los 100 nodos, seguimos filtrando correctamente en vez de arriesgarnos a un
+// comportamiento no documentado al pasar el limite.
+const MAX_VALORES_FILTRO_IN = 100;
+
+function enGrupos<T>(items: readonly T[], tamano: number): T[][] {
+  const grupos: T[][] = [];
+  for (let i = 0; i < items.length; i += tamano) {
+    grupos.push(items.slice(i, i + tamano));
+  }
+  return grupos;
+}
 
 export default function SolicitudesDisponibles({ token }: Props) {
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
   const [compromisos, setCompromisos] = useState<CompromisoVoluntarioActivo[]>([]);
+  const [volunteerId, setVolunteerId] = useState<string | null>(null);
+  const [nodosEnRango, setNodosEnRango] = useState<string[]>([]);
   const [requiereVerificacion, setRequiereVerificacion] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +56,18 @@ export default function SolicitudesDisponibles({ token }: Props) {
       const resp = await listarSolicitudesDisponibles(token);
       setSolicitudes(resp.solicitudes);
       setCompromisos(resp.compromisos ?? []);
+      setVolunteerId(resp.volunteer_id);
+      // Reusa la referencia anterior si el conjunto de nodos no cambio: el RPC
+      // no garantiza el mismo orden entre llamadas, y json_agg() en la
+      // migracion no tiene ORDER BY, asi que comparamos como conjunto (no por
+      // posicion) para no disparar un re-render/resuscripcion de Realtime
+      // innecesaria cuando el contenido es identico (issue #83).
+      setNodosEnRango((prev) => {
+        const next = resp.nodos_en_rango ?? [];
+        const mismoConjunto =
+          prev.length === next.length && new Set([...prev, ...next]).size === prev.length;
+        return mismoConjunto ? prev : next;
+      });
       setRequiereVerificacion(resp.requiere_verificacion);
       setError(null);
     } catch (e) {
@@ -59,11 +83,38 @@ export default function SolicitudesDisponibles({ token }: Props) {
     void cargar();
   }, [cargar]);
 
+  const realtimeTables = useMemo<RealtimeTable[]>(() => {
+    const tables: RealtimeTable[] = [];
+
+    // Solo nos importan cambios en solicitudes/compromisos de nodos dentro de
+    // nuestro rango (issue #83); si no hay ninguno, no hace falta suscribirse.
+    for (const grupo of enGrupos(nodosEnRango, MAX_VALORES_FILTRO_IN)) {
+      const filtroNodos = `in.(${grupo.join(",")})`;
+      tables.push(
+        { table: "solicitudes", filter: `node_id_origen=${filtroNodos}` },
+        // compromisos_nodo tiene dos lados relevantes (quien surte, quien
+        // pidio); Realtime no soporta un OR entre columnas en un solo filtro,
+        // asi que se suscribe la misma tabla dos veces, una por cada lado.
+        { table: "compromisos_nodo", filter: `node_id_compromete=${filtroNodos}` },
+        { table: "compromisos_nodo", filter: `node_id_destino=${filtroNodos}` }
+      );
+    }
+
+    if (volunteerId) {
+      tables.push({
+        table: "compromisos_voluntario",
+        filter: `volunteer_id=eq.${volunteerId}`,
+      });
+    }
+
+    return tables;
+  }, [volunteerId, nodosEnRango]);
+
   useRealtimeRefresh(
     "solicitudes_disponibles_changes",
-    REALTIME_TABLES,
+    realtimeTables,
     () => void cargar(false),
-    Boolean(token)
+    Boolean(token) && Boolean(volunteerId)
   );
 
   const verificar = async () => {
@@ -157,7 +208,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
             no se guarda: solo se usa para saber tu municipio, y la verificacion vale 24 horas.
           </p>
           <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-fg">
-            Rango operativo: 650 km maximo si tienes vehiculo registrado; 300 km maximo sin vehiculo.
+            Rango operativo: 40 km maximo si tienes vehiculo registrado; 15 km maximo sin vehiculo.
           </div>
           <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
             Esta verificacion debe hacerse desde un celular con ubicacion activa.
