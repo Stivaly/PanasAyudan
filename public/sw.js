@@ -1,13 +1,26 @@
-// v3 (issue #24): vista pública de nodos. /buscar ya es parte del shell; las fichas
-// /nodo/[id] son dinámicas y las cachea el handler de navegación (network-first) al
-// visitarlas, habilitando el compartir por SMS offline desde datos ya renderizados.
+// v4 (issue #39): el precache incluye los assets del build. El HTML del shell
+// referencia sus chunks /_next/static/* con hash de contenido; se extraen del
+// propio HTML precacheado y se agregan al cache en el install, para que la
+// hidratación funcione offline en frío. /dar sale del shell (modelo viejo).
 const CACHE = "panasayudan-v4";
 const SHELL = ["/", "/buscar", "/dar", "/voluntarios", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
+async function precache() {
+  const cache = await caches.open(CACHE);
+  await cache.addAll(SHELL);
+  const assets = new Set();
+  for (const ruta of SHELL) {
+    const res = await cache.match(ruta);
+    if (!res || !(res.headers.get("content-type") || "").includes("text/html")) continue;
+    const html = await res.text();
+    for (const m of html.matchAll(/["'](\/_next\/static\/[^"']+)["']/g)) assets.add(m[1]);
+  }
+  // Un asset que falle no debe brickear el install: se cachea en la primera visita.
+  await Promise.allSettled([...assets].map((url) => cache.add(url)));
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
-  );
+  event.waitUntil(precache().then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
