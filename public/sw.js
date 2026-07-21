@@ -7,7 +7,9 @@ const SHELL = ["/", "/buscar", "/dar", "/voluntarios", "/manifest.json", "/icon-
 
 async function precache() {
   const cache = await caches.open(CACHE);
-  await cache.addAll(SHELL);
+  // Por URL, no addAll: un 404 (ruta renombrada, deploy parcial) no debe
+  // impedir la instalación del SW (issue #40).
+  await Promise.allSettled(SHELL.map((url) => cache.add(url)));
   const assets = new Set();
   for (const ruta of SHELL) {
     const res = await cache.match(ruta);
