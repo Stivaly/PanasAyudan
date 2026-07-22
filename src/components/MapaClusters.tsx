@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { loadGoogleMaps } from "@/lib/maps";
 import { Coords } from "@/lib/types";
+import Skeleton from "./Skeleton";
 
 export interface NodoMapa {
   id: string;
@@ -63,15 +64,19 @@ export default function MapaClusters({ centro, nodos }: Props) {
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
   const router = useRouter();
 
   const inicializar = useCallback(async () => {
     setError(null);
+    setCargando(true);
     try {
       await loadGoogleMaps();
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo cargar el mapa.");
       return;
+    } finally {
+      setCargando(false);
     }
     if (!ref.current || mapRef.current) return;
     mapRef.current = new google.maps.Map(ref.current, {
@@ -151,6 +156,7 @@ export default function MapaClusters({ centro, nodos }: Props) {
   return (
     <div className="relative h-full w-full">
       <div ref={ref} className="h-full w-full" />
+      {cargando && !mapReady && !error && <Skeleton className="absolute inset-0" />}
       {error && (
         <div className="absolute inset-0 grid place-items-center bg-bg/90 p-4">
           <div className="card border-danger flex max-w-xs flex-col items-center gap-2 text-center">

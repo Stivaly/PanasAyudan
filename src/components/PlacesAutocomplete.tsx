@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps";
 import { PlaceSeleccion } from "@/lib/types";
+import Skeleton from "./Skeleton";
 
 interface Props {
   onSelect: (place: PlaceSeleccion) => void;
@@ -69,11 +70,12 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
 
   return (
     <div>
-      {!activo && !error && (
+      {cargando && <Skeleton className="h-[52px] w-full border border-border" />}
+      {!activo && !error && !cargando && (
         <input
           type="text"
           readOnly
-          placeholder={cargando ? "Cargando…" : "Busca el lugar en Google"}
+          placeholder="Busca el lugar en Google"
           className="field"
           onFocus={iniciar}
         />
