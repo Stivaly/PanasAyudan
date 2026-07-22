@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { SolicitudRegistroNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   token: string;
@@ -99,7 +100,7 @@ export default function SolicitudesRegistroNodo({ token }: Props) {
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       {cargando ? (
-        <p className="text-sm text-muted">Cargando solicitudes…</p>
+        <SkeletonLista />
       ) : pendientes.length === 0 ? (
         <p className="text-sm text-muted">No hay solicitudes pendientes.</p>
       ) : (

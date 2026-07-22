@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import PlacesAutocomplete from "./PlacesAutocomplete";
 import MapaPicker from "./MapaPicker";
+import Skeleton from "./Skeleton";
 import { resolverCentro } from "@/lib/geo";
 import { Coords, PlaceSeleccion } from "@/lib/types";
 
@@ -103,7 +104,7 @@ export default function UbicacionPicker({ valor, onChange, allowManual = true }:
           {centro ? (
             <MapaPicker centro={centro} valor={coordsManual} onChange={setCoordsManual} />
           ) : (
-            <p className="text-sm text-muted">Cargando mapa…</p>
+            <Skeleton className="h-56 w-full rounded-2xl border border-border" />
           )}
           <input
             className="field"

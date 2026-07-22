@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getEstados, listarNodosAdmin, pausarNodo } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
 import EditarNodo from "@/components/EditarNodo";
+import Skeleton from "@/components/Skeleton";
 import EstadoMovimientosNodo from "@/components/EstadoMovimientosNodo";
 import InventarioNodo from "@/components/InventarioNodo";
 import NodoTabBar, { NodoTab } from "@/components/NodoTabBar";
@@ -126,7 +127,10 @@ export default function NodoAdminPanel() {
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       {cargando ? (
-        <p className="text-sm text-muted">Cargando puntos...</p>
+        <div className="card flex flex-col gap-2">
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
       ) : nodos.length === 0 ? (
         <div className="card border-accent">
           <p className="text-sm text-muted">Aun no administras ningun punto.</p>

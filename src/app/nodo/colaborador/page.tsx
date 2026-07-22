@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { listarNodosMiembro } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
 import InventarioNodo from "@/components/InventarioNodo";
+import Skeleton from "@/components/Skeleton";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { NodoMiembro } from "@/lib/types";
@@ -92,7 +93,10 @@ export default function ColaboradorPanel() {
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       {cargando ? (
-        <p className="text-sm text-muted">Cargando puntos...</p>
+        <div className="card flex flex-col gap-2">
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
       ) : nodos.length === 0 ? (
         <div className="card border-accent">
           <p className="text-sm text-muted">Aun no colaboras en ningun punto.</p>

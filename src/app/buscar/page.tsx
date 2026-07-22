@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import BotonVolver from "@/components/BotonVolver";
 import FiltrosBuscar from "@/components/FiltrosBuscar";
 import ListaNodos from "@/components/ListaNodos";
+import SkeletonListaNodos from "@/components/SkeletonListaNodos";
 import type { NodoMapa } from "@/components/MapaClusters";
 import { useNodosPublicos } from "@/hooks/useNodosPublicos";
 import { getCategorias, getEstados } from "@/lib/api";
@@ -144,7 +145,7 @@ export default function Buscar() {
         Ver en mapa
       </button>
 
-      {cargando && <p className="text-muted">Cargando...</p>}
+      {cargando && <SkeletonListaNodos />}
 
       {!cargando && nodosFiltrados.length === 0 && (
         <p className="text-muted">No hay puntos de ayuda disponibles con este filtro.</p>

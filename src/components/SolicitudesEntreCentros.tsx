@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import { MAGNITUD_ORDEN, Magnitud, SolicitudParaNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   nodeId: string;
@@ -99,7 +100,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
 
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
       {cargando ? (
-        <p className="text-sm text-muted">Cargando solicitudes cercanas...</p>
+        <SkeletonLista />
       ) : solicitudes.length === 0 ? (
         <p className="text-sm text-muted">No hay solicitudes de otros puntos en rango ahora mismo.</p>
       ) : (

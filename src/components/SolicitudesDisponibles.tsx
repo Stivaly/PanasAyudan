@@ -14,6 +14,7 @@ import {
   SolicitudDisponible,
 } from "@/lib/types";
 import { RealtimeTable, useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   token: string;
@@ -197,7 +198,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
     <section className="flex flex-col gap-3">
       <h3 className="text-lg font-bold">Traslados disponibles</h3>
 
-      {cargando && <p className="text-muted">Cargando traslados...</p>}
+      {cargando && <SkeletonLista />}
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       {!cargando && requiereVerificacion && (

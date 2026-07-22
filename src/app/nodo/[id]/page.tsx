@@ -18,6 +18,7 @@ import {
   statusVisible,
 } from "@/lib/types";
 import CompartirNodo from "@/components/CompartirNodo";
+import SkeletonNodoDetalle from "@/components/SkeletonNodoDetalle";
 
 const TIPO_LABEL: Record<string, string> = {
   acopio: "Centro de acopio",
@@ -94,7 +95,7 @@ export default function NodoDetalle() {
   );
 
   if (cargando) {
-    return <main className="grid min-h-dvh place-items-center text-muted">Cargando...</main>;
+    return <SkeletonNodoDetalle />;
   }
 
   if (!nodo) {
