@@ -1,3 +1,6 @@
+// v9 (issue #42): sin skipWaiting automático — el SW nuevo queda en waiting y
+// el cliente (RegistrarSW) avisa "nueva versión disponible"; se activa solo
+// cuando el usuario acepta (mensaje SKIP_WAITING) o al cerrar las pestañas.
 // v8 (issue #41): página /offline dedicada como fallback de navegación, en vez
 // de servir la home para cualquier ruta no cacheada.
 // v7 (issue #40): el shell se precachea por URL (Promise.allSettled), no con
@@ -8,7 +11,7 @@
 // ya es parte del shell; las fichas /nodo/[id] son dinámicas y las cachea el
 // handler de navegación (network-first) al visitarlas, habilitando el
 // compartir por SMS offline desde datos ya renderizados.
-const CACHE = "panasayudan-v8";
+const CACHE = "panasayudan-v9";
 const SHELL = [
   "/",
   "/offline",
@@ -39,7 +42,11 @@ async function precache() {
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(precache().then(() => self.skipWaiting()));
+  event.waitUntil(precache());
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
