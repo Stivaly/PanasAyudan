@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { loadGoogleMaps } from "@/lib/maps";
 import { Coords } from "@/lib/types";
+import Skeleton from "./Skeleton";
 
 export interface NodoMapa {
   id: string;
@@ -62,29 +63,41 @@ export default function MapaClusters({ centro, nodos }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    let cancelado = false;
-    (async () => {
+  const inicializar = useCallback(async () => {
+    setError(null);
+    setCargando(true);
+    try {
       await loadGoogleMaps();
-      if (cancelado || !ref.current || mapRef.current) return;
-      mapRef.current = new google.maps.Map(ref.current, {
-        center: centro,
-        zoom: 13,
-        disableDefaultUI: true,
-        zoomControl: true,
-        gestureHandling: "greedy",
-        backgroundColor: "#0a0a0a",
-        clickableIcons: false,
-        styles: MAPA_SOLO_BASE,
-      });
-      setMapReady(true);
-    })();
-    return () => {
-      cancelado = true;
-    };
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cargar el mapa.");
+      return;
+    } finally {
+      setCargando(false);
+    }
+    if (!ref.current || mapRef.current) return;
+    mapRef.current = new google.maps.Map(ref.current, {
+      center: centro,
+      zoom: 13,
+      disableDefaultUI: true,
+      zoomControl: true,
+      gestureHandling: "greedy",
+      backgroundColor: "#0a0a0a",
+      clickableIcons: false,
+      styles: MAPA_SOLO_BASE,
+    });
+    setMapReady(true);
   }, [centro]);
+
+  useEffect(() => {
+    // Carga inicial en efecto (intencional): dispara inicializar al montar o
+    // al cambiar de centro.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void inicializar();
+  }, [inicializar]);
 
   useEffect(() => {
     mapRef.current?.setCenter(centro);
@@ -140,5 +153,20 @@ export default function MapaClusters({ centro, nodos }: Props) {
     };
   }, [nodos, router, mapReady]);
 
-  return <div ref={ref} className="h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={ref} className="h-full w-full" />
+      {cargando && !mapReady && !error && <Skeleton className="absolute inset-0" />}
+      {error && (
+        <div className="absolute inset-0 grid place-items-center bg-bg/90 p-4">
+          <div className="card border-danger flex max-w-xs flex-col items-center gap-2 text-center">
+            <p className="text-sm font-semibold text-danger">{error}</p>
+            <button onClick={() => void inicializar()} className="btn-ghost w-full text-sm">
+              Reintentar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

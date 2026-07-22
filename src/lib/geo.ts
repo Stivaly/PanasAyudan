@@ -1,10 +1,11 @@
+import { fetchConTimeout } from "./fetchConTimeout";
 import { Coords } from "./types";
 
 export const CARACAS: Coords = { lat: 10.4806, lng: -66.9036 };
 
 async function fromIp(): Promise<Coords | null> {
   try {
-    const res = await fetch("https://ip-api.com/json", { cache: "no-store" });
+    const res = await fetchConTimeout("https://ip-api.com/json", { cache: "no-store" }, 5000);
     if (!res.ok) return null;
     const data = await res.json();
     if (data?.status === "success" && typeof data.lat === "number" && typeof data.lon === "number") {

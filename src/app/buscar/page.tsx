@@ -28,7 +28,7 @@ export default function Buscar() {
   const [verMapa, setVerMapa] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [centroUsuario, setCentroUsuario] = useState<Coords>(CARACAS);
-  const { nodos, cargando } = useNodosPublicos();
+  const { nodos, cargando, error, refrescar } = useNodosPublicos();
 
   useEffect(() => {
     getCategorias().then(setCategorias).catch(() => {});
@@ -146,7 +146,16 @@ export default function Buscar() {
 
       {cargando && <p className="text-muted">Cargando...</p>}
 
-      {!cargando && nodosFiltrados.length === 0 && (
+      {!cargando && error && (
+        <div className="card border-danger">
+          <p className="text-sm font-semibold text-danger">{error}</p>
+          <button onClick={refrescar} className="btn-ghost mt-2 w-full text-sm">
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {!cargando && !error && nodosFiltrados.length === 0 && (
         <p className="text-muted">No hay puntos de ayuda disponibles con este filtro.</p>
       )}
 
