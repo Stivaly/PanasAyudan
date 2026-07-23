@@ -28,7 +28,7 @@ export default function Buscar() {
   const [verMapa, setVerMapa] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [centroUsuario, setCentroUsuario] = useState<Coords>(CARACAS);
-  const { nodos, cargando, error, refrescar } = useNodosPublicos();
+  const { nodos, cargando, error, cargar } = useNodosPublicos();
 
   useEffect(() => {
     getCategorias().then(setCategorias).catch(() => {});
@@ -149,7 +149,7 @@ export default function Buscar() {
       {!cargando && error && (
         <div className="card border-danger">
           <p className="text-sm font-semibold text-danger">{error}</p>
-          <button onClick={refrescar} className="btn-ghost mt-2 w-full text-sm">
+          <button onClick={() => void cargar()} className="btn-ghost mt-2 w-full text-sm">
             Reintentar
           </button>
         </div>

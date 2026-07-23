@@ -1,4 +1,4 @@
-import { fetchConTimeout } from "./fetchConTimeout";
+import { fetchConTimeout } from "./supabase";
 import { Coords } from "./types";
 
 export const CARACAS: Coords = { lat: 10.4806, lng: -66.9036 };

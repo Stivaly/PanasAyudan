@@ -26,7 +26,10 @@ export default function ColaboradorPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback((t: string, mostrarCarga = true) => {
-    if (mostrarCarga) setCargando(true);
+    if (mostrarCarga) {
+      setCargando(true);
+      setError(null);
+    }
     return listarNodosMiembro(t)
       .then((data) => {
         setNodos(data);

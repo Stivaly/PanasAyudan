@@ -1,5 +1,4 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { fetchConTimeout } from "./fetchConTimeout";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -8,6 +7,22 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error(
     "Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY en el entorno."
   );
+}
+
+const DEFAULT_FETCH_TIMEOUT_MS = 15000;
+
+// Envuelve fetch con un AbortSignal.timeout(). Si el caller ya pasó su propio
+// signal, se respeta tal cual (no lo pisamos) en vez de asumir que nunca pasa.
+export function fetchConTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS
+): Promise<Response> {
+  if (init?.signal) return fetch(input, init);
+  // webviews viejos (chrome <103 / safari <16) no tienen AbortSignal.timeout;
+  // mejor degradar al comportamiento anterior que romper todas las llamadas.
+  if (typeof AbortSignal.timeout !== "function") return fetch(input, init);
+  return fetch(input, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 }
 
 // Cliente público (sin token de voluntario). Lectura de mapa, stock, RPC públicas.

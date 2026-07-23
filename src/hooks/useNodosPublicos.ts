@@ -16,13 +16,17 @@ interface Estado {
   error: string | null;
 }
 
-export function useNodosPublicos(): Estado & { refrescar: () => void } {
+export function useNodosPublicos(): Estado & {
+  refrescar: () => void;
+  cargar: (mostrarCarga?: boolean) => Promise<void>;
+} {
   const [nodos, setNodos] = useState<NodoPublico[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const cargar = useCallback(async () => {
+  const cargar = useCallback(async (mostrarCarga = true) => {
+    if (mostrarCarga) setCargando(true);
     try {
       setNodos(await getNodosPublicos());
       setError(null);
@@ -36,14 +40,13 @@ export function useNodosPublicos(): Estado & { refrescar: () => void } {
   const refrescar = useCallback(() => {
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(() => {
-      void cargar();
+      void cargar(false);
     }, 400);
   }, [cargar]);
 
   useEffect(() => {
-    // Carga inicial en efecto (intencional): marcamos "cargando" y disparamos.
+    // Carga inicial en efecto (intencional): cargar() ya marca "cargando".
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCargando(true);
     void cargar();
 
     const canal = supabase
@@ -66,5 +69,5 @@ export function useNodosPublicos(): Estado & { refrescar: () => void } {
     };
   }, [cargar, refrescar]);
 
-  return { nodos, cargando, error, refrescar };
+  return { nodos, cargando, error, refrescar, cargar };
 }

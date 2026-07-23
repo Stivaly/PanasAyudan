@@ -25,6 +25,7 @@ export function loadGoogleMaps(): Promise<typeof google> {
     const cbName = "__panas_gmaps_cb";
 
     const timeoutId = setTimeout(() => {
+      script.remove();
       reject(new Error("Tiempo de espera agotado al cargar Google Maps."));
     }, MAPS_LOAD_TIMEOUT_MS);
 
