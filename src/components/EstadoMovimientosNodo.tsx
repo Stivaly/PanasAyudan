@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { MovimientoNodoEntrante, MovimientoNodoSaliente } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   nodeId: string;
@@ -77,7 +78,11 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
     `${mov.category_name}${mov.subcategoria ? " - " + mov.subcategoria : ""}`;
 
   if (cargando) {
-    return <p className="text-sm text-muted">Cargando movimientos...</p>;
+    return (
+      <div className="flex flex-col gap-3 border-t border-border pt-3">
+        <SkeletonLista filas={2} />
+      </div>
+    );
   }
 
   return (

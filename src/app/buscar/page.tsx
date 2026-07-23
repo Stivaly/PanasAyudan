@@ -5,17 +5,16 @@
 // demanda con dynamic import — sin ningún request de mapa hasta tocar "Ver en mapa".
 
 import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
 import BotonVolver from "@/components/BotonVolver";
 import FiltrosBuscar from "@/components/FiltrosBuscar";
 import ListaNodos from "@/components/ListaNodos";
+import SkeletonListaNodos from "@/components/SkeletonListaNodos";
+import MapaClusters from "@/components/MapaClustersDinamico";
 import type { NodoMapa } from "@/components/MapaClusters";
 import { useNodosPublicos } from "@/hooks/useNodosPublicos";
 import { getCategorias, getEstados } from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
 import { Category, Coords, EstadoVenezuela, statusVisible } from "@/lib/types";
-
-const MapaClusters = dynamic(() => import("@/components/MapaClusters"), { ssr: false });
 
 // Nodos por página en la lista: acota la altura para que no baje infinito.
 const POR_PAGINA = 8;
@@ -144,7 +143,7 @@ export default function Buscar() {
         Ver en mapa
       </button>
 
-      {cargando && <p className="text-muted">Cargando...</p>}
+      {cargando && <SkeletonListaNodos />}
 
       {!cargando && error && (
         <div className="card border-danger">

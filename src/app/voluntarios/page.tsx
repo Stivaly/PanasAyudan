@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BotonVolver from "@/components/BotonVolver";
+import Skeleton from "@/components/Skeleton";
 import {
   registrarVoluntario,
   getCentrosAcopioPorEstado,
@@ -456,7 +457,7 @@ export default function Voluntarios() {
             <>
               <label className="text-sm font-semibold text-muted">Centro de acopio</label>
               {cargandoCentros ? (
-                <p className="text-muted text-sm">Cargando centros…</p>
+                <Skeleton className="h-[52px] w-full" />
               ) : centros.length === 0 ? (
                 <p className="text-muted text-sm">
                   No hay centros de acopio registrados en este estado todavía.

@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import BotonVolver from "@/components/BotonVolver";
+import Skeleton from "@/components/Skeleton";
 import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
 import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import { normalizarTelefonoVe, errorTelegram, normalizarTelegram } from "@/lib/telefono";
@@ -291,7 +292,7 @@ export default function SuperadminPanel() {
               <>
                 <label className="text-sm font-semibold text-muted">Centro de acopio</label>
                 {cargandoCentros ? (
-                  <p className="text-muted text-sm">Cargando centros…</p>
+                  <Skeleton className="h-[52px] w-full" />
                 ) : centros.length === 0 ? (
                   <p className="text-muted text-sm">
                     No hay centros de acopio registrados en este estado todavía.
