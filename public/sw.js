@@ -1,5 +1,3 @@
-// v8 (issue #41): página /offline dedicada como fallback de navegación, en vez
-// de servir la home para cualquier ruta no cacheada.
 // v7 (issue #40): el shell se precachea por URL (Promise.allSettled), no con
 // addAll: un 404 en una sola ruta (renombrada, deploy parcial) ya no impide
 // que el SW instale. v6 (issue #38): los iconos maskable se separan de los
@@ -8,10 +6,9 @@
 // ya es parte del shell; las fichas /nodo/[id] son dinámicas y las cachea el
 // handler de navegación (network-first) al visitarlas, habilitando el
 // compartir por SMS offline desde datos ya renderizados.
-const CACHE = "panasayudan-v8";
+const CACHE = "panasayudan-v7";
 const SHELL = [
   "/",
-  "/offline",
   "/buscar",
   "/dar",
   "/voluntarios",
@@ -75,12 +72,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE).then((c) => c.put(request, copia));
           return res;
         })
-        .catch(() =>
-          caches
-            .match(request)
-            // "/" como último recurso: el precache per-URL tolera que /offline falle.
-            .then((r) => r || caches.match("/offline").then((o) => o || caches.match("/")))
-        )
+        .catch(() => caches.match(request).then((r) => r || caches.match("/")))
     );
     return;
   }
