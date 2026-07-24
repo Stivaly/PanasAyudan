@@ -14,11 +14,13 @@ export default function BotonVolver({
   fallback = "/",
   className = "rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold",
   children = "←",
+  ariaLabel = "Volver",
 }: {
   destinoFijo?: string;
   fallback?: string;
   className?: string;
   children?: ReactNode;
+  ariaLabel?: string;
 }) {
   const router = useRouter();
 
@@ -35,7 +37,7 @@ export default function BotonVolver({
   };
 
   return (
-    <button type="button" onClick={volver} className={className}>
+    <button type="button" onClick={volver} className={className} aria-label={ariaLabel}>
       {children}
     </button>
   );
