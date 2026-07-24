@@ -14,6 +14,7 @@ html {
   --color-accent: 22 101 52;
   --color-badge: 22 101 52;
   --color-danger: 220 38 38;
+  --color-warning: 180 83 9;
   --color-muted: 71 85 105;
 }
 
@@ -26,6 +27,7 @@ html.dark {
   --color-accent: 34 197 94;
   --color-badge: 98 160 77;
   --color-danger: 239 68 68;
+  --color-warning: 251 191 36;
   --color-muted: 156 163 175;
 }
 

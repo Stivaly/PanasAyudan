@@ -157,7 +157,7 @@ export default function EditarNodo({ nodo, estados, token, onSaved }: Props) {
       )}
 
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
-      {aviso && <p className="text-sm font-semibold text-accent">{aviso}</p>}
+      {aviso && <p className="text-sm font-semibold text-warning">{aviso}</p>}
 
       <div className="grid grid-cols-2 gap-2">
         <button onClick={guardar} disabled={guardando} className="btn-primary text-sm disabled:opacity-50">
