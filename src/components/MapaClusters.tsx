@@ -62,6 +62,8 @@ export default function MapaClusters({ centro, nodos }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
+  const centroAplicadoRef = useRef<Coords | null>(null);
+  const idsAjustadosRef = useRef<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -89,6 +91,7 @@ export default function MapaClusters({ centro, nodos }: Props) {
       clickableIcons: false,
       styles: MAPA_SOLO_BASE,
     });
+    centroAplicadoRef.current = centro;
     setMapReady(true);
   }, [centro]);
 
@@ -100,7 +103,12 @@ export default function MapaClusters({ centro, nodos }: Props) {
   }, [inicializar]);
 
   useEffect(() => {
-    mapRef.current?.setCenter(centro);
+    const map = mapRef.current;
+    if (!map) return;
+    const previo = centroAplicadoRef.current;
+    if (previo && previo.lat === centro.lat && previo.lng === centro.lng) return;
+    centroAplicadoRef.current = centro;
+    map.setCenter(centro);
   }, [centro]);
 
   useEffect(() => {
@@ -135,7 +143,9 @@ export default function MapaClusters({ centro, nodos }: Props) {
     });
 
     let zoomListener: google.maps.MapsEventListener | null = null;
-    if (nodos.length > 0) {
+    const idsActuales = nodos.map((nodo) => nodo.id).sort().join("|");
+    if (nodos.length > 0 && idsActuales !== idsAjustadosRef.current) {
+      idsAjustadosRef.current = idsActuales;
       const bounds = new google.maps.LatLngBounds();
       nodos.forEach((nodo) => bounds.extend({ lat: nodo.lat, lng: nodo.lng }));
       map.fitBounds(bounds);
