@@ -205,7 +205,7 @@ export default function NodoAdminPanel() {
                   nodeId={activo.id}
                   token={token}
                   verificado={activo.verificado}
-                  onVerificado={() => cargar(token)}
+                  onVerificado={() => cargar(token, false)}
                 />
                 {!pendienteVerificacion && (
                   <div className="grid grid-cols-2 gap-2">
@@ -258,7 +258,7 @@ export default function NodoAdminPanel() {
                   nodo={activo}
                   estados={estados}
                   token={token}
-                  onSaved={() => cargar(token)}
+                  onSaved={() => cargar(token, false)}
                 />
               </div>
             )}
