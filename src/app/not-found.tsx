@@ -7,7 +7,7 @@ export default function NotFound() {
         <p className="text-lg font-bold">Página no encontrada</p>
         <p className="mt-1 text-muted">La ruta que buscas no existe.</p>
         <Link href="/" className="btn-primary mt-5 inline-flex">
-          Volver al mapa
+          Volver al inicio
         </Link>
       </div>
     </main>
