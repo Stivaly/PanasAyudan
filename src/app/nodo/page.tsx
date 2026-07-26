@@ -85,13 +85,26 @@ export default function NodoAdminPanel() {
     router.push("/voluntarios");
   };
 
+  const [pausando, setPausando] = useState<TipoPausa | null>(null);
+
+  const CONFIRMACION_PAUSA: Record<TipoPausa, string> = {
+    recepcion: "Pausar la recepcion de este punto?",
+    entrega: "Pausar la entrega de este punto?",
+    ambas: "Pausar recepcion y entrega de este punto?",
+    reactivar: "Reactivar este punto?",
+  };
+
   const pausar = async (tipoPausa: TipoPausa) => {
-    if (!token || !activo) return;
+    if (!token || !activo || pausando) return;
+    if (!window.confirm(CONFIRMACION_PAUSA[tipoPausa])) return;
+    setPausando(tipoPausa);
     try {
       await pausarNodo(activo.id, tipoPausa, token);
       await cargar(token, false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo actualizar el punto.");
+    } finally {
+      setPausando(null);
     }
   };
 
@@ -210,23 +223,39 @@ export default function NodoAdminPanel() {
                 {!pendienteVerificacion && (
                   <div className="grid grid-cols-2 gap-2">
                     {operaRecepcion && (
-                      <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
-                        Pausar recepcion
+                      <button
+                        onClick={() => pausar("recepcion")}
+                        disabled={pausando !== null}
+                        className="btn-ghost text-sm disabled:opacity-50"
+                      >
+                        {pausando === "recepcion" ? "Pausando…" : "Pausar recepcion"}
                       </button>
                     )}
                     {operaEntrega && (
-                      <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
-                        Pausar entrega
+                      <button
+                        onClick={() => pausar("entrega")}
+                        disabled={pausando !== null}
+                        className="btn-ghost text-sm disabled:opacity-50"
+                      >
+                        {pausando === "entrega" ? "Pausando…" : "Pausar entrega"}
                       </button>
                     )}
                     {/* Pausar ambas solo tiene sentido en un mixto: opera las dos mitades. */}
                     {operaRecepcion && operaEntrega && (
-                      <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
-                        Pausar ambas
+                      <button
+                        onClick={() => pausar("ambas")}
+                        disabled={pausando !== null}
+                        className="btn-ghost text-sm disabled:opacity-50"
+                      >
+                        {pausando === "ambas" ? "Pausando…" : "Pausar ambas"}
                       </button>
                     )}
-                    <button onClick={() => pausar("reactivar")} className="btn-ghost text-sm">
-                      Reactivar
+                    <button
+                      onClick={() => pausar("reactivar")}
+                      disabled={pausando !== null}
+                      className="btn-ghost text-sm disabled:opacity-50"
+                    >
+                      {pausando === "reactivar" ? "Reactivando…" : "Reactivar"}
                     </button>
                   </div>
                 )}
