@@ -60,6 +60,18 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   // Item pendiente de confirmación de borrado (abre el modal "¿Estás seguro?").
   const [borrarItem, setBorrarItem] = useState<InventarioItem | null>(null);
   const [borrando, setBorrando] = useState(false);
+  const confirmarBorrarRef = useRef<HTMLButtonElement | null>(null);
+
+  // Foco inicial al abrir el modal + cierre con Escape (mientras no esté borrando).
+  useEffect(() => {
+    if (!borrarItem) return;
+    confirmarBorrarRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !borrando) setBorrarItem(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [borrarItem, borrando]);
 
   // --- Prompt "¿Solicitar más?" (ambos modos) ---
   const [solicitarFor, setSolicitarFor] = useState<string | null>(null);
@@ -446,6 +458,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             </p>
             <div className="mt-5 flex gap-2">
               <button
+                ref={confirmarBorrarRef}
                 onClick={eliminar}
                 disabled={borrando}
                 className="btn-danger flex-1 text-sm disabled:opacity-50"
