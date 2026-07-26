@@ -226,7 +226,14 @@ export default function Voluntarios() {
     setVerificando(true);
     // Validar el token contra la base de datos ANTES de guardarlo o navegar.
     // Un token falso o inválido no debe escribir nada en localStorage.
-    const valido = await validarTokenVoluntario(t);
+    let valido: boolean;
+    try {
+      valido = await validarTokenVoluntario(t);
+    } catch {
+      setVerificando(false);
+      setError("No se pudo verificar tu codigo. Revisa tu conexion e intenta de nuevo.");
+      return;
+    }
     if (!valido) {
       setVerificando(false);
       setError("Codigo no reconocido. Verifica que lo copiaste correctamente.");
