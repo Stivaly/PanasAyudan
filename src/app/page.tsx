@@ -17,6 +17,15 @@ export default function Home() {
   const token = useVolunteerToken();
   const tieneToken = token !== null;
   const [role, setRole] = useState<VolunteerRole | null>(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+
+  useEffect(() => {
+    const onCambioVisibilidad = (e: Event) => {
+      setModalAbierto((e as CustomEvent<{ visible: boolean }>).detail.visible);
+    };
+    window.addEventListener("bienvenida-visible-change", onCambioVisibilidad);
+    return () => window.removeEventListener("bienvenida-visible-change", onCambioVisibilidad);
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -59,6 +68,8 @@ export default function Home() {
       <button
         type="button"
         onClick={() => window.dispatchEvent(new Event("abrir-bienvenida"))}
+        aria-haspopup="dialog"
+        aria-expanded={modalAbierto}
         className="absolute left-4 top-4 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-fg"
       >
         Como funciona
