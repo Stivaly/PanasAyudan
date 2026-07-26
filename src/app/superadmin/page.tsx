@@ -226,7 +226,7 @@ export default function SuperadminPanel() {
               Guarda este token y entrégaselo al admin. No se vuelve a mostrar y no se
               puede recuperar.
             </p>
-            <input className="field font-mono text-sm" type="text" value={adminToken} readOnly />
+            <input className="field font-mono text-sm" type="password" value={adminToken} readOnly />
             <button
               type="button"
               onClick={() => navigator.clipboard?.writeText(adminToken)}
