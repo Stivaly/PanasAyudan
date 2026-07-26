@@ -36,7 +36,7 @@ export function loadGoogleMaps(): Promise<typeof google> {
     const script = document.createElement("script");
     script.src =
       `https://maps.googleapis.com/maps/api/js?key=${API_KEY}` +
-      `&libraries=places,geometry,marker&language=es&region=VE&callback=${cbName}`;
+      `&libraries=places,geometry,marker&language=es&region=VE&loading=async&callback=${cbName}`;
     script.async = true;
     script.defer = true;
     script.onerror = () => {

@@ -51,12 +51,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       {/* suppressHydrationWarning: extensiones del navegador (p. ej. Bitdefender)
           inyectan atributos como bis_register/__processed_* en <body> antes de la
           hidratación. Suprime solo el mismatch de atributos de este nodo, no el
           contenido ni los componentes hijos. */}
       <body className="min-h-dvh bg-bg text-fg antialiased" suppressHydrationWarning>
+        {/* Primer hijo de <body>: corre antes de que pinte el resto del
+            contenido (evita flash de tema) sin anidar <script> bajo <html>,
+            que React 19 rechaza. */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <KeepAlive />
         <RegistrarSW />
         <InstalarApp />
