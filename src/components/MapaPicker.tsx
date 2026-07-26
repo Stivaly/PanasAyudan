@@ -31,6 +31,8 @@ export default function MapaPicker({ centro, valor, onChange }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+  const clickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
+  const dragListenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [mapReady, setMapReady] = useState(false);
@@ -72,10 +74,10 @@ export default function MapaPicker({ centro, valor, onChange }: Props) {
         onChange(coords);
       };
 
-      map.addListener("click", (e: google.maps.MapMouseEvent) =>
+      clickListenerRef.current = map.addListener("click", (e: google.maps.MapMouseEvent) =>
         fijar(aCoords(e.latLng))
       );
-      marker.addListener("dragend", () => fijar(aCoords(marker.position)));
+      dragListenerRef.current = marker.addListener("dragend", () => fijar(aCoords(marker.position)));
       setMapReady(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo cargar el mapa.");
@@ -89,6 +91,11 @@ export default function MapaPicker({ centro, valor, onChange }: Props) {
     // Carga inicial en efecto (intencional): dispara inicializar al montar.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void inicializar();
+    return () => {
+      clickListenerRef.current?.remove();
+      dragListenerRef.current?.remove();
+      if (markerRef.current) markerRef.current.map = null;
+    };
   }, [inicializar]);
 
   return (
