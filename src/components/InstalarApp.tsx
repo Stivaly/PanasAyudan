@@ -6,6 +6,7 @@
 // - Descartarlo lo oculta 14 días. No aparece en el primer render: espera 30 s
 //   de uso o segunda visita, para no interrumpir a quien entra en emergencia.
 import { useEffect, useState } from "react";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 const KEY_DESCARTE = "pa_install_dismissed";
 const KEY_VISITA = "pa_install_visited";
@@ -27,11 +28,11 @@ export default function InstalarApp() {
       (navigator as unknown as { standalone?: boolean }).standalone === true;
     if (standalone) return;
 
-    const desc = Number(localStorage.getItem(KEY_DESCARTE) || 0);
+    const desc = Number(safeGetItem(KEY_DESCARTE) || 0);
     if (desc && Date.now() - desc < DIAS_DESCARTE * 24 * 60 * 60 * 1000) return;
 
-    const segundaVisita = localStorage.getItem(KEY_VISITA) === "1";
-    localStorage.setItem(KEY_VISITA, "1");
+    const segundaVisita = safeGetItem(KEY_VISITA) === "1";
+    safeSetItem(KEY_VISITA, "1");
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- se deriva del navegador al montar el banner
@@ -66,7 +67,7 @@ export default function InstalarApp() {
   }, []);
 
   const descartar = () => {
-    localStorage.setItem(KEY_DESCARTE, String(Date.now()));
+    safeSetItem(KEY_DESCARTE, String(Date.now()));
     setMostrar(false);
   };
 
