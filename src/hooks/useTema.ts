@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export type Tema = "dark" | "light";
 
@@ -26,7 +27,7 @@ export function aplicarTema(tema: Tema) {
   const root = document.documentElement;
   root.classList.toggle("dark", tema === "dark");
   root.style.colorScheme = tema;
-  localStorage.setItem(THEME_KEY, tema);
+  safeSetItem(THEME_KEY, tema);
 
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (meta) meta.content = THEME_COLOR[tema];

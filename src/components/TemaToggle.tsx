@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTema } from "@/hooks/useTema";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 const AVISO_CLARO_KEY = "pa_light_theme_notice_dismissed";
 
@@ -17,13 +18,13 @@ export default function TemaToggle() {
     }
 
     setTema("light");
-    if (localStorage.getItem(AVISO_CLARO_KEY) !== "1") {
+    if (safeGetItem(AVISO_CLARO_KEY) !== "1") {
       setMostrarAviso(true);
     }
   };
 
   const descartarAviso = () => {
-    localStorage.setItem(AVISO_CLARO_KEY, "1");
+    safeSetItem(AVISO_CLARO_KEY, "1");
     setMostrarAviso(false);
   };
 
