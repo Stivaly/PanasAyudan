@@ -30,6 +30,12 @@ export default function ModalBienvenida() {
     return () => window.removeEventListener("abrir-bienvenida", abrir);
   }, []);
 
+  // Notifica el estado de visibilidad para que el botón que abre el modal
+  // pueda anunciar aria-expanded correctamente.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("bienvenida-visible-change", { detail: { visible } }));
+  }, [visible]);
+
   function cerrar() {
     try {
       localStorage.setItem(STORAGE_KEY, "1");
