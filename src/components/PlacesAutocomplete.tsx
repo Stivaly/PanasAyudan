@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps";
 import { PlaceSeleccion } from "@/lib/types";
 import Skeleton from "./Skeleton";
@@ -19,9 +19,21 @@ interface GmpSelectEvent {
 export default function PlacesAutocomplete({ onSelect }: Props) {
   const contRef = useRef<HTMLDivElement>(null);
   const montadoRef = useRef(false);
+  const elRef = useRef<HTMLElement | null>(null);
+  const gmpSelectHandlerRef = useRef<((event: Event) => void) | null>(null);
   const [cargando, setCargando] = useState(false);
   const [activo, setActivo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cont = contRef.current;
+    return () => {
+      if (elRef.current && gmpSelectHandlerRef.current) {
+        elRef.current.removeEventListener("gmp-select", gmpSelectHandlerRef.current);
+      }
+      if (cont) cont.innerHTML = "";
+    };
+  }, []);
 
   const iniciar = async () => {
     if (montadoRef.current || cargando || !contRef.current) return;
@@ -40,7 +52,7 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
       });
       el.style.width = "100%";
 
-      el.addEventListener("gmp-select", async (event: Event) => {
+      const onGmpSelect = async (event: Event) => {
         const { placePrediction } = event as unknown as GmpSelectEvent;
         const place = placePrediction.toPlace();
         await place.fetchFields({
@@ -54,10 +66,13 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
           lng: place.location.lng(),
           address: place.formattedAddress ?? null,
         });
-      });
+      };
+      gmpSelectHandlerRef.current = onGmpSelect;
+      el.addEventListener("gmp-select", onGmpSelect);
 
       contRef.current.innerHTML = "";
       contRef.current.appendChild(el);
+      elRef.current = el as unknown as HTMLElement;
       montadoRef.current = true;
       setActivo(true);
       (el as unknown as HTMLElement).focus?.();
