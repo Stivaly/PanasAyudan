@@ -235,22 +235,20 @@ export async function crearAporte(
 // Valida un token de voluntario contra la base de datos antes de confiar en él.
 // Usa el cliente autenticado por token: la policy RLS volunteers_select_own solo
 // devuelve la fila cuyo token coincide con el header 'volunteer-token'. Si existe
-// exactamente una fila activa => token válido. Nunca lanza: cualquier error, fallo
-// de red o cero filas devuelve false, sin exponer el error crudo de Supabase.
+// exactamente una fila activa => token válido. false solo significa "código
+// inválido o inactivo" (la consulta sí se completó); un fallo de red o de
+// Supabase se propaga (throw) para que el llamador lo distinga de un código
+// incorrecto y no lo reporte como tal.
 export async function validarTokenVoluntario(token: string): Promise<boolean> {
   const limpio = token?.trim();
   if (!limpio) return false;
-  try {
-    const { count, error } = await supabaseWithToken(limpio)
-      .from("volunteers")
-      .select("id", { count: "exact", head: true })
-      .eq("token", limpio)
-      .eq("activo", true);
-    if (error) return false;
-    return count === 1;
-  } catch {
-    return false;
-  }
+  const { count, error } = await supabaseWithToken(limpio)
+    .from("volunteers")
+    .select("id", { count: "exact", head: true })
+    .eq("token", limpio)
+    .eq("activo", true);
+  if (error) throw new Error(error.message);
+  return count === 1;
 }
 
 // Obtiene el rol asociado a un token de voluntario (issue #17). Usa el cliente
