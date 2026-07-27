@@ -40,6 +40,7 @@ export default function SuperadminPanel() {
   const [cargandoCentros, setCargandoCentros] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState<string | null>(null);
+  const [mostrarAdminToken, setMostrarAdminToken] = useState(false);
   const [creandoAdmin, setCreandoAdmin] = useState(false);
 
   useEffect(() => {
@@ -226,7 +227,22 @@ export default function SuperadminPanel() {
               Guarda este token y entrégaselo al admin. No se vuelve a mostrar y no se
               puede recuperar.
             </p>
-            <input className="field font-mono text-sm" type="text" value={adminToken} readOnly />
+            <div className="flex gap-2">
+              <input
+                className="field flex-1 font-mono text-sm"
+                type={mostrarAdminToken ? "text" : "password"}
+                value={adminToken}
+                readOnly
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarAdminToken((v) => !v)}
+                aria-label={mostrarAdminToken ? "Ocultar token" : "Mostrar token"}
+                className="btn-ghost px-3 text-sm"
+              >
+                {mostrarAdminToken ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => navigator.clipboard?.writeText(adminToken)}
@@ -234,7 +250,14 @@ export default function SuperadminPanel() {
             >
               Copiar token
             </button>
-            <button type="button" onClick={() => setAdminToken(null)} className="btn-primary w-full">
+            <button
+              type="button"
+              onClick={() => {
+                setAdminToken(null);
+                setMostrarAdminToken(false);
+              }}
+              className="btn-primary w-full"
+            >
               Crear otro admin
             </button>
           </>
