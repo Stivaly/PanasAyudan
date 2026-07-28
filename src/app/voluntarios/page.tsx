@@ -48,6 +48,9 @@ export default function Voluntarios() {
   const [centros, setCentros] = useState<CentroAcopio[]>([]);
   const [cargandoCentros, setCargandoCentros] = useState(false);
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
+  // Aviso discreto si falla la carga de estados (issue #55): sin esto, el
+  // combobox quedaba vacío en silencio.
+  const [estadosError, setEstadosError] = useState(false);
   const [tokenNuevo, setTokenNuevo] = useState<string | null>(null);
   // Bug #12: feedback visual al copiar el codigo de acceso.
   const [copiado, setCopiado] = useState(false);
@@ -117,9 +120,15 @@ export default function Voluntarios() {
   }, [router]);
 
   // Al abrir el formulario de registro, cargar la lista de estados (no los centros).
+  // Si falla, el guard estados.length hace que reentrar a la vista reintente solo.
   useEffect(() => {
     if (vista !== "registro" || estados.length > 0) return;
-    getEstados().then(setEstados).catch(() => setEstados([]));
+    getEstados()
+      .then((lista) => {
+        setEstados(lista);
+        setEstadosError(false);
+      })
+      .catch(() => setEstadosError(true));
   }, [vista, estados.length]);
 
   // Los centros se cargan solo al elegir un estado, filtrados por ese estado.
@@ -460,6 +469,11 @@ export default function Voluntarios() {
             label="Estado del centro de acopio"
             placeholder="Elige un estado (opcional)"
           />
+          {estadosError && (
+            <p className="text-xs font-semibold text-warning">
+              No se pudieron cargar los estados. El campo es opcional; puedes continuar.
+            </p>
+          )}
           {estadoId && (
             <>
               <label className="text-sm font-semibold text-muted">Centro de acopio</label>

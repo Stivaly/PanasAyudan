@@ -28,10 +28,13 @@ export default function Buscar() {
   const [pagina, setPagina] = useState(1);
   const [centroUsuario, setCentroUsuario] = useState<Coords>(CARACAS);
   const { nodos, cargando, error, refrescar } = useNodosPublicos();
+  // Aviso discreto si fallan las cargas de los filtros (issue #55): sin esto,
+  // los selects quedaban vacíos en silencio.
+  const [filtrosError, setFiltrosError] = useState(false);
 
   useEffect(() => {
-    getCategorias().then(setCategorias).catch(() => {});
-    getEstados().then(setEstados).catch(() => {});
+    getCategorias().then(setCategorias).catch(() => setFiltrosError(true));
+    getEstados().then(setEstados).catch(() => setFiltrosError(true));
   }, []);
 
   // Filtra por estado (estado_id) y por macrocategoría disponible (slug).
@@ -94,14 +97,21 @@ export default function Buscar() {
   );
 
   const filtros = (
-    <FiltrosBuscar
-      estados={estados}
-      categorias={categorias}
-      estadoId={estadoId}
-      categoria={activa}
-      onEstado={setEstadoId}
-      onCategoria={setActiva}
-    />
+    <div className="flex flex-col gap-1">
+      {filtrosError && (
+        <p className="text-xs font-semibold text-warning">
+          No se pudieron cargar los filtros.
+        </p>
+      )}
+      <FiltrosBuscar
+        estados={estados}
+        categorias={categorias}
+        estadoId={estadoId}
+        categoria={activa}
+        onEstado={setEstadoId}
+        onCategoria={setActiva}
+      />
+    </div>
   );
 
   if (verMapa) {
