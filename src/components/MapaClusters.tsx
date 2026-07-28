@@ -32,8 +32,14 @@ const MAPA_SOLO_BASE: google.maps.MapTypeStyle[] = [
   { featureType: "water", elementType: "geometry", stylers: [{ saturation: -45 }, { lightness: 10 }] },
 ];
 
-function pinSvg(valor: number, pausado = false): string {
-  const fontSize = valor > 99 ? 14 : valor > 9 ? 16 : 18;
+// valor solo tiene sentido para clusters (cantidad de nodos agrupados); un
+// nodo suelto no lleva número.
+function pinSvg(valor?: number, pausado = false): string {
+  const fontSize = valor != null && valor > 99 ? 14 : valor != null && valor > 9 ? 16 : 18;
+  const texto =
+    valor != null
+      ? `<text x="24" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="800" fill="#fff">${valor}</text>`
+      : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="56" viewBox="0 0 48 56">
     <defs>
       <linearGradient id="g" x1="10" y1="6" x2="38" y2="42" gradientUnits="userSpaceOnUse">
@@ -46,11 +52,11 @@ function pinSvg(valor: number, pausado = false): string {
     </defs>
     <path filter="url(#s)" d="M24 53c-2.9-5.1-17-17.2-17-30C7 13.1 14.6 6 24 6s17 7.1 17 17c0 12.8-14.1 24.9-17 30Z" fill="url(#g)" stroke="#0a0a0a" stroke-width="4"/>
     <circle cx="24" cy="23" r="13" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>
-    <text x="24" y="29" text-anchor="middle" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="800" fill="#fff">${valor}</text>
+    ${texto}
   </svg>`;
 }
 
-function pinIcon(valor: number, pausado = false): google.maps.Icon {
+function pinIcon(valor?: number, pausado = false): google.maps.Icon {
   return {
     url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSvg(valor, pausado)),
     scaledSize: new google.maps.Size(48, 56),
@@ -118,7 +124,7 @@ export default function MapaClusters({ centro, nodos }: Props) {
     const markers = nodos.map((nodo) => {
       const marker = new google.maps.Marker({
         position: { lat: nodo.lat, lng: nodo.lng },
-        icon: pinIcon(1, nodo.pausado),
+        icon: pinIcon(undefined, nodo.pausado),
         title: nodo.nombre,
         zIndex: Number(google.maps.Marker.MAX_ZINDEX) + 1,
       });
