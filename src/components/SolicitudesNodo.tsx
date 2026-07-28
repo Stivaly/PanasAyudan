@@ -38,6 +38,9 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [requiereVehiculo, setRequiereVehiculo] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
+  // Anti doble submit (issue #53): RPC de borrado en vuelo. Boolean basta
+  // porque solo hay un strip de confirmacion abierto a la vez (eliminandoId).
+  const [borrando, setBorrando] = useState(false);
   const [subPendiente, setSubPendiente] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -186,7 +189,9 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   };
 
   const eliminar = async (solicitudId: string) => {
+    if (borrando) return;
     setError(null);
+    setBorrando(true);
     try {
       await eliminarSolicitud(solicitudId, token);
       setEliminandoId(null);
@@ -194,6 +199,8 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       cargar();
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo eliminar la solicitud.");
+    } finally {
+      setBorrando(false);
     }
   };
 
@@ -413,13 +420,15 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                         <span className="text-xs text-danger">Eliminar esta solicitud?</span>
                         <button
                           onClick={() => eliminar(s.id)}
-                          className="text-xs font-semibold text-danger"
+                          disabled={borrando}
+                          className="text-xs font-semibold text-danger disabled:opacity-50"
                         >
-                          Si, eliminar
+                          {borrando ? "Eliminando…" : "Si, eliminar"}
                         </button>
                         <button
                           onClick={() => setEliminandoId(null)}
-                          className="text-xs font-semibold text-muted"
+                          disabled={borrando}
+                          className="text-xs font-semibold text-muted disabled:opacity-50"
                         >
                           Cancelar
                         </button>
