@@ -68,17 +68,37 @@ export function useRoleGuard(allowed: VolunteerRole[]): RoleGuardState {
         const role = await obtenerRol(tokenActual);
         setCachedRole(tokenActual, role);
         aplicarRol(tokenActual, role);
-      } catch {
+      } catch (e) {
         if (!activo) return;
-        clearVolunteerToken();
-        clearCachedRole();
-        setState({
-          token: null,
-          role: null,
-          loading: false,
-          error: "Sesion invalida. Ingresa tu token nuevamente.",
-        });
-        router.replace("/voluntarios?sesion=invalida");
+
+        // Solo token_invalido bota la sesión (issue #48). Un error de red o
+        // timeout no debe borrar un token válido: en red intermitente eso
+        // desloguearía al voluntario en cada blip.
+        const mensaje = e instanceof Error ? e.message : "";
+        if (mensaje.includes("token_invalido")) {
+          // Refuerzo del interceptor de supabase.ts, que ya limpia y redirige.
+          clearVolunteerToken();
+          clearCachedRole();
+          setState({
+            token: null,
+            role: null,
+            loading: false,
+            error: "Sesion invalida. Ingresa tu token nuevamente.",
+          });
+          router.replace("/voluntarios?sesion=invalida");
+          return;
+        }
+
+        setState((prev) =>
+          prev.role
+            ? prev // ya se aplicó el rol cacheado: la página sigue usable
+            : {
+                token: tokenActual,
+                role: null,
+                loading: false,
+                error: "No se pudo validar la sesion. Revisa tu conexion.",
+              }
+        );
       }
     }
 
