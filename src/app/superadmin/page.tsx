@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import AvisoCarga from "@/components/AvisoCarga";
 import BotonVolver from "@/components/BotonVolver";
 import Skeleton from "@/components/Skeleton";
 import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
@@ -36,22 +37,35 @@ export default function SuperadminPanel() {
   const [adminEstadoId, setAdminEstadoId] = useState<string | null>(null);
   const [adminCentroId, setAdminCentroId] = useState("");
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
+  const [estadosError, setEstadosError] = useState(false);
   const [centros, setCentros] = useState<CentroAcopio[]>([]);
   const [cargandoCentros, setCargandoCentros] = useState(false);
+  const [centrosError, setCentrosError] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [mostrarAdminToken, setMostrarAdminToken] = useState(false);
   const [creandoAdmin, setCreandoAdmin] = useState(false);
 
   useEffect(() => {
-    getEstados().then(setEstados).catch(() => setEstados([]));
+    getEstados()
+      .then((lista) => {
+        setEstados(lista);
+        setEstadosError(false);
+      })
+      .catch(() => setEstadosError(true));
   }, []);
 
   const cargarCentros = useCallback((estadoId: string, mostrarCarga = true) => {
     if (mostrarCarga) setCargandoCentros(true);
     return getCentrosAcopioPorEstado(estadoId)
-      .then(setCentros)
-      .catch(() => setCentros([]))
+      .then((lista) => {
+        setCentros(lista);
+        setCentrosError(false);
+      })
+      .catch(() => {
+        setCentros([]);
+        setCentrosError(true);
+      })
       .finally(() => setCargandoCentros(false));
   }, []);
 
@@ -311,11 +325,20 @@ export default function SuperadminPanel() {
               label="Estado del centro de acopio"
               placeholder="Elige un estado"
             />
+            {estadosError && (
+              <AvisoCarga>
+                No se pudieron cargar los estados. Recarga la página para intentar de nuevo.
+              </AvisoCarga>
+            )}
             {adminEstadoId && (
               <>
                 <label className="text-sm font-semibold text-muted">Centro de acopio</label>
                 {cargandoCentros ? (
                   <Skeleton className="h-[52px] w-full" />
+                ) : centrosError ? (
+                  <AvisoCarga>
+                    No se pudieron cargar los centros de acopio de este estado.
+                  </AvisoCarga>
                 ) : centros.length === 0 ? (
                   <p className="text-muted text-sm">
                     No hay centros de acopio registrados en este estado todavía.

@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import AvisoCarga from "@/components/AvisoCarga";
 import BotonVolver from "@/components/BotonVolver";
 import { getCategorias, getEstados, crearSolicitudRegistroNodo } from "@/lib/api";
 import { normalizarTelefonoVe } from "@/lib/telefono";
@@ -16,7 +17,9 @@ import { Category, EstadoVenezuela, NodeTipo } from "@/lib/types";
 
 export default function RegistrarNodo() {
   const [categorias, setCategorias] = useState<Category[]>([]);
+  const [categoriasError, setCategoriasError] = useState(false);
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
+  const [estadosError, setEstadosError] = useState(false);
 
   const [nombreNodo, setNombreNodo] = useState("");
   const [tipo, setTipo] = useState<NodeTipo>("acopio");
@@ -34,8 +37,18 @@ export default function RegistrarNodo() {
   const [enviado, setEnviado] = useState(false);
 
   useEffect(() => {
-    getCategorias().then(setCategorias).catch(() => setCategorias([]));
-    getEstados().then(setEstados).catch(() => setEstados([]));
+    getCategorias()
+      .then((lista) => {
+        setCategorias(lista);
+        setCategoriasError(false);
+      })
+      .catch(() => setCategoriasError(true));
+    getEstados()
+      .then((lista) => {
+        setEstados(lista);
+        setEstadosError(false);
+      })
+      .catch(() => setEstadosError(true));
   }, []);
 
   const toggleCategoria = (id: string) => {
@@ -170,6 +183,11 @@ export default function RegistrarNodo() {
           placeholder="Elige el estado"
           required
         />
+        {estadosError && (
+          <AvisoCarga>
+            No se pudieron cargar los estados. Recarga la página para intentar de nuevo.
+          </AvisoCarga>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">
@@ -184,6 +202,11 @@ export default function RegistrarNodo() {
         <label className="text-sm font-semibold text-muted">
           ¿Qué categorías manejará? (opcional)
         </label>
+        {categoriasError && (
+          <AvisoCarga>
+            No se pudieron cargar las categorías. El campo es opcional; puedes continuar.
+          </AvisoCarga>
+        )}
         <div className="grid grid-cols-2 gap-2">
           {categorias.map((c) => (
             <label

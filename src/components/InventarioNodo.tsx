@@ -9,6 +9,7 @@
 // Al marcar agotado se ofrece crear la solicitud automática (solicitar_reposicion).
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import AvisoCarga from "@/components/AvisoCarga";
 import {
   getCategorias,
   getSubcategorias,
@@ -42,7 +43,9 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
 
   // --- Formulario de configuración (solo admin) ---
   const [categorias, setCategorias] = useState<Category[]>([]);
+  const [categoriasError, setCategoriasError] = useState(false);
   const [subcategorias, setSubcategorias] = useState<Subcategory[]>([]);
+  const [subcategoriasError, setSubcategoriasError] = useState(false);
   const [fCategory, setFCategory] = useState("");
   const [fSubcategory, setFSubcategory] = useState("");
   const [fDisponible, setFDisponible] = useState(true);
@@ -86,7 +89,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
 
   useEffect(() => {
     if (soloColaborador) return;
-    getCategorias().then(setCategorias).catch(() => setCategorias([]));
+    getCategorias()
+      .then((lista) => {
+        setCategorias(lista);
+        setCategoriasError(false);
+      })
+      .catch(() => setCategoriasError(true));
   }, [soloColaborador]);
 
   useEffect(() => {
@@ -98,7 +106,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
       setSubcategorias([]);
       return;
     }
-    getSubcategorias(fCategory).then(setSubcategorias).catch(() => setSubcategorias([]));
+    getSubcategorias(fCategory)
+      .then((lista) => {
+        setSubcategorias(lista);
+        setSubcategoriasError(false);
+      })
+      .catch(() => setSubcategoriasError(true));
   }, [fCategory, soloColaborador]);
 
   const limpiarFormulario = () => {
@@ -284,6 +297,11 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+              {categoriasError && (
+                <AvisoCarga>
+                  No se pudieron cargar las categorías. Recarga para intentar de nuevo.
+                </AvisoCarga>
+              )}
               <select
                 className="field"
                 value={fSubcategory}
@@ -295,6 +313,11 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
+              {subcategoriasError && (
+                <AvisoCarga>
+                  No se pudieron cargar las subcategorías. El campo es opcional; puedes continuar.
+                </AvisoCarga>
+              )}
             </>
           )}
           {publicaMagnitud && (

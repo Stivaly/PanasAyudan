@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AvisoCarga from "@/components/AvisoCarga";
 import {
   crearSolicitud,
   editarSolicitud,
@@ -25,8 +26,11 @@ interface Props {
 
 export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [categorias, setCategorias] = useState<Category[]>([]);
+  const [categoriasError, setCategoriasError] = useState(false);
   const [subcategorias, setSubcategorias] = useState<Subcategory[]>([]);
+  const [subcategoriasError, setSubcategoriasError] = useState(false);
   const [solicitudes, setSolicitudes] = useState<SolicitudNodo[]>([]);
+  const [solicitudesError, setSolicitudesError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
 
@@ -46,8 +50,11 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
 
   const cargar = useCallback(() => {
     listarSolicitudesNodo(nodeId, token)
-      .then(setSolicitudes)
-      .catch(() => setSolicitudes([]));
+      .then((lista) => {
+        setSolicitudes(lista);
+        setSolicitudesError(false);
+      })
+      .catch(() => setSolicitudesError(true));
   }, [nodeId, token]);
 
   const grupos = useMemo(
@@ -86,7 +93,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   );
 
   useEffect(() => {
-    getCategorias().then(setCategorias).catch(() => setCategorias([]));
+    getCategorias()
+      .then((lista) => {
+        setCategorias(lista);
+        setCategoriasError(false);
+      })
+      .catch(() => setCategoriasError(true));
     cargar();
   }, [cargar]);
 
@@ -106,8 +118,11 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       return;
     }
     getSubcategorias(categoryId)
-      .then(setSubcategorias)
-      .catch(() => setSubcategorias([]));
+      .then((lista) => {
+        setSubcategorias(lista);
+        setSubcategoriasError(false);
+      })
+      .catch(() => setSubcategoriasError(true));
   }, [categoryId]);
 
   useEffect(() => {
@@ -272,6 +287,11 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             </option>
           ))}
         </select>
+        {categoriasError && (
+          <AvisoCarga>
+            No se pudieron cargar las categorías. Recarga para intentar de nuevo.
+          </AvisoCarga>
+        )}
         <select
           className="field"
           value={subcategoryId}
@@ -285,6 +305,11 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             </option>
           ))}
         </select>
+        {subcategoriasError && (
+          <AvisoCarga>
+            No se pudieron cargar las subcategorías. El campo es opcional; puedes continuar.
+          </AvisoCarga>
+        )}
         <div className="flex gap-2">
           <input
             className="field w-1/3"
@@ -340,7 +365,14 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
         </div>
       </div>
 
-      {solicitudes.length === 0 ? (
+      {solicitudesError ? (
+        <div className="card border-danger">
+          <p className="text-sm font-semibold text-danger">No se pudieron cargar las solicitudes.</p>
+          <button onClick={cargar} className="btn-ghost mt-2 w-full text-sm">
+            Reintentar
+          </button>
+        </div>
+      ) : solicitudes.length === 0 ? (
         <p className="text-sm text-muted">Este punto aun no tiene solicitudes.</p>
       ) : (
         grupos.map((grupo) =>
