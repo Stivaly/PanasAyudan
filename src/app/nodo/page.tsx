@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getEstados, listarNodosAdmin, pausarNodo } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
+import AvisoCarga from "@/components/AvisoCarga";
 import EditarNodo from "@/components/EditarNodo";
 import Skeleton from "@/components/Skeleton";
 import EstadoMovimientosNodo from "@/components/EstadoMovimientosNodo";
@@ -29,6 +30,7 @@ export default function NodoAdminPanel() {
   const [nodos, setNodos] = useState<NodoAdmin[]>([]);
   const [activeNodeId, setActiveNodeId] = useState("");
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
+  const [estadosError, setEstadosError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [tab, setTab] = useState<NodoTab>("estado");
@@ -51,7 +53,12 @@ export default function NodoAdminPanel() {
   );
 
   useEffect(() => {
-    getEstados().then(setEstados).catch(() => setEstados([]));
+    getEstados()
+      .then((lista) => {
+        setEstados(lista);
+        setEstadosError(false);
+      })
+      .catch(() => setEstadosError(true));
   }, []);
 
   useEffect(() => {
@@ -282,7 +289,12 @@ export default function NodoAdminPanel() {
             )}
 
             {tabVisible === "ajustes" && (
-              <div className="card">
+              <div className="card flex flex-col gap-2">
+                {estadosError && (
+                  <AvisoCarga>
+                    No se pudieron cargar los estados. El selector de estado puede no mostrar opciones.
+                  </AvisoCarga>
+                )}
                 <EditarNodo
                   nodo={activo}
                   estados={estados}
