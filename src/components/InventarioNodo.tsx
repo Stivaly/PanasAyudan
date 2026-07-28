@@ -60,6 +60,10 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   // Item pendiente de confirmación de borrado (abre el modal "¿Estás seguro?").
   const [borrarItem, setBorrarItem] = useState<InventarioItem | null>(null);
   const [borrando, setBorrando] = useState(false);
+  // Anti doble submit (issue #53): id del item cuya RPC de "no hay" está en
+  // vuelo, y flag del formulario de reposición (solo hay uno abierto a la vez).
+  const [agotando, setAgotando] = useState<string | null>(null);
+  const [solicitando, setSolicitando] = useState(false);
   const confirmarBorrarRef = useRef<HTMLButtonElement | null>(null);
 
   // Foco inicial al abrir el modal + cierre con Escape (mientras no esté borrando).
@@ -193,8 +197,10 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   };
 
   const agotar = async (inventoryId: string) => {
+    if (agotando === inventoryId) return;
     setError(null);
     setExito(null);
+    setAgotando(inventoryId);
     try {
       const r = await marcarAgotado(inventoryId, token);
       refrescar();
@@ -202,11 +208,14 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
       if (r.sugerir_solicitud) setSolicitarFor(inventoryId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo marcar como agotado.");
+    } finally {
+      setAgotando(null);
     }
   };
 
   const solicitar = useCallback(
     async (inventoryId: string) => {
+      if (solicitando) return;
       setError(null);
       setExito(null);
       const cant = Number(solCantidad);
@@ -214,6 +223,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
         setError("Indica la cantidad (numero entero mayor a cero).");
         return;
       }
+      setSolicitando(true);
       try {
         await solicitarReposicion(inventoryId, solMagnitud, cant, solVehiculo, token, solNota.trim() || null);
         setSolicitarFor(null);
@@ -224,9 +234,11 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
         setExito("Solicitud de reposicion creada.");
       } catch (e) {
         setError(e instanceof Error ? e.message : "No se pudo crear la solicitud.");
+      } finally {
+        setSolicitando(false);
       }
     },
-    [solMagnitud, solCantidad, solVehiculo, solNota, token]
+    [solMagnitud, solCantidad, solVehiculo, solNota, token, solicitando]
   );
 
   return (
@@ -357,8 +369,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                     con la casilla "Disponible"); el colaborador solo marca "no hay". */}
                 {soloColaborador
                   ? it.disponible && (
-                      <button onClick={() => agotar(it.id)} className="text-xs font-semibold text-danger">
-                        Marcar “no hay”
+                      <button
+                        onClick={() => agotar(it.id)}
+                        disabled={agotando === it.id}
+                        className="text-xs font-semibold text-danger disabled:opacity-50"
+                      >
+                        {agotando === it.id ? "Marcando…" : "Marcar “no hay”"}
                       </button>
                     )
                   : (
@@ -422,10 +438,18 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                   <span>Requiere vehículo</span>
                 </label>
                 <div className="flex gap-2">
-                  <button onClick={() => solicitar(it.id)} className="btn-primary text-xs">
-                    Solicitar
+                  <button
+                    onClick={() => solicitar(it.id)}
+                    disabled={solicitando}
+                    className="btn-primary text-xs disabled:opacity-50"
+                  >
+                    {solicitando ? "Solicitando…" : "Solicitar"}
                   </button>
-                  <button onClick={() => setSolicitarFor(null)} className="btn-ghost text-xs">
+                  <button
+                    onClick={() => setSolicitarFor(null)}
+                    disabled={solicitando}
+                    className="btn-ghost text-xs disabled:opacity-50"
+                  >
                     Cancelar
                   </button>
                 </div>
