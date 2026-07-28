@@ -6,6 +6,7 @@ import InstalarApp from "@/components/InstalarApp";
 import RecargarEnChunkError from "@/components/RecargarEnChunkError";
 import TemaToggle from "@/components/TemaToggle";
 import AvisoBateria from "@/components/AvisoBateria";
+import AvisoConexion from "@/components/AvisoConexion";
 
 export const metadata: Metadata = {
   title: "PanasAyudan",
@@ -66,6 +67,7 @@ export default function RootLayout({
         <RecargarEnChunkError />
         <TemaToggle />
         <AvisoBateria />
+        <AvisoConexion />
         {children}
       </body>
     </html>
