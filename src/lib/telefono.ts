@@ -47,3 +47,11 @@ export function normalizarTelegram(value: string): string {
   if (!trimmed) return "";
   return trimmed.startsWith("@") ? trimmed : `@${trimmed}`;
 }
+
+// Limpia el valor MIENTRAS el usuario escribe: descarta cualquier carácter que
+// no sea letra, número, guion bajo o @, y deja un único @ al inicio. No valida
+// longitud ni agrega el @ (de eso se encargan errorTelegram y
+// normalizarTelegram al enviar): aquí solo se impide teclear basura.
+export function sanitizarTelegram(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_@]/g, "").replace(/(?!^)@/g, "");
+}
