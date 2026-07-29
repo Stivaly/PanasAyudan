@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AvisoError from "@/components/AvisoError";
 import BotonVolver from "@/components/BotonVolver";
 import Skeleton from "@/components/Skeleton";
 import {
@@ -375,7 +376,7 @@ export default function Voluntarios() {
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
           />
-          {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+          <AvisoError mensaje={error} />
           <button type="submit" disabled={verificando} className="btn-primary w-full disabled:opacity-50">
             {verificando ? "Verificando..." : "Entrar"}
           </button>
@@ -427,7 +428,7 @@ export default function Voluntarios() {
               setTelegramError(errorTelegram(telegram) ?? "");
             }}
           />
-          {telegramError && <p className="text-sm font-semibold text-danger">{telegramError}</p>}
+          <AvisoError mensaje={telegramError || null} enfocar={false} />
           <label className="flex items-center gap-2 rounded-xl border border-border bg-bg p-3 text-sm">
             <input
               type="checkbox"
@@ -494,7 +495,7 @@ export default function Voluntarios() {
           <p className="text-xs text-muted">
             Puedes ser el centro o solo un voluntario que ayuda desde ahí.
           </p>
-          {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+          <AvisoError mensaje={error} />
           <button onClick={registrar} disabled={enviando} className="btn-primary w-full disabled:opacity-50">
             {enviando ? "Registrando..." : "Registrarme"}
           </button>
