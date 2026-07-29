@@ -22,11 +22,14 @@ token de voluntario.
 Comandos principales:
 
 ```bash
-npm install
-npm run dev
-npm run build
-npm run lint
+pnpm install
+pnpm dev
+pnpm build
+pnpm lint
 ```
+
+El gestor de paquetes es **pnpm** (`pnpm-lock.yaml` + `pnpm-workspace.yaml`). No
+usar `npm` ni `yarn`: generan un lockfile paralelo que se desincroniza del real.
 
 Variables necesarias:
 

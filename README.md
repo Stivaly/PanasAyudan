@@ -25,10 +25,10 @@ zona de rescate.
 
 ## Configuración
 
-1. Instala dependencias:
+1. Instala dependencias (el gestor de paquetes es **pnpm**, no `npm` ni `yarn`):
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Copia las variables de entorno y complétalas:
@@ -54,7 +54,7 @@ zona de rescate.
 4. Levanta el entorno de desarrollo:
 
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 ## Estructura
