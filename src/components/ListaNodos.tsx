@@ -6,16 +6,11 @@
 
 import Link from "next/link";
 import { NodoPublico, descripcionPausa, statusVisible } from "@/lib/types";
+import { TIPO_NODO_LABEL } from "@/lib/constantes";
 
 interface Props {
   nodos: NodoPublico[];
 }
-
-const TIPO_LABEL: Record<string, string> = {
-  acopio: "Centro de acopio",
-  entrega: "Punto de entrega",
-  mixto: "Acopio y entrega",
-};
 
 export default function ListaNodos({ nodos }: Props) {
   return (
@@ -42,7 +37,7 @@ export default function ListaNodos({ nodos }: Props) {
                 )}
               </div>
               <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-                {TIPO_LABEL[n.tipo] ?? n.tipo}
+                {TIPO_NODO_LABEL[n.tipo] ?? n.tipo}
               </span>
               {n.categorias.length > 0 ? (
                 <div className="flex flex-wrap gap-1">

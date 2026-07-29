@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import { MAGNITUD_ORDEN, Magnitud, SolicitudParaNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { RANGO_ENTRE_NODOS_KM } from "@/lib/constantes";
 import SkeletonLista from "./SkeletonLista";
 
 interface Props {
@@ -94,7 +95,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
       <div>
         <p className="text-sm font-semibold text-accent">Solicitudes de otros puntos</p>
         <p className="mt-1 text-xs text-muted">
-          Pedidos de centros dentro del rango operativo de 650 km maximo.
+          Pedidos de centros dentro del rango operativo de {RANGO_ENTRE_NODOS_KM} km maximo.
         </p>
       </div>
 
