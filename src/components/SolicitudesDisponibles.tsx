@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   listarSolicitudesDisponibles,
   marcarRetiroCompromiso,
@@ -44,6 +44,9 @@ function enGrupos<T>(items: readonly T[], tamano: number): T[][] {
 }
 
 export default function SolicitudesDisponibles({ token }: Props) {
+  // Solo hay un formulario abierto a la vez, pero el id se genera igual con
+  // useId para no depender de eso si el diseno cambia.
+  const cantidadId = useId();
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
   const [compromisos, setCompromisos] = useState<CompromisoVoluntarioActivo[]>([]);
   const [volunteerId, setVolunteerId] = useState<string | null>(null);
@@ -337,9 +340,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
               </div>
             ) : respondiendoId === s.id ? (
               <div className="flex flex-col gap-2 rounded-xl bg-bg p-3">
-                <label className="text-xs font-semibold text-muted">Cantidad que puedo llevar</label>
+                <label htmlFor={cantidadId} className="text-xs font-semibold text-muted">
+                  Cantidad que puedo llevar
+                </label>
                 <div className="flex gap-2">
                   <input
+                    id={cantidadId}
                     className="field w-1/3"
                     inputMode="numeric"
                     placeholder={`Max ${s.cantidad_disponible}`}
@@ -347,6 +353,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
                     onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
                   />
                   <select
+                    aria-label="Magnitud"
                     className="field flex-1"
                     value={magnitud}
                     onChange={(e) => setMagnitud(e.target.value as Magnitud)}

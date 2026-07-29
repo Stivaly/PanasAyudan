@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   listarSolicitudesParaNodo,
   responderSolicitudNodo,
@@ -23,6 +23,9 @@ const REALTIME_TABLES = [
 ];
 
 export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
+  // Solo hay un formulario abierto a la vez, pero el id se genera igual con
+  // useId para no depender de eso si el diseno cambia.
+  const cantidadId = useId();
   const [solicitudes, setSolicitudes] = useState<SolicitudParaNodo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -126,9 +129,12 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
 
             {respondiendoId === s.id ? (
               <div className="mt-3 flex flex-col gap-2 rounded-xl bg-surface p-3">
-                <label className="text-xs font-semibold text-muted">Cantidad y magnitud que puede aportar este punto</label>
+                <label htmlFor={cantidadId} className="text-xs font-semibold text-muted">
+                  Cantidad y magnitud que puede aportar este punto
+                </label>
                 <div className="flex gap-2">
                   <input
+                    id={cantidadId}
                     className="field w-1/3"
                     inputMode="numeric"
                     placeholder={s.sobrante > 0 ? `Max ${s.sobrante}` : "Cantidad"}
@@ -136,6 +142,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
                     onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
                   />
                   <select
+                    aria-label="Magnitud"
                     className="field flex-1"
                     value={magnitud}
                     onChange={(e) => setMagnitud(e.target.value as Magnitud)}
