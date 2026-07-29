@@ -4,13 +4,12 @@
 // permanente de un nodo, que es exclusivo de superadmin (un admin del nodo solo
 // puede pausarlo). El panel de aprobación/gestión completo llega en otro issue.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AvisoCarga from "@/components/AvisoCarga";
 import AvisoError from "@/components/AvisoError";
 import BotonVolver from "@/components/BotonVolver";
-import Skeleton from "@/components/Skeleton";
-import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
+import { cerrarNodo, crearAdmin, getEstados } from "@/lib/api";
 import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
 import {
   normalizarTelefonoVe,
@@ -19,10 +18,11 @@ import {
   sanitizarTelegram,
 } from "@/lib/telefono";
 import EstadoCombobox from "@/components/EstadoCombobox";
+import SelectorCentro from "@/components/SelectorCentro";
 import SolicitudesRegistroNodo from "@/components/SolicitudesRegistroNodo";
-import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
-import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
+import { EstadoVenezuela } from "@/lib/types";
 
 export default function SuperadminPanel() {
   const router = useRouter();
@@ -41,12 +41,15 @@ export default function SuperadminPanel() {
   const [adminTelegram, setAdminTelegram] = useState("");
   const [adminTelegramError, setAdminTelegramError] = useState("");
   const [adminEstadoId, setAdminEstadoId] = useState<string | null>(null);
-  const [adminCentroId, setAdminCentroId] = useState("");
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [estadosError, setEstadosError] = useState(false);
-  const [centros, setCentros] = useState<CentroAcopio[]>([]);
-  const [cargandoCentros, setCargandoCentros] = useState(false);
-  const [centrosError, setCentrosError] = useState(false);
+  const {
+    centros,
+    centroId: adminCentroId,
+    setCentroId: setAdminCentroId,
+    cargando: cargandoCentros,
+    error: centrosError,
+  } = useCentrosPorEstado(adminEstadoId, "superadmin_centros_estado_changes");
   const [adminError, setAdminError] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [mostrarAdminToken, setMostrarAdminToken] = useState(false);
@@ -60,51 +63,6 @@ export default function SuperadminPanel() {
       })
       .catch(() => setEstadosError(true));
   }, []);
-
-  const cargarCentros = useCallback((estadoId: string, mostrarCarga = true) => {
-    if (mostrarCarga) setCargandoCentros(true);
-    return getCentrosAcopioPorEstado(estadoId)
-      .then((lista) => {
-        setCentros(lista);
-        setCentrosError(false);
-      })
-      .catch(() => {
-        setCentros([]);
-        setCentrosError(true);
-      })
-      .finally(() => setCargandoCentros(false));
-  }, []);
-
-  const realtimeCentros = useMemo(
-    () =>
-      adminEstadoId
-        ? [{ table: "centros_acopio", filter: `estado_id=eq.${adminEstadoId}` }]
-        : [],
-    [adminEstadoId]
-  );
-
-  // Los centros se cargan solo al elegir un estado, filtrados por ese estado
-  // (mismo patrón que el registro de voluntario).
-  useEffect(() => {
-    // Reset de selects dependientes al cambiar de estado + fetch (intencional).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAdminCentroId("");
-    setCentros([]);
-    if (!adminEstadoId) {
-      setCargandoCentros(false);
-      return;
-    }
-    void cargarCentros(adminEstadoId);
-  }, [adminEstadoId, cargarCentros]);
-
-  useRealtimeRefresh(
-    "superadmin_centros_estado_changes",
-    realtimeCentros,
-    () => {
-      if (adminEstadoId) void cargarCentros(adminEstadoId, false);
-    },
-    Boolean(adminEstadoId)
-  );
 
   // Cierra la sesión: limpia el token persistente y el cache de rol, y vuelve a
   // /voluntarios para poder ingresar con otra cuenta. Sin esto el superadmin
@@ -347,36 +305,13 @@ export default function SuperadminPanel() {
               </AvisoCarga>
             )}
             {adminEstadoId && (
-              <>
-                <label htmlFor="admin-centro" className="text-sm font-semibold text-muted">
-                  Centro de acopio
-                </label>
-                {cargandoCentros ? (
-                  <Skeleton className="h-[52px] w-full" />
-                ) : centrosError ? (
-                  <AvisoCarga>
-                    No se pudieron cargar los centros de acopio de este estado.
-                  </AvisoCarga>
-                ) : centros.length === 0 ? (
-                  <p className="text-muted text-sm">
-                    No hay centros de acopio registrados en este estado todavía.
-                  </p>
-                ) : (
-                  <select
-                    id="admin-centro"
-                    className="field"
-                    value={adminCentroId}
-                    onChange={(e) => setAdminCentroId(e.target.value)}
-                  >
-                    <option value="">Seleccionar centro</option>
-                    {centros.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </>
+              <SelectorCentro
+                centros={centros}
+                valor={adminCentroId}
+                onChange={setAdminCentroId}
+                cargando={cargandoCentros}
+                error={centrosError}
+              />
             )}
             <AvisoError mensaje={adminError} />
             <button
