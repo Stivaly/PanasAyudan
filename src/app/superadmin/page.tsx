@@ -222,7 +222,11 @@ export default function SuperadminPanel() {
 
       <div className="card border-accent flex flex-col gap-3">
         <p className="text-sm font-semibold text-accent">Cerrar punto (permanente)</p>
+        <label htmlFor="cerrar-node-id" className="text-sm font-semibold text-muted">
+          ID del punto a cerrar
+        </label>
         <input
+          id="cerrar-node-id"
           className="field"
           placeholder="ID del punto"
           value={nodeId}
@@ -283,22 +287,31 @@ export default function SuperadminPanel() {
           </>
         ) : (
           <>
-            <label className="text-sm font-semibold text-muted">Nombre</label>
+            <label htmlFor="admin-nombre" className="text-sm font-semibold text-muted">
+              Nombre
+            </label>
             <input
+              id="admin-nombre"
               className="field"
               placeholder="Nombre"
               value={adminNombre}
               onChange={(e) => setAdminNombre(e.target.value)}
             />
-            <label className="text-sm font-semibold text-muted">Apellido</label>
+            <label htmlFor="admin-apellido" className="text-sm font-semibold text-muted">
+              Apellido
+            </label>
             <input
+              id="admin-apellido"
               className="field"
               placeholder="Apellido"
               value={adminApellido}
               onChange={(e) => setAdminApellido(e.target.value)}
             />
-            <label className="text-sm font-semibold text-muted">Teléfono (opcional)</label>
+            <label htmlFor="admin-telefono" className="text-sm font-semibold text-muted">
+              Teléfono (opcional)
+            </label>
             <input
+              id="admin-telefono"
               className="field"
               type="tel"
               inputMode="tel"
@@ -306,8 +319,11 @@ export default function SuperadminPanel() {
               value={adminTelefono}
               onChange={(e) => setAdminTelefono(e.target.value.replace(/[a-zA-Z]/g, ""))}
             />
-            <label className="text-sm font-semibold text-muted">Telegram (opcional)</label>
+            <label htmlFor="admin-telegram" className="text-sm font-semibold text-muted">
+              Telegram (opcional)
+            </label>
             <input
+              id="admin-telegram"
               className="field"
               placeholder="Telegram (ej: @usuario)"
               value={adminTelegram}
@@ -332,7 +348,9 @@ export default function SuperadminPanel() {
             )}
             {adminEstadoId && (
               <>
-                <label className="text-sm font-semibold text-muted">Centro de acopio</label>
+                <label htmlFor="admin-centro" className="text-sm font-semibold text-muted">
+                  Centro de acopio
+                </label>
                 {cargandoCentros ? (
                   <Skeleton className="h-[52px] w-full" />
                 ) : centrosError ? (
@@ -345,6 +363,7 @@ export default function SuperadminPanel() {
                   </p>
                 ) : (
                   <select
+                    id="admin-centro"
                     className="field"
                     value={adminCentroId}
                     onChange={(e) => setAdminCentroId(e.target.value)}

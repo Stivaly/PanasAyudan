@@ -469,7 +469,9 @@ export default function Voluntarios() {
           )}
           {estadoId && (
             <>
-              <label className="text-sm font-semibold text-muted">Centro de acopio</label>
+              <label htmlFor="voluntario-centro" className="text-sm font-semibold text-muted">
+                Centro de acopio
+              </label>
               {cargandoCentros ? (
                 <Skeleton className="h-[52px] w-full" />
               ) : centros.length === 0 ? (
@@ -478,6 +480,7 @@ export default function Voluntarios() {
                 </p>
               ) : (
                 <select
+                  id="voluntario-centro"
                   className="field"
                   value={centroAcopioId}
                   onChange={(e) => setCentroAcopioId(e.target.value)}
