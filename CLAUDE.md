@@ -1,14 +1,17 @@
 Eres un desarrollador senior ejecutando la implementación de "PanasAyudan",
 una app de emergencia para distribución de insumos en Venezuela.
-El proyecto está EN MIGRACIÓN del modelo viejo (aportes/reservas públicas)
-al modelo de nodos. La fuente de verdad funcional es definicion.md y los
-issues de GitHub - NO este resumen. Solo ejecutas código.
+El modelo de nodos YA ESTÁ IMPLEMENTADO; lo que queda es pulido, deuda técnica
+y la eliminación del modelo viejo. La fuente de verdad funcional es definicion.md
+y los issues de GitHub - NO este resumen. Solo ejecutas código.
 
 ## REGLAS DE EJECUCIÓN
 
 - Cada tarea viene de un issue de GitHub (Stivaly/PanasAyudan). Lee el
   cuerpo COMPLETO del issue Y sus comentarios - los comentarios contienen
   verificaciones de estado y puntos de integración exactos.
+- ANTES de implementar, verifica que el problema siga existiendo en el código
+  actual. Varios issues ya fueron resueltos de rebote por PRs no relacionados;
+  el texto del issue puede estar desactualizado.
 - Escribe código completo y funcional. Sin placeholders, sin TODO,
   sin "aquí iría X".
 - Un archivo por bloque. Nunca cortes un archivo a la mitad.
@@ -17,83 +20,96 @@ issues de GitHub - NO este resumen. Solo ejecutas código.
 - No repitas código ya escrito. No expliques salvo que se pregunte.
 - Ambigüedad bloqueante -> una sola pregunta mínima.
 
+## FLUJO DE TRABAJO (ver CONTRIBUTING.md)
+
+- Rama de integración: `Development` (con mayúscula). Rama por issue:
+  `git checkout -b issue-N origin/Development`. PR siempre `--base Development`.
+- Verificación antes de subir: `pnpm lint` y `pnpm exec tsc --noEmit`.
+- `Closes #N` NO cierra el issue (mergeamos a Development, no a main): cerrarlo
+  a mano tras el merge con `gh issue close N --comment "Resuelto en PR #M."`.
+- Antes de tomar un issue, revisar PRs abiertos: si el archivo ya está en un PR
+  sin mergear, saltar ese issue hasta que se mergee.
+
 ## STACK (REAL, verificado en package.json - no asumas otro)
 
+- **pnpm** como gestor de paquetes. Nunca `npm` ni `yarn` (generan un lockfile
+  paralelo al pnpm-lock.yaml).
 - Next.js 16 App Router (`next ^16.2.9`), TypeScript, Tailwind CSS
-- Supabase: PostgreSQL + RPC + RLS + Realtime + pg_cron
+- Supabase: PostgreSQL + PostGIS + RPC + RLS + Realtime + pg_cron
 - Google Maps JS: Places API NUEVA (`PlaceAutocompleteElement`, la legacy
   no funciona), `AdvancedMarkerElement` (requiere NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID),
   MarkerClusterer, Distance Matrix
 - PWA: public/manifest.json + public/sw.js (si tocas sw.js, sube el
-  nombre de cache: hoy es "panasayudan-v2")
-- Modo oscuro por defecto con toggle manual; modo claro disponible para luz solar directa
+  nombre de cache: hoy es "panasayudan-v9")
+- Modo oscuro por defecto con toggle manual; modo claro para luz solar directa
 
-## ESTADO ACTUAL - rama feat/rediseno-modelo-nodos
+## ESTADO ACTUAL - rama Development
 
-Migraciones aplicadas hasta 0033. Ya implementado (NO rehacer):
-- 0030 (#17): roles por token - superadmin | admin | colaborador |
-  voluntario. RPCs obtener_rol, crear_admin, crear_colaborador.
-- 0031 (#18): modelo de nodos sobre centros_acopio - tipo
-  (acopio|entrega|mixto), status (inactivo|activo|pausado|cerrado),
-  verificación GPS (verificar_nodo, tolerancia por distancia_metros),
-  pausa granular (pausado_recepcion/pausado_entrega), node_admins,
-  node_collaborators. Frontend: /nodo, /nodo/colaborador, /superadmin,
-  VerificarNodo.tsx.
-- 0032 (#19): solicitudes entre nodos - dominio magnitud_nivel
-  (unidades...gandola), magnitud_orden(), tablas solicitudes,
-  compromisos_voluntario (SIN ubicación del voluntario, por diseño),
-  compromisos_nodo. RPCs crear_solicitud, responder_solicitud_voluntario,
-  responder_solicitud_nodo, cancelar_compromiso,
-  confirmar_entrega_compromiso, listar_solicitudes_disponibles (calcula
-  sobrante y filtra por requiere_vehiculo). Frontend:
-  SolicitudesDisponibles.tsx, SolicitudesNodo.tsx.
-  registrar_voluntario ahora tiene 9 parámetros e incluye
-  tiene_vehiculo + capacidad en kg/m3.
-- 0033: limpieza de sobrecarga huérfana de registrar_voluntario
-  (patrón de drop defensivo por firma - reutilízalo).
+Migraciones aplicadas hasta 0062. Todo el roadmap de arquitectura está cerrado
+(NO rehacer): roles por token (#17/0030), modelo de nodos (#18/0031),
+solicitudes entre nodos (#19/0032), taxonomía de categorías (#30/0037), rango
+del voluntario por GPS (#20/0038+0043+0047), inventario por nodo (#22/0039),
+incumplimiento por cédula (#23/0040), gestión de nodos end-to-end
+(#21/#29/0041+0042+0044), vista pública de nodos (#24), PWA instalable (#31),
+precarga de inventario al aprobar (#33/0058) y eliminación de la zona declarada
+del voluntario (#27/0059).
+
+Reglas vigentes que salen de esas migraciones:
+- Rango del voluntario: radio geográfico con PostGIS, 650 km con vehículo /
+  300 km sin vehículo (0047). Verificación de ubicación válida por 24 h.
+- Bloqueo de cédula: SOLO cuando el nodo destino marca "no llegó" sobre un
+  compromiso (0040). NO hay bloqueo automático por vencimiento.
+- Frontend por rol con `useRoleGuard`: /superadmin, /nodo, /nodo/colaborador.
+  /nodo opera sobre un punto activo con `NodoTabBar`, sin duplicar formularios.
 
 CONVIVENCIA: el modelo viejo (aportes, aporte_items, recogidas, /dar,
-/lugar/[id], reservar_item, zona_descripcion) SIGUE VIVO. Se elimina
-recién al ejecutar #25, #26 y #27, y solo cuando sus reemplazos existan.
-No borres nada de eso por iniciativa propia.
+/lugar/[id], /mis-recogidas, /voluntarios/gestionar/[id], reservar_item) SIGUE
+VIVO, ya sin enlaces desde la navegación principal. Se elimina recién al
+ejecutar #25 y #26. No borres nada de eso por iniciativa propia.
 
-## ORDEN DE TRABAJO (dependencias entre issues)
+## ORDEN DE TRABAJO
 
-1. #30 - Taxonomía de categorías (10 macro + subcategorías).
-   Prerequisito de #22 y #24. Autocontenido, empezar aquí.
-2. #20 - Voluntario: GPS por municipio, adyacencias, verificación 24h.
-   Prerequisito de #27.
-3. #22 - Inventario por tipo de nodo, condiciones por item,
-   colaboradores. Depende de #30.
-4. #23 - Incumplimiento y bloqueo por cédula. Leer el comentario del
-   issue: se reutiliza cedulas_bloqueadas (0023) cambiando su FK, y el
-   punto de integración es confirmar_entrega_compromiso (0032).
-5. #29 (+ restos de #21) - Gestión de nodos end-to-end: formulario
-   público de solicitud, aprobación superadmin, edición admin.
-6. #24 - Vista pública (lista por defecto, mapa opcional, SMS/WhatsApp)
-   y #31 - banner de instalación PWA (habilita el SMS offline).
-7. #25, #26, #27 - Eliminaciones del modelo viejo. SIEMPRE al final.
+Lo que queda son issues de calidad, ordenados de menor a mayor dificultad. El
+orden también evita que dos issues toquen el mismo archivo a la vez:
 
-Bugs viejos: NO arreglar #5 ni #16 (viven en flujos que #25/#26
-eliminan). #10 y #12 sí siguen vigentes (el flujo de token persiste).
+1. #74 - normalizarTelefonoVe duplicada en voluntarios (el sanitizador de
+   Telegram YA está en lib/telefono.ts: solo queda la copia del teléfono).
+2. #72 - acentuación inconsistente (solo texto, pero toca muchos archivos).
+3. #59 -> #60 -> #61 - bloque de accesibilidad, en ese orden: comparten
+   archivos (htmlFor/id, luego labels, luego role="alert" + foco).
+4. #78 - hook useCategoriaSubcategoria. #81 - constantes centralizadas.
+   #77 - componente CantidadMagnitud (después de #60).
+5. #76 - useCentrosPorEstado + SelectorCentro. #56 - selector de nodos para
+   cerrar en superadmin. #79 - unificar SolicitudesDisponibles/EntreCentros.
+6. #73 - MapaClusters a AdvancedMarkerElement. #80 - partir InventarioNodo y
+   SolicitudesNodo (al final: #78/#77/#79 ya le sacan piezas).
+7. #34 - cruce código vs tracker: en su mayoría decisiones, no código.
+8. #25 y #26 - eliminaciones del modelo viejo. SIEMPRE al final.
+
+Bugs viejos: NO arreglar #5 ni #16 (viven en flujos que #25/#26 eliminan).
 
 ## INVARIANTES CRÍTICOS (romper esto es bloqueo inmediato)
 
 - El contacto (teléfono/telegram) JAMÁS sale en lecturas públicas.
   Solo vía RPC con token. Ninguna policy nueva puede exponerlo.
 - La ubicación del voluntario JAMÁS se guarda en BD ni se comparte.
-  Solo tiempo estimado y cantidad comprometida (así está modelado 0032).
+  Solo tiempo estimado y cantidad comprometida.
 - Stock/cantidades se modifican solo vía RPC atómica, nunca UPDATE directo.
 - Migraciones: numeradas secuenciales en supabase/migrations, idempotentes
-  (if not exists / on conflict / drop defensivo por firma), RLS explícita
-  en cada tabla nueva. RPCs security definer con set search_path = public.
+  (if not exists / on conflict / drop defensivo por firma - ver 0033 y 0059),
+  RLS explícita en cada tabla nueva. RPCs security definer con
+  set search_path = public.
 - Token: localStorage "panas_volunteer_token", header volunteer-token
-  vía supabaseWithToken(token) en src/lib/supabase.ts.
+  vía supabaseWithToken(token) en src/lib/supabase.ts. Todo acceso a
+  localStorage pasa por src/lib/safeStorage.ts.
 - Teléfonos: siempre por normalizarTelefonoVe (src/lib/telefono.ts).
 - Geolocalización: resolverCentro (IP -> GPS solo si ya autorizado).
   Nunca disparar el prompt de permisos.
+- Paleta mínima (bg, surface, border, accent, danger, muted). Un color nuevo
+  se agrega en los 3 lugares a la vez: tailwind.config.ts, globals.css :root
+  y html.dark.
 - Si cambias categorías/estados: alinear tabla en Supabase + CategorySlug
-  en src/lib/types.ts + los 4 consumidores (buscar, dar, gestionar,
+  en src/lib/types.ts + sus consumidores (buscar, InventarioNodo,
   SolicitudesNodo).
 
 ## LO QUE NO EXISTE (y no se agrega sin issue)
@@ -104,3 +120,4 @@ eliminan). #10 y #12 sí siguen vigentes (el flujo de token persiste).
 - Flujo de entrega directa al público en la app (la app informa;
   la verificación de condiciones ocurre en campo)
 - Reservas del público (desaparecen con #25 - no crear variantes nuevas)
+- Especialidades/turnos de voluntarios (#28, marcado [FUTURE])
