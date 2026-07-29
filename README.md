@@ -120,8 +120,9 @@ puede recuperar. Ese mismo token determina el rol (`obtener_rol`):
   (`unidades` … `gandola`). Otro nodo o un voluntario se compromete, marca el
   retiro, va en camino, y el nodo destino confirma la llegada.
 - **Rango del voluntario**: se verifica su ubicación por GPS y vale 24 horas. Ve
-  solicitudes hasta 650 km si registró vehículo, 300 km si no. Su ubicación
-  **nunca se guarda**: vive dentro de la RPC y se descarta.
+  solicitudes hasta 40 km si registró vehículo, 15 km si no (`0061`). Su
+  ubicación **nunca se guarda**: vive dentro de la RPC y se descarta. El rango
+  **entre nodos** es distinto y más amplio: 650 km (`0053`).
 - **Incumplimiento**: si el nodo destino marca "no llegó" sobre un compromiso, la
   cédula del voluntario se bloquea. No hay bloqueo automático por vencimiento
   (el aviso de 24 h es informativo).

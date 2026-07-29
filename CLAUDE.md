@@ -55,8 +55,10 @@ precarga de inventario al aprobar (#33/0058) y eliminación de la zona declarada
 del voluntario (#27/0059).
 
 Reglas vigentes que salen de esas migraciones:
-- Rango del voluntario: radio geográfico con PostGIS, 650 km con vehículo /
-  300 km sin vehículo (0047). Verificación de ubicación válida por 24 h.
+- Rango del voluntario: radio geográfico con PostGIS, 40 km con vehículo /
+  15 km sin vehículo (0061 — reemplaza los 650/300 de 0047, que ya NO rigen).
+  Verificación de ubicación válida por 24 h. El rango ENTRE NODOS es otro
+  número y otra RPC: 650 km en listar_solicitudes_para_nodo (0053).
 - Bloqueo de cédula: SOLO cuando el nodo destino marca "no llegó" sobre un
   compromiso (0040). NO hay bloqueo automático por vencimiento.
 - Frontend por rol con `useRoleGuard`: /superadmin, /nodo, /nodo/colaborador.

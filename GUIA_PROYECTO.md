@@ -195,7 +195,9 @@ lo que bloquea la cédula del voluntario.
 
 **Rango del voluntario**: `verificarUbicacionVoluntario` toma el GPS, lo usa
 dentro de la RPC con `ST_DWithin` y lo descarta. La verificación vale 24 h. El
-radio es 650 km con vehículo registrado y 300 km sin él (0047).
+radio es 40 km con vehículo registrado y 15 km sin él (`0061`; los 650/300 de
+`0047` quedaron atrás). Ojo con no confundirlo con el rango **entre nodos**, que
+es otra RPC y otro número: `listar_solicitudes_para_nodo` usa 650 km (`0053`).
 
 **Inventario**: el admin da de alta items con categoría, subcategoría, condición,
 magnitud y disponibilidad; el colaborador solo marca agotado y pide reposición.
