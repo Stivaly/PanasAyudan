@@ -5,28 +5,6 @@ Fecha: 2026-07-07
 Base revisada con grafo `codebase_memory`, captura adjunta del panel de punto y
 archivos frontend principales.
 
-> ## Estado: documento historico (revisado 2026-07-28)
->
-> **Este es el diagnostico del 2026-07-07, no el estado actual.** Se conserva
-> porque explica por que el frontend quedo como quedo. Contraste contra el codigo
-> de hoy:
->
-> | Paso de la secuencia recomendada | Estado |
-> | --- | --- |
-> | 1. Guard de rol reutilizable | **Hecho** — `src/hooks/useRoleGuard.ts`, aplicado en `/nodo`, `/nodo/colaborador` y `/superadmin` |
-> | 2. `PanelVoluntario` puro | **Hecho** — hoy solo monta `SolicitudesDisponibles`; ya no carga aportes ni recogidas |
-> | 3. `/nodo` sobre un punto activo | **Hecho** — la lista es selector y las secciones van por `NodoTabBar` |
-> | 4. Corregir `InventarioNodo` | **Hecho** — refresca via `useInventarioNodo`, limpia el formulario y muestra exito inline |
-> | 5. Reorganizar `SolicitudesNodo` | **Hecho** — seccion "Pedir insumos" y listas por estado; los movimientos viven en `EstadoMovimientosNodo` |
-> | 6. Ajustar `/nodo/colaborador` | **Hecho** — guard de rol y solo inventario operativo |
-> | 7. Ajustar `/superadmin` | **Parcial** — guard aplicado; el cierre de nodo sigue pidiendo el UUID a mano (**issue #56**), y sigue pendiente decidir si admin -> nodo pasa a ser obligatorio |
-> | 8. QA visual y de permisos | **Pendiente** |
->
-> Lo demas del documento sigue siendo valido como criterio de diseno. Las
-> pantallas legadas (`/dar`, `/lugar/[id]`, `/mis-recogidas`,
-> `/voluntarios/gestionar/[id]`) siguen vivas y ya sin enlaces desde la
-> navegacion principal, a la espera de #25 y #26.
-
 ## Diagnostico corto
 
 El frontend esta en un estado intermedio entre el modelo viejo
