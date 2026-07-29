@@ -14,6 +14,13 @@ import {
   SolicitudDisponible,
 } from "@/lib/types";
 import { RealtimeTable, useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import {
+  CONFIRMACION_HORAS,
+  RANGO_VOLUNTARIO_KM,
+  RETIRO_HORAS,
+  TIEMPO_ESTIMADO_DEFECTO_MINUTOS,
+  VERIFICACION_UBICACION_HORAS,
+} from "@/lib/constantes";
 import SkeletonLista from "./SkeletonLista";
 
 interface Props {
@@ -23,7 +30,7 @@ interface Props {
 // Realtime limita el operador "in." a 100 valores por filtro (documentado en
 // https://supabase.com/docs/guides/realtime/postgres-changes). Se parte
 // nodosEnRango en grupos de este tamano para no depender de que el rango del
-// voluntario (hoy 40/15 km) se mantenga chico: si crece en el futuro y supera
+// voluntario (ver RANGO_VOLUNTARIO_KM) se mantenga chico: si crece en el futuro y supera
 // los 100 nodos, seguimos filtrando correctamente en vez de arriesgarnos a un
 // comportamiento no documentado al pasar el limite.
 const MAX_VALORES_FILTRO_IN = 100;
@@ -155,7 +162,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
         s.solicitud_id,
         magnitud,
         cant,
-        240,
+        TIEMPO_ESTIMADO_DEFECTO_MINUTOS,
         token,
         s.compromiso_nodo_id
       );
@@ -206,10 +213,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
           <p className="font-semibold text-accent">Verifica tu ubicacion para operar</p>
           <p className="mt-1 text-sm text-muted">
             Confirma donde estas una sola vez para poder tomar traslados cercanos. Tu ubicacion
-            no se guarda: solo se usa para saber tu municipio, y la verificacion vale 24 horas.
+            no se guarda: solo se usa para saber tu municipio, y la verificacion vale{" "}
+            {VERIFICACION_UBICACION_HORAS} horas.
           </p>
           <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-fg">
-            Rango operativo: 40 km maximo si tienes vehiculo registrado; 15 km maximo sin vehiculo.
+            Rango operativo: {RANGO_VOLUNTARIO_KM.conVehiculo} km maximo si tienes vehiculo
+            registrado; {RANGO_VOLUNTARIO_KM.sinVehiculo} km maximo sin vehiculo.
           </div>
           <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
             Esta verificacion debe hacerse desde un celular con ubicacion activa.
@@ -257,12 +266,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   )}
                   {c.atrasado_4h && (
                     <p className="mt-1 text-xs font-semibold text-danger">
-                      Vencio el plazo de retiro de 4 horas.
+                      Vencio el plazo de retiro de {RETIRO_HORAS} horas.
                     </p>
                   )}
                   {c.atrasado_24h && (
                     <p className="mt-1 text-xs font-semibold text-danger">
-                      El centro receptor aun no confirma luego de 24 horas.
+                      El centro receptor aun no confirma luego de {CONFIRMACION_HORAS} horas.
                     </p>
                   )}
                 </div>
@@ -350,8 +359,9 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   </select>
                 </div>
                 <p className="text-xs text-muted">
-                  Al comprometerte, tienes 4 horas para retirar. Despues del retiro,
-                  el centro receptor tiene 24 horas para confirmar la recepcion.
+                  Al comprometerte, tienes {RETIRO_HORAS} horas para retirar. Despues del
+                  retiro, el centro receptor tiene {CONFIRMACION_HORAS} horas para confirmar
+                  la recepcion.
                 </p>
                 <div className="flex gap-2">
                   <button

@@ -14,17 +14,12 @@ import {
 } from "@/lib/api";
 import { SolicitudRegistroNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { TIPO_NODO_LABEL_CORTO } from "@/lib/constantes";
 import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   token: string;
 }
-
-const TIPO_LABEL: Record<string, string> = {
-  acopio: "Acopio",
-  entrega: "Entrega",
-  mixto: "Mixto",
-};
 
 const REALTIME_TABLES = [{ table: "solicitudes_registro_nodo" }];
 
@@ -109,7 +104,7 @@ export default function SolicitudesRegistroNodo({ token }: Props) {
             <div className="flex items-start justify-between gap-2">
               <p className="font-semibold">{s.nombre_nodo}</p>
               <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted">
-                {TIPO_LABEL[s.tipo] ?? s.tipo}
+                {TIPO_NODO_LABEL_CORTO[s.tipo] ?? s.tipo}
               </span>
             </div>
 
