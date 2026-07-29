@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AvisoCarga from "@/components/AvisoCarga";
+import AvisoError from "@/components/AvisoError";
 import BotonVolver from "@/components/BotonVolver";
 import Skeleton from "@/components/Skeleton";
 import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
@@ -230,7 +231,7 @@ export default function SuperadminPanel() {
         <p className="text-xs text-muted">
           El cierre es permanente y deja de aparecer en público. No tiene reapertura.
         </p>
-        {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+        <AvisoError mensaje={error} />
         {mensaje && <p className="text-sm font-semibold text-accent">{mensaje}</p>}
         <button onClick={cerrar} disabled={enviando} className="btn-primary w-full disabled:opacity-50">
           {enviando ? "Cerrando…" : "Cerrar punto"}
@@ -316,9 +317,7 @@ export default function SuperadminPanel() {
               }}
               onBlur={() => setAdminTelegramError(errorTelegram(adminTelegram) ?? "")}
             />
-            {adminTelegramError && (
-              <p className="text-sm font-semibold text-danger">{adminTelegramError}</p>
-            )}
+            <AvisoError mensaje={adminTelegramError || null} enfocar={false} />
             <EstadoCombobox
               estados={estados}
               estadoId={adminEstadoId}
@@ -360,7 +359,7 @@ export default function SuperadminPanel() {
                 )}
               </>
             )}
-            {adminError && <p className="text-sm font-semibold text-danger">{adminError}</p>}
+            <AvisoError mensaje={adminError} />
             <button
               onClick={crear}
               disabled={creandoAdmin}

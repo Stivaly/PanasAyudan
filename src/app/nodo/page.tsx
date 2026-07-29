@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getEstados, listarNodosAdmin, pausarNodo } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
 import AvisoCarga from "@/components/AvisoCarga";
+import AvisoError from "@/components/AvisoError";
 import EditarNodo from "@/components/EditarNodo";
 import Skeleton from "@/components/Skeleton";
 import EstadoMovimientosNodo from "@/components/EstadoMovimientosNodo";
@@ -146,7 +147,7 @@ export default function NodoAdminPanel() {
 
       {error && (
         <div className="card border-danger">
-          <p className="text-sm font-semibold text-danger">{error}</p>
+          <AvisoError mensaje={error} />
           <button onClick={() => cargar(token)} className="btn-ghost mt-2 w-full text-sm">
             Reintentar
           </button>

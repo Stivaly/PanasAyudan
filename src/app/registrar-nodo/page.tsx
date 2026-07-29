@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AvisoCarga from "@/components/AvisoCarga";
+import AvisoError from "@/components/AvisoError";
 import BotonVolver from "@/components/BotonVolver";
 import { getCategorias, getEstados, crearSolicitudRegistroNodo } from "@/lib/api";
 import { normalizarTelefonoVe } from "@/lib/telefono";
@@ -273,7 +274,7 @@ export default function RegistrarNodo() {
         />
       </section>
 
-      {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+      <AvisoError mensaje={error} />
 
       <button onClick={enviar} disabled={enviando} className="btn-primary w-full disabled:opacity-50">
         {enviando ? "Enviando…" : "Enviar solicitud"}
