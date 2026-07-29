@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
-import { loadGoogleMaps } from "@/lib/maps";
+import { loadGoogleMaps, MAP_ID } from "@/lib/maps";
 import { Coords } from "@/lib/types";
 import Skeleton from "./Skeleton";
 
@@ -20,17 +20,11 @@ interface Props {
   nodos: NodoMapa[];
 }
 
-const MAPA_SOLO_BASE: google.maps.MapTypeStyle[] = [
-  { featureType: "all", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.business", elementType: "all", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.medical", elementType: "all", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.school", elementType: "all", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ saturation: -65 }, { lightness: 18 }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ saturation: -55 }, { lightness: 28 }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ saturation: -45 }, { lightness: 10 }] },
-];
+// Los estilos inline (el viejo MAPA_SOLO_BASE que ocultaba POIs) ya no se
+// aplican: Google los ignora en cuanto el mapa declara un mapId, que es
+// obligatorio para AdvancedMarkerElement. Ese estilo ahora se configura en la
+// consola de Google Cloud sobre el Map ID, igual que el tema oscuro y que en
+// MapaPicker.
 
 // valor solo tiene sentido para clusters (cantidad de nodos agrupados); un
 // nodo suelto no lleva número.
@@ -56,12 +50,16 @@ function pinSvg(valor?: number, pausado = false): string {
   </svg>`;
 }
 
-function pinIcon(valor?: number, pausado = false): google.maps.Icon {
-  return {
-    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSvg(valor, pausado)),
-    scaledSize: new google.maps.Size(48, 56),
-    anchor: new google.maps.Point(24, 52),
-  };
+// AdvancedMarkerElement recibe un nodo del DOM, no una URL de icono. El marcador
+// ancla el borde inferior del contenido en la coordenada, mientras que el icono
+// viejo anclaba en (24,52) de un SVG de 48x56: los 4px de diferencia se
+// compensan con el margen negativo para que la punta caiga en el mismo pixel.
+function pinElement(valor?: number, pausado = false): HTMLElement {
+  const cont = document.createElement("div");
+  cont.style.marginBottom = "-4px";
+  cont.style.lineHeight = "0";
+  cont.innerHTML = pinSvg(valor, pausado);
+  return cont;
 }
 
 export default function MapaClusters({ centro, nodos }: Props) {
@@ -80,6 +78,9 @@ export default function MapaClusters({ centro, nodos }: Props) {
     setCargando(true);
     try {
       await loadGoogleMaps();
+      // El efecto de marcadores es síncrono: garantizamos acá que la librería
+      // "marker" ya esté disponible antes de marcar el mapa como listo.
+      await google.maps.importLibrary("marker");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo cargar el mapa.");
       return;
@@ -95,7 +96,7 @@ export default function MapaClusters({ centro, nodos }: Props) {
       gestureHandling: "greedy",
       backgroundColor: "#0a0a0a",
       clickableIcons: false,
-      styles: MAPA_SOLO_BASE,
+      mapId: MAP_ID,
     });
     centroAplicadoRef.current = centro;
     setMapReady(true);
@@ -121,12 +122,17 @@ export default function MapaClusters({ centro, nodos }: Props) {
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
+    const { AdvancedMarkerElement } = google.maps.marker;
+
     const markers = nodos.map((nodo) => {
-      const marker = new google.maps.Marker({
+      const marker = new AdvancedMarkerElement({
         position: { lat: nodo.lat, lng: nodo.lng },
-        icon: pinIcon(undefined, nodo.pausado),
+        content: pinElement(undefined, nodo.pausado),
         title: nodo.nombre,
-        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + 1,
+        // Sin gmpClickable el marcador avanzado no emite "click" (a diferencia
+        // del Marker legacy, que era clickeable por defecto).
+        gmpClickable: true,
+        zIndex: 1,
       });
       marker.addListener("click", () => {
         router.push(`/nodo/${nodo.id}`);
@@ -139,11 +145,13 @@ export default function MapaClusters({ centro, nodos }: Props) {
       map,
       markers,
       renderer: {
+        // El cluster va por encima de los pines sueltos (zIndex 1) y, entre
+        // clusters, gana el que agrupa más nodos.
         render: ({ count, position }) =>
-          new google.maps.Marker({
+          new AdvancedMarkerElement({
             position,
-            icon: pinIcon(count),
-            zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+            content: pinElement(count),
+            zIndex: 1 + count,
           }),
       },
     });
@@ -165,7 +173,10 @@ export default function MapaClusters({ centro, nodos }: Props) {
     return () => {
       zoomListener?.remove();
       clustererRef.current?.clearMarkers();
-      markers.forEach((m) => m.setMap(null));
+      // El marcador avanzado se desmonta asignando map = null (no hay setMap).
+      markers.forEach((m) => {
+        m.map = null;
+      });
     };
   }, [nodos, router, mapReady]);
 
