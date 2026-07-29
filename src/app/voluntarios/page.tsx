@@ -19,7 +19,12 @@ import {
   setCachedRole,
   clearCachedRole,
 } from "@/lib/supabase";
-import { normalizarTelegram, errorTelegram } from "@/lib/telefono";
+import {
+  normalizarTelefonoVe,
+  normalizarTelegram,
+  errorTelegram,
+  sanitizarTelegram,
+} from "@/lib/telefono";
 import { validarCedula, formatearCedula, limpiarCedula } from "@/lib/validaciones";
 import PanelVoluntario from "@/components/PanelVoluntario";
 import EstadoCombobox from "@/components/EstadoCombobox";
@@ -147,15 +152,6 @@ export default function Voluntarios() {
       .catch(() => setCentros([]))
       .finally(() => setCargandoCentros(false));
   }, [estadoId]);
-
-  const normalizarTelefonoVe = (valor: string): string | null => {
-    let digits = valor.replace(/\D/g, "");
-    if (digits.startsWith("00")) digits = digits.slice(2);
-    if (digits.length === 11 && digits.startsWith("0")) {
-      digits = "58" + digits.slice(1);
-    }
-    return /^58(412|414|416|424|426)\d{7}$/.test(digits) ? digits : null;
-  };
 
   const registrar = async () => {
     setError(null);
@@ -424,11 +420,7 @@ export default function Voluntarios() {
             placeholder="Telegram (ej: @usuario)"
             value={telegram}
             onChange={(e) => {
-              // Solo letras, números, guion bajo y un único @ al inicio.
-              const limpio = e.target.value
-                .replace(/[^a-zA-Z0-9_@]/g, "")
-                .replace(/(?!^)@/g, "");
-              setTelegram(limpio);
+              setTelegram(sanitizarTelegram(e.target.value));
               if (telegramError) setTelegramError("");
             }}
             onBlur={() => {

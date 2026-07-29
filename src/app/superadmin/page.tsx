@@ -11,7 +11,12 @@ import BotonVolver from "@/components/BotonVolver";
 import Skeleton from "@/components/Skeleton";
 import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
 import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
-import { normalizarTelefonoVe, errorTelegram, normalizarTelegram } from "@/lib/telefono";
+import {
+  normalizarTelefonoVe,
+  errorTelegram,
+  normalizarTelegram,
+  sanitizarTelegram,
+} from "@/lib/telefono";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import SolicitudesRegistroNodo from "@/components/SolicitudesRegistroNodo";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
@@ -306,11 +311,7 @@ export default function SuperadminPanel() {
               placeholder="Telegram (ej: @usuario)"
               value={adminTelegram}
               onChange={(e) => {
-                // Solo letras, números, guion bajo y un único @ al inicio.
-                const limpio = e.target.value
-                  .replace(/[^a-zA-Z0-9_@]/g, "")
-                  .replace(/(?!^)@/g, "");
-                setAdminTelegram(limpio);
+                setAdminTelegram(sanitizarTelegram(e.target.value));
                 if (adminTelegramError) setAdminTelegramError("");
               }}
               onBlur={() => setAdminTelegramError(errorTelegram(adminTelegram) ?? "")}
