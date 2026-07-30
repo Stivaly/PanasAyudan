@@ -5,10 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AvisoError from "@/components/AvisoError";
 import BotonVolver from "@/components/BotonVolver";
-import Skeleton from "@/components/Skeleton";
 import {
   registrarVoluntario,
-  getCentrosAcopioPorEstado,
   getEstados,
   validarTokenVoluntario,
   obtenerRol,
@@ -29,7 +27,9 @@ import {
 import { validarCedula, formatearCedula, limpiarCedula } from "@/lib/validaciones";
 import PanelVoluntario from "@/components/PanelVoluntario";
 import EstadoCombobox from "@/components/EstadoCombobox";
-import { CentroAcopio, EstadoVenezuela, VolunteerRole } from "@/lib/types";
+import SelectorCentro from "@/components/SelectorCentro";
+import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
+import { EstadoVenezuela, VolunteerRole } from "@/lib/types";
 
 type Vista = "menu" | "registro" | "acceso" | "panel";
 
@@ -50,9 +50,13 @@ export default function Voluntarios() {
   const [capacidadPeso, setCapacidadPeso] = useState("");
   const [capacidadVolumen, setCapacidadVolumen] = useState("");
   const [estadoId, setEstadoId] = useState<string | null>(null);
-  const [centroAcopioId, setCentroAcopioId] = useState("");
-  const [centros, setCentros] = useState<CentroAcopio[]>([]);
-  const [cargandoCentros, setCargandoCentros] = useState(false);
+  const {
+    centros,
+    centroId: centroAcopioId,
+    setCentroId: setCentroAcopioId,
+    cargando: cargandoCentros,
+    error: centrosError,
+  } = useCentrosPorEstado(estadoId, "voluntarios_centros_estado_changes");
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   // Aviso discreto si falla la carga de estados (issue #55): sin esto, el
   // combobox quedaba vacío en silencio.
@@ -136,23 +140,6 @@ export default function Voluntarios() {
       })
       .catch(() => setEstadosError(true));
   }, [vista, estados.length]);
-
-  // Los centros se cargan solo al elegir un estado, filtrados por ese estado.
-  useEffect(() => {
-    // Reset de selects dependientes al cambiar de estado + fetch (intencional).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCentroAcopioId("");
-    setCentros([]);
-    if (!estadoId) {
-      setCargandoCentros(false);
-      return;
-    }
-    setCargandoCentros(true);
-    getCentrosAcopioPorEstado(estadoId)
-      .then(setCentros)
-      .catch(() => setCentros([]))
-      .finally(() => setCargandoCentros(false));
-  }, [estadoId]);
 
   const registrar = async () => {
     setError(null);
@@ -468,32 +455,14 @@ export default function Voluntarios() {
             </p>
           )}
           {estadoId && (
-            <>
-              <label htmlFor="voluntario-centro" className="text-sm font-semibold text-muted">
-                Centro de acopio
-              </label>
-              {cargandoCentros ? (
-                <Skeleton className="h-[52px] w-full" />
-              ) : centros.length === 0 ? (
-                <p className="text-muted text-sm">
-                  No hay centros de acopio registrados en este estado todavía.
-                </p>
-              ) : (
-                <select
-                  id="voluntario-centro"
-                  className="field"
-                  value={centroAcopioId}
-                  onChange={(e) => setCentroAcopioId(e.target.value)}
-                >
-                  <option value="">Seleccionar centro (opcional)</option>
-                  {centros.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </>
+            <SelectorCentro
+              centros={centros}
+              valor={centroAcopioId}
+              onChange={setCentroAcopioId}
+              cargando={cargandoCentros}
+              error={centrosError}
+              placeholder="Seleccionar centro (opcional)"
+            />
           )}
           <p className="text-xs text-muted">
             Puedes ser el centro o solo un voluntario que ayuda desde ahí.
