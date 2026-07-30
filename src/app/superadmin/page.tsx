@@ -28,7 +28,10 @@ export default function SuperadminPanel() {
   const router = useRouter();
   const guard = useRoleGuard(["superadmin"]);
   const token = guard.token;
-  const [nodeId, setNodeId] = useState("");
+  // Cierre de punto: se elige estado y luego el punto de ese estado, en vez de
+  // pegar un UUID. La lista viene de centros con activo = true, que son
+  // exactamente los cerrables (cerrar_nodo pone activo = false).
+  const [cerrarEstadoId, setCerrarEstadoId] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -43,6 +46,14 @@ export default function SuperadminPanel() {
   const [adminEstadoId, setAdminEstadoId] = useState<string | null>(null);
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
   const [estadosError, setEstadosError] = useState(false);
+  const {
+    centros: centrosCerrar,
+    centroId: nodeId,
+    setCentroId: setNodeId,
+    cargando: cargandoCentrosCerrar,
+    error: centrosCerrarError,
+  } = useCentrosPorEstado(cerrarEstadoId, "superadmin_centros_cerrar_changes");
+
   const {
     centros,
     centroId: adminCentroId,
@@ -77,17 +88,22 @@ export default function SuperadminPanel() {
     if (!token) return;
     setMensaje(null);
     setError(null);
-    if (!nodeId.trim()) {
-      setError("Ingresa el ID del punto a cerrar.");
+    if (!nodeId) {
+      setError("Elige el punto que vas a cerrar.");
       return;
     }
-    if (!window.confirm("El cierre es permanente y no tiene reapertura. Confirmas cerrar este punto?")) {
+    const elegido = centrosCerrar.find((c) => c.id === nodeId);
+    if (
+      !window.confirm(
+        `El cierre es permanente y no tiene reapertura. Confirmas cerrar "${elegido?.nombre ?? "este punto"}"?`
+      )
+    ) {
       return;
     }
     setEnviando(true);
     try {
-      await cerrarNodo(nodeId.trim(), token);
-      setMensaje("Punto cerrado permanentemente.");
+      await cerrarNodo(nodeId, token);
+      setMensaje(`Punto cerrado permanentemente: ${elegido?.nombre ?? ""}`.trim());
       setNodeId("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo cerrar el punto.");
@@ -180,16 +196,29 @@ export default function SuperadminPanel() {
 
       <div className="card border-accent flex flex-col gap-3">
         <p className="text-sm font-semibold text-accent">Cerrar punto (permanente)</p>
-        <label htmlFor="cerrar-node-id" className="text-sm font-semibold text-muted">
-          ID del punto a cerrar
-        </label>
-        <input
-          id="cerrar-node-id"
-          className="field"
-          placeholder="ID del punto"
-          value={nodeId}
-          onChange={(e) => setNodeId(e.target.value)}
+        <EstadoCombobox
+          estados={estados}
+          estadoId={cerrarEstadoId}
+          onChange={setCerrarEstadoId}
+          label="Estado del punto"
+          placeholder="Elige un estado"
         />
+        {estadosError && (
+          <AvisoCarga>
+            No se pudieron cargar los estados. Recarga la página para intentar de nuevo.
+          </AvisoCarga>
+        )}
+        {cerrarEstadoId && (
+          <SelectorCentro
+            centros={centrosCerrar}
+            valor={nodeId}
+            onChange={setNodeId}
+            cargando={cargandoCentrosCerrar}
+            error={centrosCerrarError}
+            label="Punto a cerrar"
+            placeholder="Elige el punto"
+          />
+        )}
         <p className="text-xs text-muted">
           El cierre es permanente y deja de aparecer en público. No tiene reapertura.
         </p>
