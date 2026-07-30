@@ -135,7 +135,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
       await verificarUbicacionVoluntario(token);
       await cargar();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo verificar tu ubicacion.");
+      setError(e instanceof Error ? e.message : "No se pudo verificar tu ubicación.");
     } finally {
       setVerificando(false);
     }
@@ -152,7 +152,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
     setError(null);
     const cant = Number(cantidad);
     if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (numero entero mayor a cero).");
+      setError("Indica la cantidad (número entero mayor a cero).");
       return;
     }
     if (cant > s.cantidad_disponible) {
@@ -202,7 +202,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
   };
 
   const retiroTexto = (direccion?: string | null, nombre?: string | null) =>
-    direccion?.trim() || nombre?.trim() || "Direccion de retiro no disponible";
+    direccion?.trim() || nombre?.trim() || "Dirección de retiro no disponible";
 
   return (
     <section className="flex flex-col gap-3">
@@ -213,25 +213,25 @@ export default function SolicitudesDisponibles({ token }: Props) {
 
       {!cargando && requiereVerificacion && (
         <div className="rounded-xl border border-accent bg-bg p-4">
-          <p className="font-semibold text-accent">Verifica tu ubicacion para operar</p>
+          <p className="font-semibold text-accent">Verifica tu ubicación para operar</p>
           <p className="mt-1 text-sm text-muted">
-            Confirma donde estas una sola vez para poder tomar traslados cercanos. Tu ubicacion
-            no se guarda: solo se usa para saber tu municipio, y la verificacion vale{" "}
+            Confirma dónde estás una sola vez para poder tomar traslados cercanos. Tu ubicación
+            no se guarda: solo se usa para saber tu municipio, y la verificación vale{" "}
             {VERIFICACION_UBICACION_HORAS} horas.
           </p>
           <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-fg">
-            Rango operativo: {RANGO_VOLUNTARIO_KM.conVehiculo} km maximo si tienes vehiculo
-            registrado; {RANGO_VOLUNTARIO_KM.sinVehiculo} km maximo sin vehiculo.
+            Rango operativo: {RANGO_VOLUNTARIO_KM.conVehiculo} km máximo si tienes vehículo
+            registrado; {RANGO_VOLUNTARIO_KM.sinVehiculo} km máximo sin vehículo.
           </div>
           <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
-            Esta verificacion debe hacerse desde un celular con ubicacion activa.
+            Esta verificación debe hacerse desde un celular con ubicación activa.
           </div>
           <button
             onClick={verificar}
             disabled={verificando}
             className="btn-primary mt-3 w-full disabled:opacity-50"
           >
-            {verificando ? "Verificando..." : "Verificar mi ubicacion"}
+            {verificando ? "Verificando..." : "Verificar mi ubicación"}
           </button>
         </div>
       )}
@@ -269,12 +269,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   )}
                   {c.atrasado_4h && (
                     <p className="mt-1 text-xs font-semibold text-danger">
-                      Vencio el plazo de retiro de {RETIRO_HORAS} horas.
+                      Venció el plazo de retiro de {RETIRO_HORAS} horas.
                     </p>
                   )}
                   {c.atrasado_24h && (
                     <p className="mt-1 text-xs font-semibold text-danger">
-                      El centro receptor aun no confirma luego de {CONFIRMACION_HORAS} horas.
+                      El centro receptor aún no confirma luego de {CONFIRMACION_HORAS} horas.
                     </p>
                   )}
                 </div>
@@ -298,7 +298,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
         <div className="rounded-xl bg-surface p-4 text-muted">
           <p>No hay traslados disponibles para ti ahora mismo.</p>
           <p className="mt-2 text-sm">
-            Aqui apareceran inventarios que otro centro ya ofrecio, pero que aun no tienen transporte.
+            Aquí aparecerán inventarios que otro centro ya ofreció, pero que aún no tienen transporte.
           </p>
         </div>
       )}
@@ -322,7 +322,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
                 <p className="mt-1 text-xs text-muted">
                   Disponible para transportar: {s.cantidad_disponible} {s.magnitud}
                   {s.cantidad ? ` de ${s.cantidad}` : ""}
-                  {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
+                  {s.requiere_vehiculo ? " - requiere vehículo" : ""}
                 </p>
                 {s.nota && <p className="mt-1 text-xs text-fg">{s.nota}</p>}
               </div>
@@ -335,7 +335,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   Tomar traslado
                 </button>
                 <p className="mt-2 text-center text-xs text-muted">
-                  Acercate mas para poder tomar este traslado.
+                  Acércate más para poder tomar este traslado.
                 </p>
               </div>
             ) : respondiendoId === s.id ? (
@@ -366,9 +366,9 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   </select>
                 </div>
                 <p className="text-xs text-muted">
-                  Al comprometerte, tienes {RETIRO_HORAS} horas para retirar. Despues del
+                  Al comprometerte, tienes {RETIRO_HORAS} horas para retirar. Después del
                   retiro, el centro receptor tiene {CONFIRMACION_HORAS} horas para confirmar
-                  la recepcion.
+                  la recepción.
                 </p>
                 <div className="flex gap-2">
                   <button

@@ -124,7 +124,7 @@ export default function Voluntarios() {
       // Aviso derivado del parámetro de URL al montar (intencional).
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVista("acceso");
-      setError("Codigo invalido. Ingresa tu codigo de acceso nuevamente.");
+      setError("Código inválido. Ingresa tu código de acceso nuevamente.");
       router.replace("/voluntarios");
     }
   }, [router]);
@@ -212,7 +212,7 @@ export default function Voluntarios() {
   const entrar = async () => {
     const t = tokenInput.trim();
     if (!t) {
-      setError("Ingresa tu codigo de acceso.");
+      setError("Ingresa tu código de acceso.");
       return;
     }
     setError(null);
@@ -224,7 +224,7 @@ export default function Voluntarios() {
       valido = await validarTokenVoluntario(t);
     } catch {
       setVerificando(false);
-      setError("No se pudo verificar tu codigo. Revisa tu conexion e intenta de nuevo.");
+      setError("No se pudo verificar tu código. Revisa tu conexión e intenta de nuevo.");
       return;
     }
     if (!valido) {
@@ -401,7 +401,7 @@ export default function Voluntarios() {
             onChange={(e) => setTelefono(e.target.value.replace(/[a-zA-Z]/g, ""))}
           />
           <p className="text-xs text-muted">
-            Este numero se usara para coordinar los compromisos que aceptes.
+            Este número se usará para coordinar los compromisos que aceptes.
           </p>
           <input
             className="field"
@@ -491,7 +491,7 @@ export default function Voluntarios() {
               Es tu forma de volver a entrar a tu panel. No se muestra de nuevo y no se puede recuperar.
             </p>
             <p className="mt-3 rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-              Tu navegador puede ofrecer guardarlo. Acepta esa opcion para usarlo rapido en este dispositivo.
+              Tu navegador puede ofrecer guardarlo. Acepta esa opción para usarlo rápido en este dispositivo.
             </p>
             <input type="hidden" name="username" autoComplete="username" value="voluntario-panasayudan" readOnly />
             <input
@@ -511,11 +511,11 @@ export default function Voluntarios() {
               }}
               className={copiado ? "btn-ghost mt-3 w-full border-accent text-accent" : "btn-ghost mt-3 w-full"}
             >
-              {copiado ? "¡Copiado! ✓" : "Copiar codigo"}
+              {copiado ? "¡Copiado! ✓" : "Copiar código"}
             </button>
           </div>
           <button type="submit" className="btn-primary w-full">
-            Ya lo guarde, usar codigo
+            Ya lo guardé, usar código
           </button>
         </form>
       )}

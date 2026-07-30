@@ -59,12 +59,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     () => [
       {
         titulo: "Abiertas",
-        descripcion: "Pedidos publicados que aun nadie tomo.",
+        descripcion: "Pedidos publicados que aún nadie tomó.",
         solicitudes: solicitudes.filter((s) => s.status === "abierta"),
       },
       {
         titulo: "Compromisos recibidos",
-        descripcion: "Centros o voluntarios ya ofrecieron ayuda; aqui ves cuanto falta.",
+        descripcion: "Centros o voluntarios ya ofrecieron ayuda; aquí ves cuánto falta.",
         solicitudes: solicitudes.filter(
           (s) =>
             s.status === "parcial" ||
@@ -127,12 +127,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const guardar = async () => {
     setError(null);
     if (!categoryId) {
-      setError("Elige una categoria para la solicitud.");
+      setError("Elige una categoría para la solicitud.");
       return;
     }
     const cant = Number(cantidad);
     if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (numero entero mayor a cero).");
+      setError("Indica la cantidad (número entero mayor a cero).");
       return;
     }
     const datos = {
@@ -216,7 +216,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const estadoSolicitud = (s: SolicitudNodo) => {
     if (s.status === "abierta") return "Abierta";
     if (s.status === "cerrada") return "Recibida";
-    if (s.status === "en_camino") return "Con envios en camino";
+    if (s.status === "en_camino") return "Con envíos en camino";
     return "Con compromisos";
   };
 
@@ -318,7 +318,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             checked={requiereVehiculo}
             onChange={(e) => setRequiereVehiculo(e.target.checked)}
           />
-          <span>Requiere vehiculo</span>
+          <span>Requiere vehículo</span>
         </label>
         <div className="flex gap-2">
           <button
@@ -348,7 +348,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
           </button>
         </div>
       ) : solicitudes.length === 0 ? (
-        <p className="text-sm text-muted">Este punto aun no tiene solicitudes.</p>
+        <p className="text-sm text-muted">Este punto aún no tiene solicitudes.</p>
       ) : (
         grupos.map((grupo) =>
           grupo.solicitudes.length > 0 ? (
@@ -377,7 +377,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
                         </span>
                       </div>
                       {s.requiere_vehiculo && (
-                        <p className="mt-1 text-xs text-muted">Requiere vehiculo</p>
+                        <p className="mt-1 text-xs text-muted">Requiere vehículo</p>
                       )}
                       {s.nota && <p className="mt-1 text-xs text-fg">{s.nota}</p>}
                     </div>

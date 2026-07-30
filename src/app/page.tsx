@@ -81,7 +81,7 @@ export default function Home() {
         aria-expanded={modalAbierto}
         className="absolute left-4 top-4 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-fg"
       >
-        Como funciona
+        Cómo funciona
       </button>
       {tieneToken && cargandoRol ? (
         <Skeleton className="absolute right-4 top-4 h-[38px] w-28" />
@@ -104,7 +104,7 @@ export default function Home() {
           </p>
           <h1 className="text-3xl font-bold text-fg">Panas Ayudan</h1>
           <p className="mt-2 text-base text-muted">
-            Coordina la busqueda y traslado de insumos entre centros de acopio y zonas de rescate.
+            Coordina la búsqueda y traslado de insumos entre centros de acopio y zonas de rescate.
           </p>
         </header>
 
@@ -125,7 +125,7 @@ export default function Home() {
           )
         ) : (
           <div className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-            Para publicar insumos primero debes crear una cuenta o entrar con tu codigo de acceso.
+            Para publicar insumos primero debes crear una cuenta o entrar con tu código de acceso.
           </div>
         )}
         <Link href="/buscar" className="btn-ghost w-full shadow-lg">
@@ -135,14 +135,14 @@ export default function Home() {
           <p className="mt-1 text-center text-xs text-muted">
             Coordinas recogidas en tu zona?{" "}
             <Link href="/voluntarios" className="font-semibold text-accent underline">
-              Usa tu codigo de acceso
+              Usa tu código de acceso
             </Link>
           </p>
         )}
         <p className="text-center text-xs text-muted">
           Tienes un centro de acopio o entrega?{" "}
           <Link href="/registrar-nodo" className="font-semibold text-accent underline">
-            Registralo aqui
+            Regístralo aquí
           </Link>
         </p>
       </div>

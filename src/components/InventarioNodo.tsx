@@ -149,7 +149,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
     const magnitudFinal = publicaMagnitud ? (fMagnitud || null) : null;
     const cant = Number(fCantidad);
     if (magnitudFinal && (!fCantidad.trim() || !Number.isInteger(cant) || cant <= 0)) {
-      setError("Indica la cantidad (numero entero mayor a cero).");
+      setError("Indica la cantidad (número entero mayor a cero).");
       return;
     }
     setGuardando(true);
@@ -204,7 +204,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
       setExito(null);
       const cant = Number(solCantidad);
       if (!solCantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-        setError("Indica la cantidad (numero entero mayor a cero).");
+        setError("Indica la cantidad (número entero mayor a cero).");
         return;
       }
       setSolicitando(true);
