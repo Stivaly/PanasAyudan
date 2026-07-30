@@ -11,22 +11,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AvisoCarga from "@/components/AvisoCarga";
 import {
-  getCategorias,
-  getSubcategorias,
   upsertInventario,
   marcarAgotado,
   solicitarReposicion,
   eliminarInventario,
 } from "@/lib/api";
 import { useInventarioNodo } from "@/hooks/useInventarioNodo";
-import {
-  Category,
-  Subcategory,
-  Magnitud,
-  MAGNITUD_ORDEN,
-  NodeTipo,
-  InventarioItem,
-} from "@/lib/types";
+import { useCategoriasEncadenadas } from "@/hooks/useCategoriasEncadenadas";
+import { Magnitud, MAGNITUD_ORDEN, NodeTipo, InventarioItem } from "@/lib/types";
 
 interface Props {
   nodeId: string;
@@ -42,12 +34,19 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   const [exito, setExito] = useState<string | null>(null);
 
   // --- Formulario de configuración (solo admin) ---
-  const [categorias, setCategorias] = useState<Category[]>([]);
-  const [categoriasError, setCategoriasError] = useState(false);
-  const [subcategorias, setSubcategorias] = useState<Subcategory[]>([]);
-  const [subcategoriasError, setSubcategoriasError] = useState(false);
-  const [fCategory, setFCategory] = useState("");
-  const [fSubcategory, setFSubcategory] = useState("");
+  // En modo colaborador no hay formulario de alta, así que el hook se monta
+  // inactivo: no pide la taxonomía a la red.
+  const {
+    categorias,
+    categoriasError,
+    subcategorias,
+    subcategoriasError,
+    categoryId: fCategory,
+    setCategoryId: setFCategory,
+    subcategoryId: fSubcategory,
+    setSubcategoryId: setFSubcategory,
+    reset: resetCategoria,
+  } = useCategoriasEncadenadas(!soloColaborador);
   const [fDisponible, setFDisponible] = useState(true);
   const [fMagnitud, setFMagnitud] = useState<Magnitud | "">("");
   const [fCantidad, setFCantidad] = useState("");
@@ -87,37 +86,9 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
   const [solVehiculo, setSolVehiculo] = useState(false);
   const [solNota, setSolNota] = useState("");
 
-  useEffect(() => {
-    if (soloColaborador) return;
-    getCategorias()
-      .then((lista) => {
-        setCategorias(lista);
-        setCategoriasError(false);
-      })
-      .catch(() => setCategoriasError(true));
-  }, [soloColaborador]);
-
-  useEffect(() => {
-    if (soloColaborador) return;
-    // Reset de subcategoría al cambiar la macro + fetch dependiente (intencional).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFSubcategory("");
-    if (!fCategory) {
-      setSubcategorias([]);
-      return;
-    }
-    getSubcategorias(fCategory)
-      .then((lista) => {
-        setSubcategorias(lista);
-        setSubcategoriasError(false);
-      })
-      .catch(() => setSubcategoriasError(true));
-  }, [fCategory, soloColaborador]);
-
   const limpiarFormulario = () => {
     setEditItem(null);
-    setFCategory("");
-    setFSubcategory("");
+    resetCategoria();
     setFDisponible(true);
     setFCondicion("");
     setFNota("");

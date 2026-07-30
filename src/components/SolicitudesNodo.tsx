@@ -6,18 +6,11 @@ import {
   crearSolicitud,
   editarSolicitud,
   eliminarSolicitud,
-  getCategorias,
-  getSubcategorias,
   listarSolicitudesNodo,
 } from "@/lib/api";
-import {
-  Category,
-  MAGNITUD_ORDEN,
-  Magnitud,
-  SolicitudNodo,
-  Subcategory,
-} from "@/lib/types";
+import { MAGNITUD_ORDEN, Magnitud, SolicitudNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { useCategoriasEncadenadas } from "@/hooks/useCategoriasEncadenadas";
 
 interface Props {
   nodeId: string;
@@ -25,17 +18,22 @@ interface Props {
 }
 
 export default function SolicitudesNodo({ nodeId, token }: Props) {
-  const [categorias, setCategorias] = useState<Category[]>([]);
-  const [categoriasError, setCategoriasError] = useState(false);
-  const [subcategorias, setSubcategorias] = useState<Subcategory[]>([]);
-  const [subcategoriasError, setSubcategoriasError] = useState(false);
+  const {
+    categorias,
+    categoriasError,
+    subcategorias,
+    subcategoriasError,
+    categoryId,
+    setCategoryId,
+    subcategoryId,
+    setSubcategoryId,
+    reset: resetCategoria,
+  } = useCategoriasEncadenadas();
   const [solicitudes, setSolicitudes] = useState<SolicitudNodo[]>([]);
   const [solicitudesError, setSolicitudesError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
 
-  const [categoryId, setCategoryId] = useState("");
-  const [subcategoryId, setSubcategoryId] = useState("");
   const [magnitud, setMagnitud] = useState<Magnitud>("unidades");
   const [cantidad, setCantidad] = useState("");
   const [nota, setNota] = useState("");
@@ -93,12 +91,6 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   );
 
   useEffect(() => {
-    getCategorias()
-      .then((lista) => {
-        setCategorias(lista);
-        setCategoriasError(false);
-      })
-      .catch(() => setCategoriasError(true));
     cargar();
   }, [cargar]);
 
@@ -110,29 +102,13 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   );
 
   useEffect(() => {
-    // Reset del selector dependiente al cambiar categoria.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSubcategoryId("");
-    if (!categoryId) {
-      setSubcategorias([]);
-      return;
-    }
-    getSubcategorias(categoryId)
-      .then((lista) => {
-        setSubcategorias(lista);
-        setSubcategoriasError(false);
-      })
-      .catch(() => setSubcategoriasError(true));
-  }, [categoryId]);
-
-  useEffect(() => {
     if (subPendiente && subcategorias.some((s) => s.id === subPendiente)) {
       // Sincroniza el selector con la subcategoria pendiente ya cargada.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubcategoryId(subPendiente);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubPendiente(null);
     }
-  }, [subPendiente, subcategorias]);
+  }, [subPendiente, subcategorias, setSubcategoryId]);
 
   useEffect(() => {
     if (editandoId) formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -141,8 +117,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const limpiarFormulario = () => {
     setEditandoId(null);
     setSubPendiente(null);
-    setCategoryId("");
-    setSubcategoryId("");
+    resetCategoria();
     setMagnitud("unidades");
     setCantidad("");
     setNota("");
