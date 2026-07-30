@@ -96,9 +96,9 @@ export default function NodoAdminPanel() {
   const [pausando, setPausando] = useState<TipoPausa | null>(null);
 
   const CONFIRMACION_PAUSA: Record<TipoPausa, string> = {
-    recepcion: "Pausar la recepcion de este punto?",
+    recepcion: "Pausar la recepción de este punto?",
     entrega: "Pausar la entrega de este punto?",
-    ambas: "Pausar recepcion y entrega de este punto?",
+    ambas: "Pausar recepción y entrega de este punto?",
     reactivar: "Reactivar este punto?",
   };
 
@@ -163,7 +163,7 @@ export default function NodoAdminPanel() {
         <div className="card border-accent">
           <p className="text-sm text-muted">Aun no administras ningun punto.</p>
           <p className="mt-2 text-xs text-muted">
-            El alta de nuevos puntos se gestiona desde solicitudes publicas y aprobacion de superadmin.
+            El alta de nuevos puntos se gestiona desde solicitudes públicas y aprobación de superadmin.
           </p>
         </div>
       ) : (
@@ -200,7 +200,7 @@ export default function NodoAdminPanel() {
               {noOperativo && (
                 <p className="text-xs font-semibold text-danger">
                   No operativo
-                  {operaRecepcion && activo.pausado_recepcion ? " - recepcion pausada" : ""}
+                  {operaRecepcion && activo.pausado_recepcion ? " - recepción pausada" : ""}
                   {operaEntrega && activo.pausado_entrega ? " - entrega pausada" : ""}
                 </p>
               )}
@@ -236,7 +236,7 @@ export default function NodoAdminPanel() {
                         disabled={pausando !== null}
                         className="btn-ghost text-sm disabled:opacity-50"
                       >
-                        {pausando === "recepcion" ? "Pausando…" : "Pausar recepcion"}
+                        {pausando === "recepcion" ? "Pausando…" : "Pausar recepción"}
                       </button>
                     )}
                     {operaEntrega && (

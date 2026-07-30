@@ -28,7 +28,7 @@ export default function PanelVoluntario({ token, onSalir }: Props) {
       </div>
 
       <div className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-        Aqui veras inventario que otro centro ya ofrecio, pero que necesita transporte voluntario.
+        Aquí verás inventario que otro centro ya ofreció, pero que necesita transporte voluntario.
       </div>
 
       <SolicitudesDisponibles token={token} />

@@ -78,7 +78,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
     setError(null);
     const cant = Number(cantidad);
     if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (numero entero mayor a cero).");
+      setError("Indica la cantidad (número entero mayor a cero).");
       return;
     }
     setEnviando(true);
@@ -98,7 +98,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
       <div>
         <p className="text-sm font-semibold text-accent">Solicitudes de otros puntos</p>
         <p className="mt-1 text-xs text-muted">
-          Pedidos de centros dentro del rango operativo de {RANGO_ENTRE_NODOS_KM} km maximo.
+          Pedidos de centros dentro del rango operativo de {RANGO_ENTRE_NODOS_KM} km máximo.
         </p>
       </div>
 
@@ -119,7 +119,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
                 <p className="text-xs text-muted">Pide: {s.nodo_nombre}</p>
                 <p className="mt-1 text-xs text-muted">
                   Pedido: {s.cantidad ? `${s.cantidad} ` : ""}{s.magnitud}
-                  {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
+                  {s.requiere_vehiculo ? " - requiere vehículo" : ""}
                   {s.distancia_km !== null ? ` - aprox. ${s.distancia_km} km` : ""}
                 </p>
                 {s.nota && <p className="mt-1 text-xs text-fg">💬 {s.nota}</p>}

@@ -68,7 +68,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
       await accion();
       await cargar(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo completar la accion.");
+      setError(e instanceof Error ? e.message : "No se pudo completar la acción.");
     } finally {
       setAccionId(null);
     }
@@ -90,7 +90,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
       <div>
         <p className="text-sm font-semibold text-accent">Movimientos</p>
         <p className="mt-1 text-xs text-muted">
-          Envios comprometidos por este punto y ayudas que vienen hacia aqui.
+          Envíos comprometidos por este punto y ayudas que vienen hacia aquí.
         </p>
       </div>
 
@@ -99,7 +99,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase text-muted">Salientes</p>
         {salientes.length === 0 ? (
-          <p className="rounded-xl bg-bg p-3 text-sm text-muted">Este punto aun no tiene envios comprometidos.</p>
+          <p className="rounded-xl bg-bg p-3 text-sm text-muted">Este punto aún no tiene envíos comprometidos.</p>
         ) : (
           salientes.map((mov) => (
             <div key={mov.id} className="rounded-xl bg-bg p-3 text-sm">
