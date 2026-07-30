@@ -10,7 +10,7 @@ import {
 } from "@/lib/api";
 import { MAGNITUD_ORDEN, Magnitud, SolicitudNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
-import { useCategoriaSubcategoria } from "@/hooks/useCategoriaSubcategoria";
+import { useCategoriasEncadenadas } from "@/hooks/useCategoriasEncadenadas";
 
 interface Props {
   nodeId: string;
@@ -28,7 +28,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
     subcategoryId,
     setSubcategoryId,
     reset: resetCategoria,
-  } = useCategoriaSubcategoria();
+  } = useCategoriasEncadenadas();
   const [solicitudes, setSolicitudes] = useState<SolicitudNodo[]>([]);
   const [solicitudesError, setSolicitudesError] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -15,7 +15,7 @@ import { Category, Subcategory } from "@/lib/types";
 // `activo` permite montar el hook sin que dispare red: InventarioNodo en modo
 // colaborador no muestra el formulario de alta y por lo tanto no necesita la
 // taxonomía.
-export function useCategoriaSubcategoria(activo = true) {
+export function useCategoriasEncadenadas(activo = true) {
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [categoriasError, setCategoriasError] = useState(false);
   const [subcategorias, setSubcategorias] = useState<Subcategory[]>([]);

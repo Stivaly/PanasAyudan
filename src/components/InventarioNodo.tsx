@@ -17,7 +17,7 @@ import {
   eliminarInventario,
 } from "@/lib/api";
 import { useInventarioNodo } from "@/hooks/useInventarioNodo";
-import { useCategoriaSubcategoria } from "@/hooks/useCategoriaSubcategoria";
+import { useCategoriasEncadenadas } from "@/hooks/useCategoriasEncadenadas";
 import { Magnitud, MAGNITUD_ORDEN, NodeTipo, InventarioItem } from "@/lib/types";
 
 interface Props {
@@ -46,7 +46,7 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
     subcategoryId: fSubcategory,
     setSubcategoryId: setFSubcategory,
     reset: resetCategoria,
-  } = useCategoriaSubcategoria(!soloColaborador);
+  } = useCategoriasEncadenadas(!soloColaborador);
   const [fDisponible, setFDisponible] = useState(true);
   const [fMagnitud, setFMagnitud] = useState<Magnitud | "">("");
   const [fCantidad, setFCantidad] = useState("");
