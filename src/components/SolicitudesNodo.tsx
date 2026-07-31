@@ -267,7 +267,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
         >
-          <option value="">Categoria...</option>
+          <option value="">Categoría...</option>
           {categorias.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -289,7 +289,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
           onChange={(e) => setSubcategoryId(e.target.value)}
           disabled={!categoryId || subcategorias.length === 0}
         >
-          <option value="">Subcategoria (opcional)...</option>
+          <option value="">Subcategoría (opcional)...</option>
           {subcategorias.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
