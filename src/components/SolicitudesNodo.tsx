@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import AvisoCarga from "@/components/AvisoCarga";
 import {
   crearSolicitud,
@@ -47,6 +47,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [borrando, setBorrando] = useState(false);
   const [subPendiente, setSubPendiente] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const idForm = useId();
 
   const cargar = useCallback(() => {
     listarSolicitudesNodo(nodeId, token)
@@ -257,7 +258,15 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       <div ref={formRef} className="flex flex-col gap-2 rounded-xl bg-bg p-3">
-        <select className="field" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+        <label htmlFor={`${idForm}-categoria`} className="text-sm font-semibold text-muted">
+          Categoría
+        </label>
+        <select
+          id={`${idForm}-categoria`}
+          className="field"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
           <option value="">Categoria...</option>
           {categorias.map((c) => (
             <option key={c.id} value={c.id}>
@@ -270,7 +279,11 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             No se pudieron cargar las categorías. Recarga para intentar de nuevo.
           </AvisoCarga>
         )}
+        <label htmlFor={`${idForm}-subcategoria`} className="text-sm font-semibold text-muted">
+          Subcategoría
+        </label>
         <select
+          id={`${idForm}-subcategoria`}
           className="field"
           value={subcategoryId}
           onChange={(e) => setSubcategoryId(e.target.value)}
@@ -289,12 +302,18 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
           </AvisoCarga>
         )}
         <CantidadMagnitud
+          label="Cantidad y magnitud"
+          labelClassName="text-sm font-semibold text-muted"
           cantidad={cantidad}
           onCantidad={setCantidad}
           magnitud={magnitud}
           onMagnitud={(m) => setMagnitud(m as Magnitud)}
         />
+        <label htmlFor={`${idForm}-comentario`} className="text-sm font-semibold text-muted">
+          Comentario
+        </label>
         <textarea
+          id={`${idForm}-comentario`}
           className="field min-h-[70px]"
           maxLength={280}
           placeholder="Comentario: que se necesita exactamente. No incluyas telefonos."
