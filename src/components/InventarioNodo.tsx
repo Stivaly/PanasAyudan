@@ -8,7 +8,7 @@
 //     reposición; no configura (coherente con 0030 y el criterio de aceptación).
 // Al marcar agotado se ofrece crear la solicitud automática (solicitar_reposicion).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import AvisoCarga from "@/components/AvisoCarga";
 import {
   upsertInventario,
@@ -32,6 +32,10 @@ interface Props {
 export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = false }: Props) {
   const { items, error: cargaError, refrescar } = useInventarioNodo(nodeId, token);
   const publicaMagnitud = tipo !== "entrega"; // acopio | mixto muestran magnitud
+  // El bloque de reposicion se renderiza dentro de un map: cada item necesita
+  // su propio id para que el label no apunte al primero de la lista.
+  const idAlta = useId();
+  const idReposicion = useId();
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
 
@@ -266,7 +270,15 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             </div>
           ) : (
             <>
-              <select className="field" value={fCategory} onChange={(e) => setFCategory(e.target.value)}>
+              <label htmlFor={`${idAlta}-categoria`} className="text-sm font-semibold text-muted">
+                Categoría
+              </label>
+              <select
+                id={`${idAlta}-categoria`}
+                className="field"
+                value={fCategory}
+                onChange={(e) => setFCategory(e.target.value)}
+              >
                 <option value="">Categoría…</option>
                 {categorias.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -277,7 +289,11 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
                   No se pudieron cargar las categorías. Recarga para intentar de nuevo.
                 </AvisoCarga>
               )}
+              <label htmlFor={`${idAlta}-subcategoria`} className="text-sm font-semibold text-muted">
+                Subcategoría
+              </label>
               <select
+                id={`${idAlta}-subcategoria`}
                 className="field"
                 value={fSubcategory}
                 onChange={(e) => setFSubcategory(e.target.value)}
@@ -297,6 +313,8 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
           )}
           {publicaMagnitud && (
             <CantidadMagnitud
+              label="Cantidad y magnitud"
+              labelClassName="text-sm font-semibold text-muted"
               cantidad={fCantidad}
               onCantidad={setFCantidad}
               magnitud={fMagnitud}
@@ -304,13 +322,21 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
               opcionVacia={tipo === "acopio" ? "Magnitud…" : "Magnitud (opcional)…"}
             />
           )}
+          <label htmlFor={`${idAlta}-condicion`} className="text-sm font-semibold text-muted">
+            Condición
+          </label>
           <input
+            id={`${idAlta}-condicion`}
             className="field"
             placeholder="Condición (ej. Se requiere receta médica)"
             value={fCondicion}
             onChange={(e) => setFCondicion(e.target.value)}
           />
+          <label htmlFor={`${idAlta}-comentario`} className="text-sm font-semibold text-muted">
+            Comentario
+          </label>
           <textarea
+            id={`${idAlta}-comentario`}
             className="field min-h-[70px]"
             maxLength={280}
             placeholder="Comentario: qué hay exactamente (ej. acetaminofén 500mg, botellas de 1L). No incluyas telefonos."
@@ -393,12 +419,17 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             {soloColaborador && solicitarFor === it.id && (
               <div className="mt-2 flex flex-col gap-2 rounded-lg bg-surface p-2">
                 <CantidadMagnitud
+                  label="Cantidad y magnitud"
                   cantidad={solCantidad}
                   onCantidad={setSolCantidad}
                   magnitud={solMagnitud}
                   onMagnitud={(m) => setSolMagnitud(m as Magnitud)}
                 />
+                <label htmlFor={`${idReposicion}-${it.id}-comentario`} className="text-xs font-semibold text-muted">
+                  Comentario
+                </label>
                 <textarea
+                  id={`${idReposicion}-${it.id}-comentario`}
                   className="field min-h-[60px]"
                   maxLength={280}
                   placeholder="Comentario del pedido (opcional). No incluyas telefonos."
