@@ -18,7 +18,9 @@ import {
 } from "@/lib/api";
 import { useInventarioNodo } from "@/hooks/useInventarioNodo";
 import { useCategoriasEncadenadas } from "@/hooks/useCategoriasEncadenadas";
-import { Magnitud, MAGNITUD_ORDEN, NodeTipo, InventarioItem } from "@/lib/types";
+import { Magnitud, NodeTipo, InventarioItem } from "@/lib/types";
+import { validarCantidad } from "@/lib/validaciones";
+import CantidadMagnitud from "@/components/CantidadMagnitud";
 
 interface Props {
   nodeId: string;
@@ -147,11 +149,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
     }
     // La cantidad es obligatoria cuando el item lleva magnitud (acopio | mixto).
     const magnitudFinal = publicaMagnitud ? (fMagnitud || null) : null;
-    const cant = Number(fCantidad);
-    if (magnitudFinal && (!fCantidad.trim() || !Number.isInteger(cant) || cant <= 0)) {
-      setError("Indica la cantidad (número entero mayor a cero).");
+    const checkCantidad = validarCantidad(fCantidad);
+    if (magnitudFinal && !checkCantidad.valida) {
+      setError(checkCantidad.error ?? "Cantidad inválida.");
       return;
     }
+    const cant = checkCantidad.cantidad;
     setGuardando(true);
     try {
       await upsertInventario(
@@ -202,11 +205,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
       if (solicitando) return;
       setError(null);
       setExito(null);
-      const cant = Number(solCantidad);
-      if (!solCantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-        setError("Indica la cantidad (número entero mayor a cero).");
+      const check = validarCantidad(solCantidad);
+      if (!check.valida) {
+        setError(check.error ?? "Cantidad inválida.");
         return;
       }
+      const cant = check.cantidad;
       setSolicitando(true);
       try {
         await solicitarReposicion(inventoryId, solMagnitud, cant, solVehiculo, token, solNota.trim() || null);
@@ -292,27 +296,13 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             </>
           )}
           {publicaMagnitud && (
-            <div className="flex gap-2">
-              <input
-                className="field w-1/3"
-                inputMode="numeric"
-                placeholder="Cantidad"
-                value={fCantidad}
-                onChange={(e) => setFCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-              />
-              <select
-                className="field flex-1"
-                value={fMagnitud}
-                onChange={(e) => setFMagnitud(e.target.value as Magnitud | "")}
-              >
-                <option value="">
-                  {tipo === "acopio" ? "Magnitud…" : "Magnitud (opcional)…"}
-                </option>
-                {MAGNITUD_ORDEN.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
+            <CantidadMagnitud
+              cantidad={fCantidad}
+              onCantidad={setFCantidad}
+              magnitud={fMagnitud}
+              onMagnitud={setFMagnitud}
+              opcionVacia={tipo === "acopio" ? "Magnitud…" : "Magnitud (opcional)…"}
+            />
           )}
           <input
             className="field"
@@ -402,24 +392,12 @@ export default function InventarioNodo({ nodeId, token, tipo, soloColaborador = 
             )}
             {soloColaborador && solicitarFor === it.id && (
               <div className="mt-2 flex flex-col gap-2 rounded-lg bg-surface p-2">
-                <div className="flex gap-2">
-                  <input
-                    className="field w-1/3"
-                    inputMode="numeric"
-                    placeholder="Cantidad"
-                    value={solCantidad}
-                    onChange={(e) => setSolCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-                  />
-                  <select
-                    className="field flex-1"
-                    value={solMagnitud}
-                    onChange={(e) => setSolMagnitud(e.target.value as Magnitud)}
-                  >
-                    {MAGNITUD_ORDEN.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
+                <CantidadMagnitud
+                  cantidad={solCantidad}
+                  onCantidad={setSolCantidad}
+                  magnitud={solMagnitud}
+                  onMagnitud={(m) => setSolMagnitud(m as Magnitud)}
+                />
                 <textarea
                   className="field min-h-[60px]"
                   maxLength={280}

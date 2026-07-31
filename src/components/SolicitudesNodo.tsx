@@ -8,7 +8,9 @@ import {
   eliminarSolicitud,
   listarSolicitudesNodo,
 } from "@/lib/api";
-import { MAGNITUD_ORDEN, Magnitud, SolicitudNodo } from "@/lib/types";
+import { Magnitud, SolicitudNodo } from "@/lib/types";
+import { validarCantidad } from "@/lib/validaciones";
+import CantidadMagnitud from "@/components/CantidadMagnitud";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useCategoriasEncadenadas } from "@/hooks/useCategoriasEncadenadas";
 
@@ -130,11 +132,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       setError("Elige una categoría para la solicitud.");
       return;
     }
-    const cant = Number(cantidad);
-    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (número entero mayor a cero).");
+    const check = validarCantidad(cantidad);
+    if (!check.valida) {
+      setError(check.error ?? "Cantidad inválida.");
       return;
     }
+    const cant = check.cantidad;
     const datos = {
       category_id: categoryId,
       subcategory_id: subcategoryId || null,
@@ -285,26 +288,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             No se pudieron cargar las subcategorías. El campo es opcional; puedes continuar.
           </AvisoCarga>
         )}
-        <div className="flex gap-2">
-          <input
-            className="field w-1/3"
-            inputMode="numeric"
-            placeholder="Cantidad"
-            value={cantidad}
-            onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-          />
-          <select
-            className="field flex-1"
-            value={magnitud}
-            onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-          >
-            {MAGNITUD_ORDEN.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
+        <CantidadMagnitud
+          cantidad={cantidad}
+          onCantidad={setCantidad}
+          magnitud={magnitud}
+          onMagnitud={(m) => setMagnitud(m as Magnitud)}
+        />
         <textarea
           className="field min-h-[70px]"
           maxLength={280}
