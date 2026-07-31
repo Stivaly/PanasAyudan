@@ -168,8 +168,8 @@ export default function Dar() {
         { contact_phone: phone, contact_telegram: tg, volunteer_id: null },
         volunteerToken
       );
-      const locId = await fetchLocationId(placeId, descripcion.trim(), estadoId);
-      router.push(locId ? `/lugar/${locId}` : "/");
+      // /lugar/[id] ya no existe (issue #25): tras publicar se vuelve al inicio.
+      router.push("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al publicar.");
       setEnviando(false);
@@ -332,16 +332,3 @@ export default function Dar() {
   );
 }
 
-async function fetchLocationId(
-  googlePlaceId: string | null,
-  descripcion: string,
-  estadoId: string
-): Promise<string | null> {
-  const { supabase } = await import("@/lib/supabase");
-  let query = supabase.from("locations").select("id").order("created_at", { ascending: false }).limit(1);
-  query = googlePlaceId
-    ? query.eq("google_place_id", googlePlaceId)
-    : query.is("google_place_id", null).eq("descripcion_libre", descripcion).eq("estado_id", estadoId);
-  const { data } = await query.maybeSingle();
-  return (data as { id: string } | null)?.id ?? null;
-}
