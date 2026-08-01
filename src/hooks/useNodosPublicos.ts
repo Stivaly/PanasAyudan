@@ -3,7 +3,7 @@
 // Lista pública de nodos (issue #24) mantenida fresca vía Realtime. Se refresca
 // ante cambios en node_inventory (para actualizar las etiquetas de categorías) y en
 // centros_acopio (para aparecer/desaparecer al activar/pausar/cerrar un nodo).
-// Mismo patrón de debounce que useItemsRealtime / useInventarioNodo.
+// Mismo patrón de debounce que useInventarioNodo.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";

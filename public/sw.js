@@ -11,12 +11,11 @@
 // ya es parte del shell; las fichas /nodo/[id] son dinámicas y las cachea el
 // handler de navegación (network-first) al visitarlas, habilitando el
 // compartir por SMS offline desde datos ya renderizados.
-const CACHE = "panasayudan-v9";
+const CACHE = "panasayudan-v10";
 const SHELL = [
   "/",
   "/offline",
   "/buscar",
-  "/dar",
   "/voluntarios",
   "/manifest.json",
   "/icon-192.png",
