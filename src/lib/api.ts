@@ -1,5 +1,4 @@
 import { supabase, supabaseWithToken } from "./supabase";
-import { getRecogedorToken } from "./recogedor";
 import {
   Category,
   Subcategory,
@@ -7,12 +6,9 @@ import {
   ContactData,
   ItemData,
   LocationData,
-  RecogidaData,
   AporteConContacto,
   ItemConCategoria,
   Location,
-  ReservaRecogedor,
-  RecogidaConDetalle,
   EstadisticasImpacto,
   AporteVoluntario,
   CentroAcopio,
@@ -158,60 +154,6 @@ export async function getItemsActivos(
     }));
 }
 
-export async function getItemsDeLugar(locationId: string): Promise<ItemConCategoria[]> {
-  const { data, error } = await supabase
-    .from("aporte_items")
-    .select("*, category:categories(*), aporte:aportes!inner(location_id, status)")
-    .eq("aporte.location_id", locationId)
-    .eq("aporte.status", "activo");
-
-  if (error) throw error;
-  type ItemLugarRow = {
-    id: string;
-    aporte_id: string;
-    category_id: string;
-    descripcion: string;
-    qty_approx: number;
-    qty_disponible: number;
-    category: Category;
-  };
-
-  return (data as ItemLugarRow[]).map((row) => ({
-    id: row.id,
-    aporte_id: row.aporte_id,
-    category_id: row.category_id,
-    descripcion: row.descripcion,
-    qty_approx: row.qty_approx,
-    qty_disponible: row.qty_disponible,
-    category: row.category,
-  }));
-}
-
-export async function getLugar(locationId: string): Promise<Location | null> {
-  const { data, error } = await supabase
-    .from("locations")
-    .select(
-      "*, estado:estados(*), centros_acopio(nombre, horario, contacto), zonas_rescate(nombre, descripcion)"
-    )
-    .eq("id", locationId)
-    .maybeSingle();
-  if (error) throw error;
-  return data as Location | null;
-}
-
-// Reservas pendientes del dispositivo actual (por su token local) en un lugar.
-export async function getReservasDeRecogedor(
-  locationId: string,
-  recogedorToken: string
-): Promise<ReservaRecogedor[]> {
-  const { data, error } = await supabase.rpc("listar_recogidas_por_token", {
-    p_recogedor_token: recogedorToken,
-    p_location_id: locationId,
-  });
-  if (error) throw error;
-  return data as ReservaRecogedor[];
-}
-
 export async function crearAporte(
   location: LocationData,
   items: ItemData[],
@@ -270,40 +212,6 @@ export async function getAportesVoluntario(token: string): Promise<AporteVolunta
   return data as AporteVoluntario[];
 }
 
-export async function getWhatsappVoluntarioItem(aporteItemId: string): Promise<string | null> {
-  const { data, error } = await supabase.rpc("obtener_whatsapp_voluntario_item", {
-    p_aporte_item_id: aporteItemId,
-  });
-  if (error) throw error;
-  return data as string | null;
-}
-
-export async function reservarItem(
-  aporteItemId: string,
-  qty: number,
-  recogida: RecogidaData
-): Promise<string> {
-  const { data, error } = await supabase.rpc("reservar_item", {
-    p_aporte_item_id: aporteItemId,
-    p_qty: qty,
-    recogida_data: recogida,
-    p_recogedor_token: getRecogedorToken(),
-  });
-  if (error) throw error;
-  return data as string;
-}
-
-// Verifica si una cédula está bloqueada por no haber ido a buscar una reserva.
-// Recibe la cédula ya limpia (sin puntos). Falla en silencio devolviendo false.
-export async function verificarCedulaBloqueada(cedula: string): Promise<boolean> {
-  const { count, error } = await supabase
-    .from("cedulas_bloqueadas")
-    .select("id", { count: "exact", head: true })
-    .eq("cedula", cedula);
-  if (error) return false;
-  return (count ?? 0) > 0;
-}
-
 // El voluntario confirma que la entrega fue recibida (con su volunteer-token).
 export async function confirmarEntrega(
   recogidaId: string,
@@ -321,17 +229,6 @@ export async function getEstadisticasImpacto(): Promise<EstadisticasImpacto> {
   const { data, error } = await supabase.rpc("get_estadisticas_impacto");
   if (error) throw error;
   return data as EstadisticasImpacto;
-}
-
-// Todas las recogidas del dispositivo actual (cualquier status) por token local.
-export async function getRecogidasDeRecogedor(
-  recogedorToken: string
-): Promise<RecogidaConDetalle[]> {
-  const { data, error } = await supabase.rpc("listar_recogidas_recogedor", {
-    p_recogedor_token: recogedorToken,
-  });
-  if (error) throw error;
-  return (data ?? []) as RecogidaConDetalle[];
 }
 
 export async function registrarVoluntario(input: {
@@ -1176,44 +1073,6 @@ export async function liberarRecogida(recogidaId: string): Promise<void> {
     p_recogida_id: recogidaId,
   });
   if (error) throw error;
-}
-
-// El recogedor cancela su propia reserva pendiente (libera el stock).
-export async function cancelarRecogidaPropia(
-  recogidaId: string,
-  recogedorToken: string
-): Promise<void> {
-  const { error } = await supabase.rpc("cancelar_recogida_propia", {
-    p_recogida_id: recogidaId,
-    p_recogedor_token: recogedorToken,
-  });
-  if (error) {
-    if (error.message.includes("ya_completada")) {
-      throw new Error(
-        "El voluntario ya marcó esta recogida como completada, no se puede cancelar."
-      );
-    }
-    throw error;
-  }
-}
-
-// El recogedor cambia la cantidad de su reserva pendiente (sube o baja, ajustando el stock).
-export async function modificarQtyRecogida(
-  recogidaId: string,
-  nuevaQty: number,
-  recogedorToken: string
-): Promise<void> {
-  const { error } = await supabase.rpc("modificar_qty_recogida", {
-    p_recogida_id: recogidaId,
-    p_nueva_qty: nuevaQty,
-    p_recogedor_token: recogedorToken,
-  });
-  if (error) {
-    if (error.message.includes("stock_insuficiente")) {
-      throw new Error("No hay suficientes insumos disponibles para esa cantidad.");
-    }
-    throw error;
-  }
 }
 
 // El voluntario dueño edita uno de sus aporte_items (descripción, categoría y/o
