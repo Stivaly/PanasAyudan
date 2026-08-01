@@ -3,16 +3,8 @@ import {
   Category,
   Subcategory,
   EstadoVenezuela,
-  ContactData,
-  ItemData,
-  LocationData,
-  AporteConContacto,
-  ItemConCategoria,
-  Location,
   EstadisticasImpacto,
-  AporteVoluntario,
   CentroAcopio,
-  ZonaRescate,
   VolunteerRole,
   NodoData,
   NodoAdmin,
@@ -70,17 +62,6 @@ export async function getCentrosAcopioPorEstado(estadoId: string): Promise<Centr
   return data as CentroAcopio[];
 }
 
-export async function getZonasRescatePorEstado(estadoId: string): Promise<ZonaRescate[]> {
-  const { data, error } = await supabase
-    .from("zonas_rescate")
-    .select("*")
-    .eq("estado_id", estadoId)
-    .eq("activo", true)
-    .order("nombre");
-  if (error) throw error;
-  return data as ZonaRescate[];
-}
-
 // Para el selector de voluntarios sin filtro de estado previo.
 export async function getCentrosAcopioTodos(): Promise<CentroAcopio[]> {
   const { data, error } = await supabase
@@ -90,88 +71,6 @@ export async function getCentrosAcopioTodos(): Promise<CentroAcopio[]> {
     .order("nombre");
   if (error) throw error;
   return data as CentroAcopio[];
-}
-
-// Items activos (qty_disponible > 0) con su categoría y location, opcional filtro.
-export async function getItemsActivos(
-  categorySlug?: string,
-  estadoId?: string,
-  centroAcopioId?: string,
-  zonaRescateId?: string
-): Promise<{ item: ItemConCategoria; location: Location }[]> {
-  let query = supabase
-    .from("aporte_items")
-    .select(
-      "*, category:categories(*), aporte:aportes!inner(id, status, location:locations!inner(*, estado:estados(*)))"
-    )
-    .gt("qty_disponible", 0)
-    .eq("activo", true)
-    .eq("aporte.status", "activo");
-
-  if (categorySlug) {
-    query = query.eq("category.slug", categorySlug);
-  }
-
-  if (estadoId) {
-    query = query.eq("aporte.location.estado_id", estadoId);
-  }
-
-  if (centroAcopioId) {
-    query = query.eq("aporte.location.centro_acopio_id", centroAcopioId);
-  }
-
-  if (zonaRescateId) {
-    query = query.eq("aporte.location.zona_rescate_id", zonaRescateId);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  type ItemActivoRow = {
-    id: string;
-    aporte_id: string;
-    category_id: string;
-    descripcion: string;
-    qty_approx: number;
-    qty_disponible: number;
-    category: Category | null;
-    aporte: { location: Location | null } | null;
-  };
-
-  return (data as ItemActivoRow[])
-    .filter((row) => row.aporte?.location && row.category)
-    .map((row) => ({
-      item: {
-        id: row.id,
-        aporte_id: row.aporte_id,
-        category_id: row.category_id,
-        descripcion: row.descripcion,
-        qty_approx: row.qty_approx,
-        qty_disponible: row.qty_disponible,
-        category: row.category as Category,
-      },
-      location: row.aporte!.location as Location,
-    }));
-}
-
-export async function crearAporte(
-  location: LocationData,
-  items: ItemData[],
-  contacto: ContactData,
-  volunteerToken: string
-): Promise<string> {
-  // Origen obligatorio: el aporte debe asociarse a un centro de acopio o a
-  // una zona de rescate (el constraint origen_requerido lo refuerza en la BD).
-  if (!location.centro_acopio_id && !location.zona_rescate_id) {
-    throw new Error("Debe indicar un centro de acopio o una zona de rescate de origen.");
-  }
-  const { data, error } = await supabaseWithToken(volunteerToken).rpc("crear_aporte", {
-    location_data: location,
-    items_data: items,
-    contact_data: contacto,
-  });
-  if (error) throw error;
-  return data as string;
 }
 
 // Valida un token de voluntario contra la base de datos antes de confiar en él.
@@ -204,24 +103,6 @@ export async function obtenerRol(token: string): Promise<VolunteerRole> {
   });
   if (error) throw error;
   return data as VolunteerRole;
-}
-
-export async function getAportesVoluntario(token: string): Promise<AporteVoluntario[]> {
-  const { data, error } = await supabaseWithToken(token).rpc("listar_aportes_voluntario");
-  if (error) throw error;
-  return data as AporteVoluntario[];
-}
-
-// El voluntario confirma que la entrega fue recibida (con su volunteer-token).
-export async function confirmarEntrega(
-  recogidaId: string,
-  volunteerToken: string
-): Promise<void> {
-  const { error } = await supabaseWithToken(volunteerToken).rpc("confirmar_entrega", {
-    p_recogida_id: recogidaId,
-    p_volunteer_token: volunteerToken,
-  });
-  if (error) throw error;
 }
 
 // Estadísticas agregadas de impacto (públicas, sin datos personales).
@@ -1048,79 +929,3 @@ export async function getInventarioPublico(nodeId: string): Promise<InventarioPu
   return (data ?? []) as unknown as InventarioPublicoItem[];
 }
 
-export async function obtenerContacto(
-  aporteId: string,
-  token: string
-): Promise<AporteConContacto> {
-  const { data, error } = await supabaseWithToken(token).rpc(
-    "obtener_aporte_con_contacto",
-    { p_aporte_id: aporteId, p_volunteer_token: token }
-  );
-  if (error) throw error;
-  return (data as AporteConContacto[])[0];
-}
-
-export async function completarRecogida(recogidaId: string, token: string): Promise<void> {
-  const { error } = await supabaseWithToken(token).rpc("completar_recogida", {
-    p_recogida_id: recogidaId,
-    p_volunteer_token: token,
-  });
-  if (error) throw error;
-}
-
-export async function liberarRecogida(recogidaId: string): Promise<void> {
-  const { error } = await supabase.rpc("liberar_recogida", {
-    p_recogida_id: recogidaId,
-  });
-  if (error) throw error;
-}
-
-// El voluntario dueño edita uno de sus aporte_items (descripción, categoría y/o
-// cantidad). Solo se envían los campos presentes en `datos`.
-export async function editarAporteItem(
-  itemId: string,
-  volunteerToken: string,
-  datos: {
-    descripcion?: string;
-    category_id?: string;
-    qty_approx?: number;
-  }
-): Promise<void> {
-  const { error } = await supabaseWithToken(volunteerToken).rpc("editar_aporte_item", {
-    p_item_id: itemId,
-    p_volunteer_token: volunteerToken,
-    p_nuevos_datos: datos,
-  });
-  if (error) {
-    if (error.message.includes("qty_invalida")) {
-      throw new Error("No puedes reducir la cantidad por debajo de las reservas activas.");
-    }
-    if (error.message.includes("no_autorizado")) {
-      throw new Error("No tienes permiso para editar este item.");
-    }
-    throw error;
-  }
-}
-
-// El voluntario dueño elimina uno de sus aporte_items. La RPC decide entre
-// borrado físico (sin historial) y lógico (con recogidas completadas/canceladas).
-export async function eliminarAporteItem(
-  itemId: string,
-  volunteerToken: string
-): Promise<void> {
-  const { error } = await supabaseWithToken(volunteerToken).rpc("eliminar_aporte_item", {
-    p_item_id: itemId,
-    p_volunteer_token: volunteerToken,
-  });
-  if (error) {
-    if (error.message.includes("tiene_recogidas_pendientes")) {
-      throw new Error(
-        "Este item tiene reservas pendientes. Espera a que venzan o libéralas primero."
-      );
-    }
-    if (error.message.includes("no_autorizado")) {
-      throw new Error("No tienes permiso para eliminar este item.");
-    }
-    throw error;
-  }
-}
