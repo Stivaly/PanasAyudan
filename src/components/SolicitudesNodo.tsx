@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import AvisoCarga from "@/components/AvisoCarga";
 import {
   crearSolicitud,
@@ -8,7 +8,9 @@ import {
   eliminarSolicitud,
   listarSolicitudesNodo,
 } from "@/lib/api";
-import { MAGNITUD_ORDEN, Magnitud, SolicitudNodo } from "@/lib/types";
+import { Magnitud, SolicitudNodo } from "@/lib/types";
+import { validarCantidad } from "@/lib/validaciones";
+import CantidadMagnitud from "@/components/CantidadMagnitud";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useCategoriasEncadenadas } from "@/hooks/useCategoriasEncadenadas";
 
@@ -45,6 +47,7 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
   const [borrando, setBorrando] = useState(false);
   const [subPendiente, setSubPendiente] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const idForm = useId();
 
   const cargar = useCallback(() => {
     listarSolicitudesNodo(nodeId, token)
@@ -130,11 +133,12 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       setError("Elige una categoría para la solicitud.");
       return;
     }
-    const cant = Number(cantidad);
-    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (número entero mayor a cero).");
+    const check = validarCantidad(cantidad);
+    if (!check.valida) {
+      setError(check.error ?? "Cantidad inválida.");
       return;
     }
+    const cant = check.cantidad;
     const datos = {
       category_id: categoryId,
       subcategory_id: subcategoryId || null,
@@ -254,8 +258,16 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       <div ref={formRef} className="flex flex-col gap-2 rounded-xl bg-bg p-3">
-        <select className="field" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-          <option value="">Categoria...</option>
+        <label htmlFor={`${idForm}-categoria`} className="text-sm font-semibold text-muted">
+          Categoría
+        </label>
+        <select
+          id={`${idForm}-categoria`}
+          className="field"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
+          <option value="">Categoría...</option>
           {categorias.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -267,13 +279,17 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             No se pudieron cargar las categorías. Recarga para intentar de nuevo.
           </AvisoCarga>
         )}
+        <label htmlFor={`${idForm}-subcategoria`} className="text-sm font-semibold text-muted">
+          Subcategoría
+        </label>
         <select
+          id={`${idForm}-subcategoria`}
           className="field"
           value={subcategoryId}
           onChange={(e) => setSubcategoryId(e.target.value)}
           disabled={!categoryId || subcategorias.length === 0}
         >
-          <option value="">Subcategoria (opcional)...</option>
+          <option value="">Subcategoría (opcional)...</option>
           {subcategorias.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -285,27 +301,19 @@ export default function SolicitudesNodo({ nodeId, token }: Props) {
             No se pudieron cargar las subcategorías. El campo es opcional; puedes continuar.
           </AvisoCarga>
         )}
-        <div className="flex gap-2">
-          <input
-            className="field w-1/3"
-            inputMode="numeric"
-            placeholder="Cantidad"
-            value={cantidad}
-            onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-          />
-          <select
-            className="field flex-1"
-            value={magnitud}
-            onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-          >
-            {MAGNITUD_ORDEN.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
+        <CantidadMagnitud
+          label="Cantidad y magnitud"
+          labelClassName="text-sm font-semibold text-muted"
+          cantidad={cantidad}
+          onCantidad={setCantidad}
+          magnitud={magnitud}
+          onMagnitud={(m) => setMagnitud(m as Magnitud)}
+        />
+        <label htmlFor={`${idForm}-comentario`} className="text-sm font-semibold text-muted">
+          Comentario
+        </label>
         <textarea
+          id={`${idForm}-comentario`}
           className="field min-h-[70px]"
           maxLength={280}
           placeholder="Comentario: que se necesita exactamente. No incluyas telefonos."

@@ -63,3 +63,19 @@ export function validarPlaca(valor: string): ResultadoValidacion {
 export function formatearPlaca(valor: string): string {
   return valor.replace(/[\s-]/g, "").toUpperCase();
 }
+
+// Cantidad de un item o de un compromiso (issue #77): entero mayor a cero.
+// Devuelve el número ya parseado para que quien llama no lo vuelva a convertir.
+// Las reglas extra de cada flujo (por ejemplo, no exceder lo disponible) quedan
+// del lado del llamador, que es el que sabe qué mensaje corresponde.
+export function validarCantidad(valor: string): ResultadoValidacion & { cantidad: number } {
+  const cantidad = Number(valor);
+  if (!valor.trim() || !Number.isInteger(cantidad) || cantidad <= 0) {
+    return {
+      valida: false,
+      error: "Indica la cantidad (número entero mayor a cero).",
+      cantidad: 0,
+    };
+  }
+  return { valida: true, cantidad };
+}

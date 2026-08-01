@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   listarSolicitudesDisponibles,
   marcarRetiroCompromiso,
@@ -10,10 +10,10 @@ import {
 import {
   CompromisoVoluntarioActivo,
   Magnitud,
-  MAGNITUD_ORDEN,
   SolicitudDisponible,
 } from "@/lib/types";
 import { RealtimeTable, useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { validarCantidad } from "@/lib/validaciones";
 import {
   CONFIRMACION_HORAS,
   RANGO_VOLUNTARIO_KM,
@@ -21,6 +21,7 @@ import {
   TIEMPO_ESTIMADO_DEFECTO_MINUTOS,
   VERIFICACION_UBICACION_HORAS,
 } from "@/lib/constantes";
+import CantidadMagnitud from "./CantidadMagnitud";
 import SkeletonLista from "./SkeletonLista";
 
 interface Props {
@@ -44,9 +45,6 @@ function enGrupos<T>(items: readonly T[], tamano: number): T[][] {
 }
 
 export default function SolicitudesDisponibles({ token }: Props) {
-  // Solo hay un formulario abierto a la vez, pero el id se genera igual con
-  // useId para no depender de eso si el diseno cambia.
-  const cantidadId = useId();
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
   const [compromisos, setCompromisos] = useState<CompromisoVoluntarioActivo[]>([]);
   const [volunteerId, setVolunteerId] = useState<string | null>(null);
@@ -150,11 +148,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
 
   const responder = async (s: SolicitudDisponible) => {
     setError(null);
-    const cant = Number(cantidad);
-    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (número entero mayor a cero).");
+    const check = validarCantidad(cantidad);
+    if (!check.valida) {
+      setError(check.error ?? "Cantidad inválida.");
       return;
     }
+    const cant = check.cantidad;
     if (cant > s.cantidad_disponible) {
       setError(`Solo quedan ${s.cantidad_disponible} ${s.magnitud} disponibles para transportar.`);
       return;
@@ -340,31 +339,14 @@ export default function SolicitudesDisponibles({ token }: Props) {
               </div>
             ) : respondiendoId === s.id ? (
               <div className="flex flex-col gap-2 rounded-xl bg-bg p-3">
-                <label htmlFor={cantidadId} className="text-xs font-semibold text-muted">
-                  Cantidad que puedo llevar
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id={cantidadId}
-                    className="field w-1/3"
-                    inputMode="numeric"
-                    placeholder={`Max ${s.cantidad_disponible}`}
-                    value={cantidad}
-                    onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-                  />
-                  <select
-                    aria-label="Magnitud"
-                    className="field flex-1"
-                    value={magnitud}
-                    onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-                  >
-                    {MAGNITUD_ORDEN.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CantidadMagnitud
+                  cantidad={cantidad}
+                  onCantidad={setCantidad}
+                  magnitud={magnitud}
+                  onMagnitud={(m) => setMagnitud(m as Magnitud)}
+                  max={s.cantidad_disponible}
+                  label="Cantidad que puedo llevar"
+                />
                 <p className="text-xs text-muted">
                   Al comprometerte, tienes {RETIRO_HORAS} horas para retirar. Después del
                   retiro, el centro receptor tiene {CONFIRMACION_HORAS} horas para confirmar

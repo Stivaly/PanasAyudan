@@ -353,6 +353,9 @@ export default function Voluntarios() {
             </p>
           </div>
           <input type="hidden" name="username" autoComplete="username" value="voluntario-panasayudan" readOnly />
+          <label htmlFor="volunteer-token" className="text-sm font-semibold text-muted">
+            Código de acceso
+          </label>
           <input
             id="volunteer-token"
             name="password"
@@ -379,9 +382,31 @@ export default function Voluntarios() {
             <p className="font-semibold text-accent">Tu zona puede ser el puente.</p>
             <p className="mt-1 text-muted">Deja tu WhatsApp venezolano y el área donde puedes apoyar traslados.</p>
           </div>
-          <input className="field" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          <input className="field" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} />
+          <label htmlFor="reg-nombre" className="text-sm font-semibold text-muted">
+            Nombre
+          </label>
           <input
+            id="reg-nombre"
+            className="field"
+            placeholder="Nombre"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+          <label htmlFor="reg-apellido" className="text-sm font-semibold text-muted">
+            Apellido
+          </label>
+          <input
+            id="reg-apellido"
+            className="field"
+            placeholder="Apellido"
+            value={apellido}
+            onChange={(e) => setApellido(e.target.value)}
+          />
+          <label htmlFor="reg-cedula" className="text-sm font-semibold text-muted">
+            Cédula
+          </label>
+          <input
+            id="reg-cedula"
             className="field"
             inputMode="numeric"
             placeholder="Cédula (ej: 12.345.678)"
@@ -392,7 +417,11 @@ export default function Voluntarios() {
             Tu cédula no se muestra públicamente. Se usa solo para el registro y queda
             bloqueada si no cumples un compromiso aceptado.
           </p>
+          <label htmlFor="reg-whatsapp" className="text-sm font-semibold text-muted">
+            WhatsApp
+          </label>
           <input
+            id="reg-whatsapp"
             className="field"
             type="tel"
             inputMode="tel"
@@ -403,7 +432,11 @@ export default function Voluntarios() {
           <p className="text-xs text-muted">
             Este número se usará para coordinar los compromisos que aceptes.
           </p>
+          <label htmlFor="reg-telegram" className="text-sm font-semibold text-muted">
+            Telegram
+          </label>
           <input
+            id="reg-telegram"
             className="field"
             placeholder="Telegram (ej: @usuario)"
             value={telegram}
@@ -426,20 +459,32 @@ export default function Voluntarios() {
           </label>
           {tieneVehiculo && (
             <div className="flex gap-2">
-              <input
-                className="field"
-                inputMode="decimal"
-                placeholder="Peso aprox. (kg)"
-                value={capacidadPeso}
-                onChange={(e) => setCapacidadPeso(e.target.value.replace(/[^0-9.]/g, ""))}
-              />
-              <input
-                className="field"
-                inputMode="decimal"
-                placeholder="Volumen aprox. (m³)"
-                value={capacidadVolumen}
-                onChange={(e) => setCapacidadVolumen(e.target.value.replace(/[^0-9.]/g, ""))}
-              />
+              <div className="flex flex-1 flex-col gap-2">
+                <label htmlFor="reg-peso" className="text-sm font-semibold text-muted">
+                  Peso (kg)
+                </label>
+                <input
+                  id="reg-peso"
+                  className="field"
+                  inputMode="decimal"
+                  placeholder="Peso aprox. (kg)"
+                  value={capacidadPeso}
+                  onChange={(e) => setCapacidadPeso(e.target.value.replace(/[^0-9.]/g, ""))}
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-2">
+                <label htmlFor="reg-volumen" className="text-sm font-semibold text-muted">
+                  Volumen (m³)
+                </label>
+                <input
+                  id="reg-volumen"
+                  className="field"
+                  inputMode="decimal"
+                  placeholder="Volumen aprox. (m³)"
+                  value={capacidadVolumen}
+                  onChange={(e) => setCapacidadVolumen(e.target.value.replace(/[^0-9.]/g, ""))}
+                />
+              </div>
             </div>
           )}
           <EstadoCombobox
