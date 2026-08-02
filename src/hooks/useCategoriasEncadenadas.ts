@@ -15,12 +15,14 @@ import { Category, Subcategory } from "@/lib/types";
 // `activo` permite montar el hook sin que dispare red: InventarioNodo en modo
 // colaborador no muestra el formulario de alta y por lo tanto no necesita la
 // taxonomía.
-export function useCategoriasEncadenadas(activo = true) {
+// `inicialCategoryId` siembra la macro al montar (formularios en modo edición,
+// que se remontan por key al cambiar de elemento editado - issue #80).
+export function useCategoriasEncadenadas(activo = true, inicialCategoryId = "") {
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [categoriasError, setCategoriasError] = useState(false);
   const [subcategorias, setSubcategorias] = useState<Subcategory[]>([]);
   const [subcategoriasError, setSubcategoriasError] = useState(false);
-  const [categoryId, setCategoryId] = useState("");
+  const [categoryId, setCategoryId] = useState(inicialCategoryId);
   const [subcategoryId, setSubcategoryId] = useState("");
 
   useEffect(() => {
