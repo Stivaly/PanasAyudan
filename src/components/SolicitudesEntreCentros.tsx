@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   listarSolicitudesParaNodo,
   responderSolicitudNodo,
 } from "@/lib/api";
-import { MAGNITUD_ORDEN, Magnitud, SolicitudParaNodo } from "@/lib/types";
+import { Magnitud, SolicitudParaNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { RANGO_ENTRE_NODOS_KM } from "@/lib/constantes";
+import { validarCantidad } from "@/lib/validaciones";
+import CantidadMagnitud from "./CantidadMagnitud";
 import SkeletonLista from "./SkeletonLista";
 
 interface Props {
@@ -23,9 +25,6 @@ const REALTIME_TABLES = [
 ];
 
 export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
-  // Solo hay un formulario abierto a la vez, pero el id se genera igual con
-  // useId para no depender de eso si el diseno cambia.
-  const cantidadId = useId();
   const [solicitudes, setSolicitudes] = useState<SolicitudParaNodo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -76,11 +75,12 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
 
   const responder = async (solicitudId: string) => {
     setError(null);
-    const cant = Number(cantidad);
-    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (número entero mayor a cero).");
+    const check = validarCantidad(cantidad);
+    if (!check.valida) {
+      setError(check.error ?? "Cantidad inválida.");
       return;
     }
+    const cant = check.cantidad;
     setEnviando(true);
     try {
       await responderSolicitudNodo(solicitudId, magnitud, cant, tieneTransporte, token, nodeId);
@@ -129,31 +129,14 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
 
             {respondiendoId === s.id ? (
               <div className="mt-3 flex flex-col gap-2 rounded-xl bg-surface p-3">
-                <label htmlFor={cantidadId} className="text-xs font-semibold text-muted">
-                  Cantidad y magnitud que puede aportar este punto
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id={cantidadId}
-                    className="field w-1/3"
-                    inputMode="numeric"
-                    placeholder={s.sobrante > 0 ? `Max ${s.sobrante}` : "Cantidad"}
-                    value={cantidad}
-                    onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-                  />
-                  <select
-                    aria-label="Magnitud"
-                    className="field flex-1"
-                    value={magnitud}
-                    onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-                  >
-                    {MAGNITUD_ORDEN.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CantidadMagnitud
+                  cantidad={cantidad}
+                  onCantidad={setCantidad}
+                  magnitud={magnitud}
+                  onMagnitud={(m) => setMagnitud(m as Magnitud)}
+                  max={s.sobrante}
+                  label="Cantidad y magnitud que puede aportar este punto"
+                />
                 <label className="flex items-center gap-2 text-xs">
                   <input
                     type="checkbox"
