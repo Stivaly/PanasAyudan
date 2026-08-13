@@ -25,6 +25,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#0a0a0a",
+  // Sin viewport-fit=cover el navegador no expone las safe areas y todos los
+  // env(safe-area-inset-*) del proyecto resuelven a 0px. Es obligatorio aquí
+  // porque appleWebApp.statusBarStyle es "black-translucent": en iOS instalado
+  // el contenido pasa por debajo de la barra de estado y del notch, y son esos
+  // insets los que lo compensan (cabeceras, banners y NodoTabBar).
+  viewportFit: "cover",
 };
 
 const themeScript = `

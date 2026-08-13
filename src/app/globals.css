@@ -36,6 +36,11 @@ body {
   color: rgb(var(--color-fg));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeSpeed;
+  /* Con viewport-fit=cover el contenido también pasa bajo el notch en
+     horizontal, donde ninguna pantalla compensa (todas usan p-4 fijo). En
+     vertical y en pantallas sin notch estos insets son 0: no agregan margen. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 * {
