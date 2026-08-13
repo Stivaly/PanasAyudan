@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PilaInferior, { ORDEN_AVISO } from "@/components/PilaInferior";
 import { useTema } from "@/hooks/useTema";
 
 type BatteryManagerLike = EventTarget & {
@@ -70,26 +71,30 @@ export default function AvisoBateria() {
   if (tema === "dark" || !banner) return null;
 
   return (
-    <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-md rounded-xl border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-950 shadow-lg dark:bg-amber-950 dark:text-amber-50">
-      <p className="font-semibold">
-        Batería al {banner.nivel}% — cambia a modo oscuro para no gastar más
-      </p>
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setTema("dark")}
-          className="rounded-lg bg-amber-900 px-3 py-2 text-sm font-semibold text-white dark:bg-amber-400 dark:text-black"
-        >
-          Cambiar ahora
-        </button>
-        <button
-          type="button"
-          onClick={() => setBanner(null)}
-          className="rounded-lg border border-amber-700/40 px-3 py-2 text-sm font-semibold"
-        >
-          Cerrar
-        </button>
+    <PilaInferior orden={ORDEN_AVISO}>
+      <div className="p-3">
+        <div className="mx-auto max-w-md rounded-xl border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-950 shadow-lg dark:bg-amber-950 dark:text-amber-50">
+          <p className="font-semibold">
+            Batería al {banner.nivel}% — cambia a modo oscuro para no gastar más
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTema("dark")}
+              className="rounded-lg bg-amber-900 px-3 py-2 text-sm font-semibold text-white dark:bg-amber-400 dark:text-black"
+            >
+              Cambiar ahora
+            </button>
+            <button
+              type="button"
+              onClick={() => setBanner(null)}
+              className="rounded-lg border border-amber-700/40 px-3 py-2 text-sm font-semibold"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </PilaInferior>
   );
 }

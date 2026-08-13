@@ -4,6 +4,8 @@
 // Secciona el panel admin para móvil: cada función vive en su propia vista y se
 // alcanza con el pulgar, en lugar de un único scroll interminable.
 
+import PilaInferior, { ORDEN_TABBAR } from "@/components/PilaInferior";
+
 export type NodoTab = "estado" | "inventario" | "pedir" | "cercanos" | "ajustes";
 
 interface Props {
@@ -79,39 +81,45 @@ const ITEMS: Item[] = [
 
 export default function NodoTabBar({ active, onChange, alertas, disabled }: Props) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex w-full max-w-lg">
-        {ITEMS.map((item) => {
-          const activo = item.key === active;
-          const bloqueado = Boolean(disabled?.[item.key]);
-          return (
-            <button
-              key={item.key}
-              onClick={() => {
-                if (!bloqueado) onChange(item.key);
-              }}
-              disabled={bloqueado}
-              aria-current={activo ? "page" : undefined}
-              className={
-                "relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors " +
-                (bloqueado
-                  ? "cursor-not-allowed text-muted/45"
-                  : activo
-                  ? "text-accent"
-                  : "text-muted active:text-fg")
-              }
-            >
-              <span className="relative">
-                {item.icon}
-                {alertas?.[item.key] && (
-                  <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-danger ring-2 ring-surface" />
-                )}
-              </span>
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+    // Último de la pila: queda pegado al borde y los banners se apilan encima,
+    // no sobre él. El margen negativo cancela el padding de safe area de la
+    // pila para que el fondo de la barra sí llegue hasta el borde físico,
+    // mientras sus iconos se mantienen sobre la barra de gestos.
+    <PilaInferior orden={ORDEN_TABBAR}>
+      <nav className="border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)] mb-[calc(-1*env(safe-area-inset-bottom))]">
+        <div className="mx-auto flex w-full max-w-lg">
+          {ITEMS.map((item) => {
+            const activo = item.key === active;
+            const bloqueado = Boolean(disabled?.[item.key]);
+            return (
+              <button
+                key={item.key}
+                onClick={() => {
+                  if (!bloqueado) onChange(item.key);
+                }}
+                disabled={bloqueado}
+                aria-current={activo ? "page" : undefined}
+                className={
+                  "relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors " +
+                  (bloqueado
+                    ? "cursor-not-allowed text-muted/45"
+                    : activo
+                    ? "text-accent"
+                    : "text-muted active:text-fg")
+                }
+              >
+                <span className="relative">
+                  {item.icon}
+                  {alertas?.[item.key] && (
+                    <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-danger ring-2 ring-surface" />
+                  )}
+                </span>
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </PilaInferior>
   );
 }

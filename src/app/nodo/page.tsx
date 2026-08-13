@@ -134,7 +134,9 @@ export default function NodoAdminPanel() {
   const noOperativo = activo ? pausadoRelevante(activo) : false;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+    // Sin pb hardcodeado para la tab bar: ahora la PilaInferior reserva su
+    // propio alto en el body, y ese 5rem fijo se sumaría dos veces (#154).
+    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4">
       <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
           &larr;
