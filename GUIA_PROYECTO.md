@@ -1,31 +1,34 @@
-# Guia de lectura del proyecto
+# Guía de lectura del proyecto
 
-Este documento resume como esta armado PanasAyudan para que una futura lectura
-del repositorio sea mas rapida y segura.
+Este documento resume cómo está armado PanasAyudan para que una futura lectura
+del repositorio sea más rápida y segura. La fuente de verdad funcional son los
+issues de GitHub y `definicion.md` (que vive fuera del repositorio); esto es un
+mapa del código, no la especificación.
 
-## Proposito
+## Propósito
 
-PanasAyudan es una app movil-first para coordinar insumos de emergencia en
-Venezuela. Un voluntario registrado publica lo que se puede donar, cualquier
-persona lo busca en lista o mapa y reserva una cantidad, y luego la lleva a un
-centro de acopio o zona de rescate. El contacto del aporte queda protegido por
-token de voluntario.
+PanasAyudan es una app móvil-first para coordinar insumos de emergencia en
+Venezuela. La unidad central es el **nodo**: un punto físico de acopio, de
+entrega o mixto, con su inventario. Los nodos piden entre sí lo que les falta,
+los voluntarios trasladan, y el público consulta dónde hay qué sin reservar
+nada. El contacto de cada nodo queda protegido detrás de RPC con token.
 
 ## Stack
 
-- Next.js con App Router, React, TypeScript y Tailwind CSS.
-- Supabase para PostgreSQL, RPC, RLS, Realtime y pg_cron.
-- Google Maps JavaScript API con Places nuevo, Advanced Markers,
-  MarkerClusterer y Distance Matrix.
+- Next.js 16 con App Router, React, TypeScript y Tailwind CSS.
+- Supabase para PostgreSQL, PostGIS, RPC, RLS, Realtime y pg_cron.
+- Google Maps JavaScript API con Places nuevo, Advanced Markers, MarkerClusterer
+  y Distance Matrix.
 - PWA simple con `manifest.json` y `sw.js`.
 
-Comandos principales:
+Comandos principales (el gestor de paquetes es **pnpm**; `npm` o `yarn` generan
+un lockfile paralelo que se desincroniza del `pnpm-lock.yaml` real):
 
 ```bash
-npm install
-npm run dev
-npm run build
-npm run lint
+pnpm install
+pnpm dev
+pnpm build
+pnpm lint
 ```
 
 Variables necesarias:
@@ -35,272 +38,229 @@ Variables necesarias:
 - `NEXT_PUBLIC_GOOGLE_MAPS_KEY`
 - `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`
 
-Nota: la version real de Next esta en `package.json` (`next ^16.2.9`). Si
-aparece algun problema de compatibilidad, revisar primero esa version.
+Nota: la versión real de Next está en `package.json` (`next ^16.2.9`). Si aparece
+algún problema de compatibilidad, revisar primero esa versión.
 
-## Dos identidades, sin login
+## Identidad y roles, sin login
 
-No hay autenticacion de usuarios. Todo se basa en dos tokens guardados en
-`localStorage`:
+No hay autenticación de usuarios. Todo se basa en tokens en `localStorage`
+(accedidos siempre por `src/lib/safeStorage.ts`):
 
 - **Voluntario** (`panas_volunteer_token`): se obtiene al registrarse en
-  `/voluntarios`. Habilita publicar aportes, gestionarlos, ver el contacto del
-  donante y confirmar entregas. Se muestra una sola vez y no se recupera.
-- **Recogedor** (`panas_recogedor_token`): un UUID que el navegador genera la
-  primera vez que se reserva (`src/lib/recogedor.ts`). Identifica al dispositivo
-  para que vea, modifique y cancele sus propias reservas en `/mis-recogidas`. No
-  es autenticacion: un token ajeno no devuelve nada. Tambien se guardan los
-  datos personales del recogedor (`panas_recogedor`) para pre-rellenar reservas.
+  `/voluntarios`. Se muestra una sola vez y no se recupera. Es la única
+  credencial del sistema.
+- **Rol de sesión** (`panas_session_role`): cache del rol resuelto por
+  `obtener_rol`, para no repetir la consulta en cada navegación.
+- **Recogedor** (`panas_recogedor_token`, `panas_recogedor`): identidad local del
+  modelo viejo de reservas. Solo la usan las rutas legadas.
+
+El rol sale del token, no de la URL: `superadmin | admin | colaborador |
+voluntario`. `useRoleGuard` (en `src/hooks/`) resuelve el rol antes de renderizar
+cualquier pantalla privilegiada y redirige si no corresponde. Mientras resuelve
+muestra skeleton, nunca la UI sensible.
 
 ## Rutas
 
-- `/`: pantalla inicial con acceso a donar, buscar, ver mis recogidas e ingresar
-  al area de voluntarios. Muestra estadisticas de impacto agregadas
-  (`SeccionImpacto`).
-- `/dar`: formulario para publicar un aporte. Solo accesible para voluntarios
-  registrados: si no hay token en `localStorage`, muestra un aviso para
-  registrarse en `/voluntarios`. Pide descripcion del lugar, estado obligatorio,
-  origen obligatorio (centro de acopio o zona de rescate), ubicacion por Google
-  Places o mapa manual, items y contacto (telefono y/o Telegram, al menos uno).
-  El telefono se normaliza con `normalizarTelefonoVe`. Publica usando la RPC
-  `crear_aporte` con el token del voluntario.
-- `/buscar`: vista publica de insumos disponibles. Carga categorias y estados,
-  permite filtrar por categoria, estado, centro de acopio y zona de rescate;
-  muestra lista por defecto y carga el mapa solo cuando el usuario lo pide.
-- `/lugar/[id]`: detalle de un lugar con items disponibles. Permite compartir
-  por WhatsApp y reservar cantidades mediante `reservar_item`, eligiendo el
-  destino. Muestra las reservas activas del propio dispositivo
-  (`MisReservasActivas`).
-- `/mis-recogidas`: panel del recogedor con todas las reservas de este
-  dispositivo (por su token local). Separa pendientes de completadas/canceladas,
-  muestra el destino, el contador de 4 horas, el estado de confirmacion, y
-  permite cambiar la cantidad o cancelar una reserva pendiente. Escucha cambios
-  en Realtime filtrando por `recogedor_token`.
-- `/voluntarios`: registro/acceso por token y panel de recogidas pendientes.
-  El registro permite asociar un centro de acopio de referencia. El token se
-  guarda en `localStorage` y se muestra una sola vez al registrarse.
-- `/voluntarios/gestionar/[id]`: panel por lugar para el voluntario dueno de los
-  aportes. Lista sus insumos en ese lugar y las solicitudes pendientes agrupadas
-  por item, con acciones de completar, confirmar entrega o liberar cada reserva.
-  Requiere token.
+Públicas:
+
+- `/`: pantalla inicial con acceso a buscar, registrar un punto e ingresar al
+  área de voluntarios. Muestra el modal de bienvenida (`ModalBienvenida`) y
+  estadísticas de impacto agregadas (`SeccionImpacto`).
+- `/buscar`: vista pública de nodos activos (`useNodosPublicos`). Lista por
+  defecto (`ListaNodos`) con filtros (`FiltrosBuscar`); el mapa
+  (`MapaClustersDinamico`) se carga solo cuando el usuario lo pide.
+- `/nodo/[id]`: detalle público de un nodo — datos, estado operativo e inventario
+  público (`getNodoPublico`, `getInventarioPublico`), con opción de compartir
+  (`CompartirNodo`).
+- `/registrar-nodo`: formulario público para solicitar el alta de un punto
+  (`crearSolicitudRegistroNodo`). Usa `UbicacionPicker` / `PlacesAutocomplete`.
+  No crea el nodo: crea una solicitud que aprueba un superadmin.
+- `/offline`: fallback que sirve el service worker sin conexión.
+
+Con token:
+
+- `/voluntarios`: registro/acceso por token y panel del voluntario. Al resolver
+  el rol redirige: `superadmin` → `/superadmin`, `admin` → `/nodo`,
+  `colaborador` → `/nodo/colaborador`; el voluntario se queda aquí.
+  `PanelVoluntario` es hoy exclusivamente `SolicitudesDisponibles`.
+- `/nodo`: panel del admin sobre un **punto activo** (si administra varios, la
+  lista funciona como selector, no se duplica la operación). Secciones por
+  `NodoTabBar`: inventario, pedir insumos, movimientos y datos del punto —
+  `VerificarNodo`, `EditarNodo`, `InventarioNodo`, `SolicitudesNodo`,
+  `EstadoMovimientosNodo`.
+- `/nodo/colaborador`: mismo inventario en modo `soloColaborador`: marcar
+  agotado y solicitar reposición, sin alta de items ni edición del nodo.
+- `/superadmin`: solicitudes de registro (`SolicitudesRegistroNodo`), creación de
+  admins y cierre permanente de nodos.
+
+Legado (modelo viejo, sin enlaces desde la navegación principal): `/dar`,
+`/lugar/[id]`, `/mis-recogidas`, `/voluntarios/gestionar/[id]`.
 
 ## Estructura de carpetas
 
-- `src/app`: rutas App Router, layout global, pantallas de carga/error y CSS
-  global.
-- `src/components`: piezas de interfaz: mapas, formularios, filtros, reserva,
-  panel voluntario, acciones sobre recogidas, impacto, contador, combobox de
-  estado y registro del service worker.
-- `src/hooks`: lectura en tiempo real de inventario y recogidas pendientes.
-- `src/lib`: cliente Supabase, acciones de datos (`api.ts`), carga de Google
-  Maps, geolocalizacion, normalizacion de telefono (`telefono.ts`), identidad
-  local del recogedor (`recogedor.ts`), validaciones y tipos compartidos.
+- `src/app`: rutas App Router, layout global, pantallas de carga/error/offline y
+  CSS global.
+- `src/components`: mapas, formularios, paneles de nodo, solicitudes, inventario,
+  skeletons, avisos de conexión/batería y registro del service worker.
+- `src/hooks`: Realtime (`useRealtimeRefresh`, `useInventarioNodo`,
+  `useNodosPublicos`), guard de rol, token, tema y conexión.
+- `src/lib`: cliente Supabase, acciones de datos (`api.ts`), Google Maps,
+  geolocalización, teléfono (`telefono.ts`), storage seguro (`safeStorage.ts`),
+  fetch con timeout, validaciones y tipos compartidos.
 - `src/types`: tipos auxiliares globales para Google Maps.
 - `public`: manifest PWA y service worker.
-- `supabase/migrations`: migraciones SQL disponibles en el repo (hasta `0027`),
-  incluyendo esquema base, RLS/RPC, voluntarios, recogidas, WhatsApp, filtros
-  por estado, identidad del recogedor, confirmacion de entrega, estadisticas de
-  impacto, bloqueo de cedulas y centros de acopio / zonas de rescate.
-- `supabase/scripts`: scripts SQL de mantenimiento manual (no migraciones), p.
-  ej. `limpiar_recogidas_aportes.sql`.
+- `supabase/migrations`: migraciones SQL numeradas, hasta `0062`.
+- `supabase/scripts`: scripts SQL de mantenimiento manual (no migraciones).
 
-## Modelo de datos esperado
+## Modelo de datos
 
-Los tipos en `src/lib/types.ts` muestran el contrato usado por la UI:
+Los tipos en `src/lib/types.ts` muestran el contrato usado por la UI.
 
-- `categories`: categorias con `name` y `slug`.
-- `estados`: estados venezolanos publicos para filtrar busquedas y clasificar
-  aportes.
-- `centros_acopio`: centros de acopio curados (solo lectura) por estado, con
-  direccion, horario y contacto. Origen de aportes y destino de recogidas.
-- `zonas_rescate`: zonas de rescate de referencia (solo lectura) por estado.
-- `locations`: lugares con `google_place_id`, nombre, coordenadas, direccion,
-  descripcion libre, `estado_id` y referencias opcionales a centro de acopio /
-  zona de rescate.
-- `aportes`: publicaciones activas o cerradas, asociadas a un lugar.
-- `aporte_items`: items de cada aporte, con cantidad aproximada y disponible.
-- `recogidas`: reservas pendientes/completadas/canceladas con datos de quien ira
-  a buscar, `recogedor_token`, destino (centro/zona), `confirmation_deadline` y
-  `confirmada_at`.
-- `cedulas_bloqueadas`: cedulas que reservaron y no fueron a buscar; no pueden
-  volver a reservar.
-- `volunteers`: voluntarios con contacto, zona, centro de acopio de referencia,
-  token y estado activo.
+Modelo de nodos (vigente):
+
+- `centros_acopio`: la tabla que sostiene los nodos, con `tipo`
+  (`acopio | entrega | mixto`), `status` (`inactivo | activo | pausado |
+  cerrado`), verificación GPS y pausa granular (`pausado_recepcion`,
+  `pausado_entrega`).
+- `node_admins` / `node_collaborators`: membresía de cada nodo por rol.
+- `node_inventory`: inventario por nodo, con categoría, subcategoría, condición,
+  magnitud y disponibilidad.
+- `solicitudes`: lo que un nodo pide, con cantidad y `magnitud_nivel`
+  (`unidades` … `gandola`, ordenadas por `magnitud_orden()`).
+- `compromisos_voluntario`: compromiso de un voluntario sobre una solicitud —
+  **sin ubicación del voluntario, por diseño**; solo tiempo estimado y cantidad.
+- `compromisos_nodo`: compromiso de un nodo hacia otro.
+- `solicitudes_registro_nodo`: altas pendientes de aprobación por superadmin.
+- `categories` / `subcategories`: taxonomía de 10 macrocategorías con
+  subcategorías (alineada con `CategorySlug` en `src/lib/types.ts`).
+- `estados`: estados venezolanos, para filtros y clasificación.
+- `volunteers`: voluntarios con contacto, token, rol, vehículo y capacidad.
+- `cedulas_bloqueadas`: cédulas bloqueadas por incumplimiento de un compromiso.
+- `municipios` / `municipios_adyacentes`: legado del rango por adyacencia (0038),
+  reemplazado por radio geográfico en 0043/0047. Ver el punto 1 del issue #34
+  antes de tocarlos.
+
+Modelo viejo (en convivencia hasta #25/#26): `locations`, `aportes`,
+`aporte_items`, `recogidas`, `zonas_rescate`.
 
 ## Capa de datos
 
-`src/lib/api.ts` es el punto de entrada para leer y escribir datos:
+`src/lib/api.ts` es el punto de entrada para leer y escribir. Agrupado por uso:
 
-- Lecturas publicas: `getCategorias`, `getEstados`, `getCentrosAcopioPorEstado`,
-  `getZonasRescatePorEstado`, `getCentrosAcopioTodos`, `getItemsActivos`,
-  `getItemsDeLugar`, `getLugar`, `getReservasDeRecogedor`,
-  `getWhatsappVoluntarioItem`, `verificarCedulaBloqueada`.
-- Escrituras/RPC publicas: `reservarItem`, `registrarVoluntario`,
-  `liberarRecogida`, `cancelarRecogidaPropia`, `modificarQtyRecogida`,
-  `getRecogidasDeRecogedor`, `getEstadisticasImpacto`.
-- RPC con token de voluntario: `crearAporte`, `getAportesVoluntario`,
-  `obtenerContacto`, `completarRecogida`, `confirmarEntrega`.
+- **Lecturas públicas**: `getCategorias`, `getSubcategorias`, `getEstados`,
+  `getNodosPublicos`, `getNodoPublico`, `getInventarioPublico`,
+  `getCentrosAcopioPorEstado`, `getCentrosAcopioTodos`, `getEstadisticasImpacto`.
+- **Alta pública**: `crearSolicitudRegistroNodo`, `registrarVoluntario`.
+- **Nodo (token admin)**: `crearNodo`, `verificarNodo`, `editarNodo`,
+  `pausarNodo`, `cerrarNodo`, `listarNodosAdmin`, `listarNodosMiembro`.
+- **Inventario (token)**: `getInventarioNodo`, `upsertInventario`,
+  `marcarAgotado`, `eliminarInventario`, `solicitarReposicion`.
+- **Solicitudes y compromisos (token)**: `crearSolicitud`, `editarSolicitud`,
+  `eliminarSolicitud`, `listarSolicitudesDisponibles`, `listarSolicitudesNodo`,
+  `listarSolicitudesParaNodo`, `responderSolicitudVoluntario`,
+  `responderSolicitudNodo`, `marcarRetiroCompromiso`,
+  `marcarCompromisoNodoEnviado`, `cancelarCompromiso`,
+  `confirmarEntregaCompromiso`, `confirmarLlegadaCompromiso`,
+  `listarMovimientosNodo`.
+- **Voluntario (token)**: `obtenerRol`, `validarTokenVoluntario`,
+  `verificarUbicacionVoluntario`.
+- **Superadmin (token)**: `crearAdmin`, `listarSolicitudesRegistro`,
+  `aprobarSolicitudRegistro`, `rechazarSolicitudRegistro`.
+- **Legado**: `crearAporte`, `getItemsActivos`, `getItemsDeLugar`, `getLugar`,
+  `reservarItem`, `getRecogidasDeRecogedor`, `liberarRecogida`,
+  `completarRecogida`, `obtenerContacto` y afines.
 
-`src/lib/supabase.ts` crea dos tipos de cliente:
+`src/lib/supabase.ts` crea dos clientes:
 
-- `supabase`: cliente anonimo para lecturas publicas, Realtime y RPC publicas.
-- `supabaseWithToken(token)`: cliente que envia el header `volunteer-token`.
-  Las policies/RPC de voluntarios dependen de ese header.
+- `supabase`: anónimo, para lecturas públicas, Realtime y RPC públicas.
+- `supabaseWithToken(token)`: envía el header `volunteer-token`. Las policies y
+  RPC con permisos dependen de ese header.
 
-No exponer contactos desde consultas publicas. El contacto del aporte debe salir
-solo por RPC protegida con token.
+No exponer contactos desde consultas públicas: el contacto sale solo por RPC
+protegida con token.
 
 ## Flujos importantes
 
-Publicar aporte:
+**Alta de un nodo**: `/registrar-nodo` crea una fila en
+`solicitudes_registro_nodo` → el superadmin la revisa en `/superadmin` →
+`aprobar_solicitud_registro` activa el centro y precarga `node_inventory` con las
+categorías declaradas (0058) → el admin entra a `/nodo` y **verifica el punto
+estando físicamente ahí** (`verificar_nodo`, tolerancia por `distancia_metros`).
 
-1. `/dar` exige token de voluntario; sin token muestra el aviso de registro y no
-   carga el formulario.
-2. Con token, carga categorias, estados, centros de acopio / zonas del estado y
-   centro aproximado.
-3. El usuario elige estado obligatorio, origen obligatorio (centro o zona) y
-   ubicacion por Places o pin manual.
-4. `ItemsForm` valida categoria, descripcion y cantidad; el contacto exige
-   telefono valido (`normalizarTelefonoVe`) y/o Telegram, al menos uno.
-5. `crearAporte` manda `location_data` con `estado_id`, `centro_acopio_id` o
-   `zona_rescate_id`, `items_data` y `contact_data`, usando `supabaseWithToken`
-   (RPC `crear_aporte` solo voluntarios; el constraint `origen_requerido`
-   refuerza el origen en la BD).
-6. Despues se busca el `location.id` recien creado y se navega a `/lugar/[id]`.
+**Pedir y mover insumos**: el admin crea una solicitud desde `/nodo` (cantidad +
+magnitud) → aparece en `SolicitudesDisponibles` (voluntarios en rango) y en
+`SolicitudesEntreCentros` (otros nodos) → quien responde queda con un compromiso
+→ marca retiro / en camino → el nodo destino confirma llegada o marca "no llegó",
+lo que bloquea la cédula del voluntario.
 
-Buscar insumos:
+**Rango del voluntario**: `verificarUbicacionVoluntario` toma el GPS, lo usa
+dentro de la RPC con `ST_DWithin` y lo descarta. La verificación vale 24 h. El
+radio es 650 km con vehículo registrado y 300 km sin él (0047).
 
-1. `/buscar` usa `useItemsRealtime` con filtros opcionales de categoria, estado,
-   centro de acopio y zona de rescate.
-2. `getItemsActivos` lee items con `qty_disponible > 0`, aporte activo y los
-   filtros aplicados.
-3. El hook agrupa items por `location`.
-4. La lista se muestra primero; `MapaClusters` se importa de forma dinamica solo
-   al tocar "Ver en mapa".
+**Inventario**: el admin da de alta items con categoría, subcategoría, condición,
+magnitud y disponibilidad; el colaborador solo marca agotado y pide reposición.
+Todo pasa por RPC atómica, nunca por `UPDATE` directo.
 
-Reservar item:
-
-1. `/lugar/[id]` muestra items disponibles.
-2. `ReservarItem` pide nombre, apellido, cedula, placa opcional, cantidad y
-   destino. Antes de reservar verifica que la cedula no este bloqueada
-   (`verificarCedulaBloqueada`).
-3. `reservarItem` crea una recogida (con `recogedor_token` y destino) y reduce
-   disponibilidad en base de datos.
-4. La UI muestra un contador local de 4 horas.
-5. La liberacion real depende de RPC/cron en Supabase.
-
-Mis recogidas (recogedor):
-
-1. `/mis-recogidas` lee todas las reservas del dispositivo con
-   `getRecogidasDeRecogedor(token)` y escucha Realtime por `recogedor_token`.
-2. El recogedor puede cambiar la cantidad (`modificarQtyRecogida`, ajusta stock)
-   o cancelar (`cancelarRecogidaPropia`, libera stock) una reserva pendiente.
-3. Ve el destino, el estado de confirmacion y un boton de WhatsApp al voluntario.
-
-Voluntarios:
-
-1. `/voluntarios` registra via `registrar_voluntario` (con centro de acopio de
-   referencia opcional) o acepta un token ya existente.
-2. El token vive en `localStorage` bajo `panas_volunteer_token`.
-3. `PanelVoluntario` usa `useRecogidasPendientes(token)` para ordenar reservas
-   por cercania.
-4. El contacto del donante se obtiene con `obtener_aporte_con_contacto`.
-5. El panel puede completar, confirmar la entrega o liberar una reserva
-   (`AccionesRecogidaVoluntario`).
-
-## Centros de acopio y zonas de rescate
-
-- Son datos curados de solo lectura, sembrados por estado en la migracion
-  `0025`. Alta/edicion solo via service role; los roles publicos solo tienen
-  `select`.
-- Un aporte (location) referencia su origen; una recogida referencia su destino.
-- El selector de voluntario puede asociar un centro de acopio de referencia.
-
-## Cedulas bloqueadas
-
-- Una cedula que reserva y no va a buscar (reserva pendiente vencida) se bloquea
-  con un job de pg_cron cada 30 min (`bloquear_cedulas_sin_confirmacion`).
-- `reservar_item` rechaza cedulas bloqueadas (`cedula_bloqueada`) antes de
-  verificar stock, y el frontend lo chequea antes con `verificarCedulaBloqueada`.
-
-## Confirmacion de entrega e impacto
-
-- La recogida lleva un `confirmation_deadline` (24h) y un `confirmada_at`.
-- El voluntario confirma la entrega con `confirmarEntrega` (RPC con su token).
-- `get_estadisticas_impacto` devuelve metricas agregadas publicas (recogidas
-  completadas/confirmadas, cantidad coordinada, aportes y lugares activos) sin
-  exponer datos personales; se muestran en `SeccionImpacto`.
-
-## Google Maps y ubicacion
+## Google Maps y ubicación
 
 - `src/lib/maps.ts` carga Google Maps de forma diferida en cliente.
 - `MAP_ID` es necesario para `AdvancedMarkerElement`. El tema oscuro del mapa se
   configura en Google Cloud sobre ese Map ID.
 - `PlacesAutocomplete` usa `PlaceAutocompleteElement`, no el Autocomplete legacy.
-- `resolverCentro` intenta IP y luego GPS solo si el permiso ya estaba
-  concedido. No dispara el prompt de geolocalizacion.
-- `calcularDistancias` usa Distance Matrix en lotes de 25 destinos.
+- `resolverCentro` intenta IP y luego GPS solo si el permiso ya estaba concedido.
+  No dispara el prompt de geolocalización.
+- `MapaClusters` todavía usa `google.maps.Marker` legacy: es el issue #73.
 
 ## PWA
 
-- `RegistrarSW` registra `/sw.js` despues de cargar la pagina.
-- `sw.js` usa network-first para navegacion y cache-first para estaticos.
+- `RegistrarSW` registra `/sw.js` después de cargar la página; `InstalarApp`
+  ofrece la instalación.
+- `sw.js` usa network-first para navegación y cache-first para estáticos, con
+  `/offline` como fallback.
 - El service worker ignora llamadas externas a Supabase, Google, ip-api y
   WhatsApp.
-
-### Deuda tecnica (frontend)
-
-- Se elimino el componente `BotonInstalar` (boton "Instalar app" / instrucciones
-  iOS para `beforeinstallprompt`). Ya no se muestra ningun prompt de instalacion
-  PWA en la UI. El `manifest.json` y el service worker siguen activos, asi que la
-  app aun es instalable manualmente desde el navegador. Pendiente: reintroducir un
-  flujo de instalacion mejor pensado (timing, descartado, soporte iOS) si se
-  retoma la promocion de la PWA.
+- Si se cambia el cache, subir el nombre: hoy es `panasayudan-v9`.
 
 ## Estilo de UI
 
-- Modo oscuro por defecto con toggle manual; modo claro disponible para luz solar directa.
-- Colores extendidos en Tailwind: `bg`, `surface`, `border`, `accent`,
-  `danger`, `muted`.
+- Modo oscuro por defecto con toggle manual (`TemaToggle`, `useTema`); modo claro
+  para luz solar directa.
+- Colores extendidos en Tailwind: `bg`, `surface`, `border`, `accent`, `danger`,
+  `muted`. La paleta es deliberadamente mínima: agregar un color implica tocar
+  `tailwind.config.ts` y `globals.css` (`:root` y `html.dark`) a la vez.
 - Clases globales reutilizables en `globals.css`: `btn`, `btn-primary`,
   `btn-danger`, `btn-ghost`, `field`, `card`, `badge`.
-- La app esta optimizada para pantallas moviles y usa `safe-area-inset`.
+- Optimizada para móvil, usa `safe-area-inset`.
 
 ## Cuidados al modificar
 
-- Mantener la privacidad del contacto: nunca agregarlo a lecturas publicas.
-- Revisar RLS/RPC antes de cambiar flujos de voluntarios o recogedor.
-- Las RPC del recogedor (`SECURITY DEFINER`) validan el `recogedor_token`; no
-  exponer recogidas al rol anonimo por consulta directa.
-- Si se agrega una categoria, actualizar datos en Supabase y verificar que el
-  `CategorySlug` de TypeScript siga alineado.
-- Si se modifica la lista de estados, actualizar la tabla `estados` y mantener
-  obligatorio el `estado_id` en `crear_aporte`.
-- Centros de acopio y zonas de rescate son de solo lectura: alta/edicion via
-  service role.
+- Mantener la privacidad del contacto: nunca agregarlo a lecturas públicas.
+- La ubicación del voluntario no se guarda ni se comparte: solo tiempo estimado y
+  cantidad comprometida.
+- Stock y cantidades solo por RPC atómica.
+- Migraciones numeradas secuenciales, idempotentes (`if not exists`, `on
+  conflict`, drop defensivo por firma — ver `0033` y `0059`), con RLS explícita en
+  cada tabla nueva. RPC `security definer` con `set search_path = public`.
+- Si se agregan categorías o estados, alinear la tabla en Supabase, `CategorySlug`
+  en `src/lib/types.ts` y sus consumidores (`buscar`, `InventarioNodo`,
+  `SolicitudesNodo`).
 - Si se toca Google Maps, probar Places nuevo, Map ID y Advanced Markers.
-- Si se cambia cache PWA, subir el nombre de cache en `public/sw.js`.
-- Si se cambia la duracion de reservas (4h) o el plazo de confirmacion (24h),
-  revisar UI, RPC y cron juntos.
+- Si se cambia el cache PWA, subir el nombre en `public/sw.js`.
+- No borrar el modelo viejo por iniciativa propia: se retira en #25 y #26.
 - El proyecto depende de `.env.local`, pero no documentar ni copiar secretos.
 
 ## Archivos clave para empezar
 
 - `src/lib/api.ts`: contrato principal con Supabase.
 - `src/lib/types.ts`: modelo mental de tablas y payloads.
-- `src/lib/recogedor.ts`: identidad local del recogedor (token + datos).
-- `src/app/dar/page.tsx`: flujo de publicacion.
-- `src/app/buscar/page.tsx`: flujo de busqueda.
-- `src/app/lugar/[id]/page.tsx`: detalle y reservas.
-- `src/app/mis-recogidas/page.tsx`: reservas del propio dispositivo.
-- `src/app/voluntarios/page.tsx`: acceso y registro de voluntarios.
-- `src/app/voluntarios/gestionar/[id]/page.tsx`: gestion por lugar de los
-  aportes propios y sus solicitudes pendientes.
-- `src/components/PanelVoluntario.tsx`: coordinacion de recogidas.
-- `src/components/SeccionImpacto.tsx`: estadisticas de impacto en la home.
-- `src/lib/telefono.ts`: normalizacion/validacion de WhatsApp venezolano.
-- `src/hooks/useItemsRealtime.ts`: inventario publico en tiempo real.
-- `src/hooks/useRecogidasPendientes.ts`: panel voluntario ordenado por
-  distancia.
+- `src/app/buscar/page.tsx`: vista pública de nodos.
+- `src/app/nodo/page.tsx`: panel operativo del admin.
+- `src/app/registrar-nodo/page.tsx`: alta pública de un punto.
+- `src/app/superadmin/page.tsx`: aprobaciones y cierre.
+- `src/app/voluntarios/page.tsx`: acceso, registro y panel del voluntario.
+- `src/components/InventarioNodo.tsx` y `SolicitudesNodo.tsx`: el corazón
+  operativo (y los dos componentes más grandes: issue #80).
+- `src/hooks/useRoleGuard.ts`: cómo se protege cada pantalla.
+- `src/lib/telefono.ts`: normalización/validación de WhatsApp venezolano.
 - `public/sw.js`: estrategia offline/cache.
 - `supabase/migrations`: historial SQL de esquema, RLS y RPC.

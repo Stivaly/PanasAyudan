@@ -1,4 +1,9 @@
--- 0026_origen_destino_obligatorio.sql
+-- 0062_origen_destino_obligatorio.sql
+-- Renombrada de 0026 (colisionaba con 0026_registrar_voluntario_centro_acopio.sql,
+-- ambas usaban el numero 0026). Contenido sin cambios; ya estaba aplicada en
+-- produccion bajo el numero viejo, esto solo corrige el archivo local para que
+-- el historial de migraciones del CLI de Supabase pueda distinguirlas.
+--
 -- Origen y destino obligatorios:
 --   * Un aporte (location) debe estar asociado a un centro de acopio O a una
 --     zona de rescate (origen del insumo).

@@ -28,6 +28,7 @@ const config: Config = {
         accent: "rgb(var(--color-accent) / <alpha-value>)",
         badge: "rgb(var(--color-badge) / <alpha-value>)",
         danger: "rgb(var(--color-danger) / <alpha-value>)",
+        warning: "rgb(var(--color-warning) / <alpha-value>)",
         muted: "rgb(var(--color-muted) / <alpha-value>)",
       },
     },

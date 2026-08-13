@@ -1,10 +1,11 @@
+import { fetchConTimeout } from "./fetchConTimeout";
 import { Coords } from "./types";
 
 export const CARACAS: Coords = { lat: 10.4806, lng: -66.9036 };
 
 async function fromIp(): Promise<Coords | null> {
   try {
-    const res = await fetch("https://ip-api.com/json", { cache: "no-store" });
+    const res = await fetchConTimeout("https://ip-api.com/json", { cache: "no-store" }, 5000);
     if (!res.ok) return null;
     const data = await res.json();
     if (data?.status === "success" && typeof data.lat === "number" && typeof data.lon === "number") {
@@ -16,21 +17,20 @@ async function fromIp(): Promise<Coords | null> {
   }
 }
 
-// Solo usa GPS si el permiso YA está concedido. Nunca dispara el prompt.
-async function fromGpsIfGranted(): Promise<Coords | null> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) return null;
-
-  try {
-    if (navigator.permissions) {
-      const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
-      if (status.state !== "granted") return null;
-    } else {
-      return null;
-    }
-  } catch {
-    return null;
+// Solo consulta el estado del permiso. Nunca dispara el prompt.
+async function permisoGpsConcedido(): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.geolocation || !navigator.permissions) {
+    return false;
   }
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+    return status.state === "granted";
+  } catch {
+    return false;
+  }
+}
 
+async function fromGps(): Promise<Coords | null> {
   return new Promise<Coords | null>((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -40,9 +40,14 @@ async function fromGpsIfGranted(): Promise<Coords | null> {
   });
 }
 
-// Cascada sin pedir nada al usuario. Devuelve siempre un centro válido.
+// Cascada sin pedir nada al usuario. Devuelve siempre un centro válido. Si el
+// permiso de GPS ya está concedido, corta directo a GPS sin esperar el fetch
+// de IP; solo recurre a IP cuando no hay GPS disponible o falla.
 export async function resolverCentro(): Promise<Coords> {
+  if (await permisoGpsConcedido()) {
+    const gps = await fromGps();
+    if (gps) return gps;
+  }
   const ip = await fromIp();
-  const gps = await fromGpsIfGranted();
-  return gps ?? ip ?? CARACAS;
+  return ip ?? CARACAS;
 }

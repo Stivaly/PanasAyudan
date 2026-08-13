@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getEstados, listarNodosAdmin, pausarNodo } from "@/lib/api";
 import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
+import AvisoCarga from "@/components/AvisoCarga";
+import AvisoError from "@/components/AvisoError";
 import EditarNodo from "@/components/EditarNodo";
+import Skeleton from "@/components/Skeleton";
 import EstadoMovimientosNodo from "@/components/EstadoMovimientosNodo";
 import InventarioNodo from "@/components/InventarioNodo";
 import NodoTabBar, { NodoTab } from "@/components/NodoTabBar";
@@ -28,6 +31,7 @@ export default function NodoAdminPanel() {
   const [nodos, setNodos] = useState<NodoAdmin[]>([]);
   const [activeNodeId, setActiveNodeId] = useState("");
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
+  const [estadosError, setEstadosError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [tab, setTab] = useState<NodoTab>("estado");
@@ -50,7 +54,12 @@ export default function NodoAdminPanel() {
   );
 
   useEffect(() => {
-    getEstados().then(setEstados).catch(() => setEstados([]));
+    getEstados()
+      .then((lista) => {
+        setEstados(lista);
+        setEstadosError(false);
+      })
+      .catch(() => setEstadosError(true));
   }, []);
 
   useEffect(() => {
@@ -84,13 +93,26 @@ export default function NodoAdminPanel() {
     router.push("/voluntarios");
   };
 
+  const [pausando, setPausando] = useState<TipoPausa | null>(null);
+
+  const CONFIRMACION_PAUSA: Record<TipoPausa, string> = {
+    recepcion: "Pausar la recepción de este punto?",
+    entrega: "Pausar la entrega de este punto?",
+    ambas: "Pausar recepción y entrega de este punto?",
+    reactivar: "Reactivar este punto?",
+  };
+
   const pausar = async (tipoPausa: TipoPausa) => {
-    if (!token || !activo) return;
+    if (!token || !activo || pausando) return;
+    if (!window.confirm(CONFIRMACION_PAUSA[tipoPausa])) return;
+    setPausando(tipoPausa);
     try {
       await pausarNodo(activo.id, tipoPausa, token);
       await cargar(token, false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo actualizar el punto.");
+    } finally {
+      setPausando(null);
     }
   };
 
@@ -123,15 +145,25 @@ export default function NodoAdminPanel() {
         </button>
       </div>
 
-      {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+      {error && (
+        <div className="card border-danger">
+          <AvisoError mensaje={error} />
+          <button onClick={() => cargar(token)} className="btn-ghost mt-2 w-full text-sm">
+            Reintentar
+          </button>
+        </div>
+      )}
 
       {cargando ? (
-        <p className="text-sm text-muted">Cargando puntos...</p>
+        <div className="card flex flex-col gap-2">
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
       ) : nodos.length === 0 ? (
         <div className="card border-accent">
           <p className="text-sm text-muted">Aun no administras ningun punto.</p>
           <p className="mt-2 text-xs text-muted">
-            El alta de nuevos puntos se gestiona desde solicitudes publicas y aprobacion de superadmin.
+            El alta de nuevos puntos se gestiona desde solicitudes públicas y aprobación de superadmin.
           </p>
         </div>
       ) : (
@@ -168,7 +200,7 @@ export default function NodoAdminPanel() {
               {noOperativo && (
                 <p className="text-xs font-semibold text-danger">
                   No operativo
-                  {operaRecepcion && activo.pausado_recepcion ? " - recepcion pausada" : ""}
+                  {operaRecepcion && activo.pausado_recepcion ? " - recepción pausada" : ""}
                   {operaEntrega && activo.pausado_entrega ? " - entrega pausada" : ""}
                 </p>
               )}
@@ -194,28 +226,44 @@ export default function NodoAdminPanel() {
                   nodeId={activo.id}
                   token={token}
                   verificado={activo.verificado}
-                  onVerificado={() => cargar(token)}
+                  onVerificado={() => cargar(token, false)}
                 />
                 {!pendienteVerificacion && (
                   <div className="grid grid-cols-2 gap-2">
                     {operaRecepcion && (
-                      <button onClick={() => pausar("recepcion")} className="btn-ghost text-sm">
-                        Pausar recepcion
+                      <button
+                        onClick={() => pausar("recepcion")}
+                        disabled={pausando !== null}
+                        className="btn-ghost text-sm disabled:opacity-50"
+                      >
+                        {pausando === "recepcion" ? "Pausando…" : "Pausar recepción"}
                       </button>
                     )}
                     {operaEntrega && (
-                      <button onClick={() => pausar("entrega")} className="btn-ghost text-sm">
-                        Pausar entrega
+                      <button
+                        onClick={() => pausar("entrega")}
+                        disabled={pausando !== null}
+                        className="btn-ghost text-sm disabled:opacity-50"
+                      >
+                        {pausando === "entrega" ? "Pausando…" : "Pausar entrega"}
                       </button>
                     )}
                     {/* Pausar ambas solo tiene sentido en un mixto: opera las dos mitades. */}
                     {operaRecepcion && operaEntrega && (
-                      <button onClick={() => pausar("ambas")} className="btn-ghost text-sm">
-                        Pausar ambas
+                      <button
+                        onClick={() => pausar("ambas")}
+                        disabled={pausando !== null}
+                        className="btn-ghost text-sm disabled:opacity-50"
+                      >
+                        {pausando === "ambas" ? "Pausando…" : "Pausar ambas"}
                       </button>
                     )}
-                    <button onClick={() => pausar("reactivar")} className="btn-ghost text-sm">
-                      Reactivar
+                    <button
+                      onClick={() => pausar("reactivar")}
+                      disabled={pausando !== null}
+                      className="btn-ghost text-sm disabled:opacity-50"
+                    >
+                      {pausando === "reactivar" ? "Reactivando…" : "Reactivar"}
                     </button>
                   </div>
                 )}
@@ -242,12 +290,17 @@ export default function NodoAdminPanel() {
             )}
 
             {tabVisible === "ajustes" && (
-              <div className="card">
+              <div className="card flex flex-col gap-2">
+                {estadosError && (
+                  <AvisoCarga>
+                    No se pudieron cargar los estados. El selector de estado puede no mostrar opciones.
+                  </AvisoCarga>
+                )}
                 <EditarNodo
                   nodo={activo}
                   estados={estados}
                   token={token}
-                  onSaved={() => cargar(token)}
+                  onSaved={() => cargar(token, false)}
                 />
               </div>
             )}

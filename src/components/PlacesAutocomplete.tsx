@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps";
 import { PlaceSeleccion } from "@/lib/types";
+import Skeleton from "./Skeleton";
 
 interface Props {
   onSelect: (place: PlaceSeleccion) => void;
@@ -18,12 +19,26 @@ interface GmpSelectEvent {
 export default function PlacesAutocomplete({ onSelect }: Props) {
   const contRef = useRef<HTMLDivElement>(null);
   const montadoRef = useRef(false);
+  const elRef = useRef<HTMLElement | null>(null);
+  const gmpSelectHandlerRef = useRef<((event: Event) => void) | null>(null);
   const [cargando, setCargando] = useState(false);
   const [activo, setActivo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cont = contRef.current;
+    return () => {
+      if (elRef.current && gmpSelectHandlerRef.current) {
+        elRef.current.removeEventListener("gmp-select", gmpSelectHandlerRef.current);
+      }
+      if (cont) cont.innerHTML = "";
+    };
+  }, []);
 
   const iniciar = async () => {
     if (montadoRef.current || cargando || !contRef.current) return;
     setCargando(true);
+    setError(null);
     try {
       await loadGoogleMaps();
       const { PlaceAutocompleteElement } = (await google.maps.importLibrary(
@@ -37,7 +52,7 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
       });
       el.style.width = "100%";
 
-      el.addEventListener("gmp-select", async (event: Event) => {
+      const onGmpSelect = async (event: Event) => {
         const { placePrediction } = event as unknown as GmpSelectEvent;
         const place = placePrediction.toPlace();
         await place.fetchFields({
@@ -51,13 +66,18 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
           lng: place.location.lng(),
           address: place.formattedAddress ?? null,
         });
-      });
+      };
+      gmpSelectHandlerRef.current = onGmpSelect;
+      el.addEventListener("gmp-select", onGmpSelect);
 
       contRef.current.innerHTML = "";
       contRef.current.appendChild(el);
+      elRef.current = el as unknown as HTMLElement;
       montadoRef.current = true;
       setActivo(true);
       (el as unknown as HTMLElement).focus?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cargar el buscador de lugares.");
     } finally {
       setCargando(false);
     }
@@ -65,14 +85,23 @@ export default function PlacesAutocomplete({ onSelect }: Props) {
 
   return (
     <div>
-      {!activo && (
+      {cargando && <Skeleton className="h-[52px] w-full border border-border" />}
+      {!activo && !error && !cargando && (
         <input
           type="text"
           readOnly
-          placeholder={cargando ? "Cargando…" : "Busca el lugar en Google"}
+          placeholder="Busca el lugar en Google"
           className="field"
           onFocus={iniciar}
         />
+      )}
+      {error && (
+        <div className="card border-danger flex flex-col gap-2">
+          <p className="text-sm font-semibold text-danger">{error}</p>
+          <button onClick={() => void iniciar()} className="btn-ghost text-sm">
+            Reintentar
+          </button>
+        </div>
       )}
       <div ref={contRef} />
     </div>

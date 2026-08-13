@@ -9,6 +9,8 @@ export const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID
 
 let loaderPromise: Promise<typeof google> | null = null;
 
+const MAPS_LOAD_TIMEOUT_MS = 15000;
+
 export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("Google Maps solo carga en el cliente."));
@@ -21,16 +23,34 @@ export function loadGoogleMaps(): Promise<typeof google> {
 
   loaderPromise = new Promise((resolve, reject) => {
     const cbName = "__panas_gmaps_cb";
-    w[cbName] = () => resolve(w.google as typeof google);
+
+    const timeoutId = setTimeout(() => {
+      reject(new Error("Tiempo de espera agotado al cargar Google Maps."));
+    }, MAPS_LOAD_TIMEOUT_MS);
+
+    w[cbName] = () => {
+      clearTimeout(timeoutId);
+      resolve(w.google as typeof google);
+    };
 
     const script = document.createElement("script");
     script.src =
       `https://maps.googleapis.com/maps/api/js?key=${API_KEY}` +
-      `&libraries=places,geometry,marker&language=es&region=VE&callback=${cbName}`;
+      `&libraries=places,geometry,marker&language=es&region=VE&loading=async&callback=${cbName}`;
     script.async = true;
     script.defer = true;
-    script.onerror = () => reject(new Error("No se pudo cargar Google Maps."));
+    script.onerror = () => {
+      clearTimeout(timeoutId);
+      reject(new Error("No se pudo cargar Google Maps."));
+    };
     document.head.appendChild(script);
+  });
+
+  // Si falla (timeout o error de red), no dejamos la promesa rechazada
+  // cacheada para siempre: un reintento del usuario debe volver a intentar
+  // cargar el script, no recibir el mismo error de forma indefinida.
+  loaderPromise.catch(() => {
+    loaderPromise = null;
   });
 
   return loaderPromise;

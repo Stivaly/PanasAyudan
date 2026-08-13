@@ -18,6 +18,7 @@ import {
   statusVisible,
 } from "@/lib/types";
 import CompartirNodo from "@/components/CompartirNodo";
+import SkeletonNodoDetalle from "@/components/SkeletonNodoDetalle";
 
 const TIPO_LABEL: Record<string, string> = {
   acopio: "Centro de acopio",
@@ -32,6 +33,7 @@ export default function NodoDetalle() {
   const [nodo, setNodo] = useState<NodoPublicoBase | null>(null);
   const [inventario, setInventario] = useState<InventarioPublicoItem[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const recargarInventario = useCallback(async () => {
     try {
@@ -41,16 +43,25 @@ export default function NodoDetalle() {
     }
   }, [nodeId]);
 
+  const cargarInicial = useCallback(async () => {
+    setCargando(true);
+    setError(null);
+    try {
+      const [n, inv] = await Promise.all([getNodoPublico(nodeId), getInventarioPublico(nodeId)]);
+      setNodo(n);
+      setInventario(inv);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo cargar este punto.");
+    } finally {
+      setCargando(false);
+    }
+  }, [nodeId]);
+
   useEffect(() => {
-    let activo = true;
-    Promise.all([getNodoPublico(nodeId), getInventarioPublico(nodeId)])
-      .then(([n, inv]) => {
-        if (!activo) return;
-        setNodo(n);
-        setInventario(inv);
-      })
-      .catch(() => {})
-      .finally(() => activo && setCargando(false));
+    // Carga inicial en efecto (intencional): dispara cargarInicial al montar
+    // o al cambiar de nodo.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void cargarInicial();
 
     const canal = supabase
       .channel(`nodo_publico_${nodeId}`)
@@ -67,10 +78,9 @@ export default function NodoDetalle() {
       .subscribe();
 
     return () => {
-      activo = false;
       void supabase.removeChannel(canal);
     };
-  }, [nodeId, recargarInventario]);
+  }, [nodeId, recargarInventario, cargarInicial]);
 
   // Agrupa el inventario por macrocategoría, conservando subcategoría + condición.
   const porCategoria = useMemo(() => {
@@ -94,7 +104,18 @@ export default function NodoDetalle() {
   );
 
   if (cargando) {
-    return <main className="grid min-h-dvh place-items-center text-muted">Cargando...</main>;
+    return <SkeletonNodoDetalle />;
+  }
+
+  if (error) {
+    return (
+      <main className="grid min-h-dvh place-items-center gap-3 p-6 text-center">
+        <p className="text-sm font-semibold text-danger">{error}</p>
+        <button onClick={() => void cargarInicial()} className="btn-primary">
+          Reintentar
+        </button>
+      </main>
+    );
   }
 
   if (!nodo) {

@@ -1,5 +1,16 @@
 # Seed de municipios (ADM2) de Venezuela — issue #20
 
+> **Estado (2026-07-28): vigente y obligatorio.** El rango del voluntario pasó de
+> adyacencia entre municipios (0038) a radio geográfico (0043, y 650/300 km por
+> vehículo en 0047), pero `municipios` **sigue siendo consumida** por la RPC de
+> verificación vigente (`0061`), que resuelve los municipios en rango y los
+> guarda en `voluntario_zonas` por 24 h. Sin este seed, todo degrada a
+> `en_rango=false` y ningún voluntario ve solicitudes.
+>
+> Lo que sí quedó sin consumidores es `municipios_adyacentes` y
+> `recalcular_adyacencias_municipios()` (ver 0043). Eso corrige el punto 1 del
+> issue #34, que daba por obsoleta la tabla `municipios` entera.
+
 `0038_municipios_gps.sql` crea el esquema (`municipios`, `municipios_adyacentes`,
 `voluntario_zonas`) y las RPC, pero **NO** trae las geometrías: los ~335
 municipios se generan desde una fuente oficial y se cargan como un seed aparte.

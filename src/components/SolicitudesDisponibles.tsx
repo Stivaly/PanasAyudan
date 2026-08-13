@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   listarSolicitudesDisponibles,
   marcarRetiroCompromiso,
@@ -10,24 +10,45 @@ import {
 import {
   CompromisoVoluntarioActivo,
   Magnitud,
-  MAGNITUD_ORDEN,
   SolicitudDisponible,
 } from "@/lib/types";
-import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { RealtimeTable, useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { validarCantidad } from "@/lib/validaciones";
+import {
+  CONFIRMACION_HORAS,
+  RANGO_VOLUNTARIO_KM,
+  RETIRO_HORAS,
+  TIEMPO_ESTIMADO_DEFECTO_MINUTOS,
+  VERIFICACION_UBICACION_HORAS,
+} from "@/lib/constantes";
+import CantidadMagnitud from "./CantidadMagnitud";
+import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   token: string;
 }
 
-const REALTIME_TABLES = [
-  { table: "solicitudes" },
-  { table: "compromisos_voluntario" },
-  { table: "compromisos_nodo" },
-];
+// Realtime limita el operador "in." a 100 valores por filtro (documentado en
+// https://supabase.com/docs/guides/realtime/postgres-changes). Se parte
+// nodosEnRango en grupos de este tamano para no depender de que el rango del
+// voluntario (ver RANGO_VOLUNTARIO_KM) se mantenga chico: si crece en el futuro y supera
+// los 100 nodos, seguimos filtrando correctamente en vez de arriesgarnos a un
+// comportamiento no documentado al pasar el limite.
+const MAX_VALORES_FILTRO_IN = 100;
+
+function enGrupos<T>(items: readonly T[], tamano: number): T[][] {
+  const grupos: T[][] = [];
+  for (let i = 0; i < items.length; i += tamano) {
+    grupos.push(items.slice(i, i + tamano));
+  }
+  return grupos;
+}
 
 export default function SolicitudesDisponibles({ token }: Props) {
   const [solicitudes, setSolicitudes] = useState<SolicitudDisponible[]>([]);
   const [compromisos, setCompromisos] = useState<CompromisoVoluntarioActivo[]>([]);
+  const [volunteerId, setVolunteerId] = useState<string | null>(null);
+  const [nodosEnRango, setNodosEnRango] = useState<string[]>([]);
   const [requiereVerificacion, setRequiereVerificacion] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +65,18 @@ export default function SolicitudesDisponibles({ token }: Props) {
       const resp = await listarSolicitudesDisponibles(token);
       setSolicitudes(resp.solicitudes);
       setCompromisos(resp.compromisos ?? []);
+      setVolunteerId(resp.volunteer_id);
+      // Reusa la referencia anterior si el conjunto de nodos no cambio: el RPC
+      // no garantiza el mismo orden entre llamadas, y json_agg() en la
+      // migracion no tiene ORDER BY, asi que comparamos como conjunto (no por
+      // posicion) para no disparar un re-render/resuscripcion de Realtime
+      // innecesaria cuando el contenido es identico (issue #83).
+      setNodosEnRango((prev) => {
+        const next = resp.nodos_en_rango ?? [];
+        const mismoConjunto =
+          prev.length === next.length && new Set([...prev, ...next]).size === prev.length;
+        return mismoConjunto ? prev : next;
+      });
       setRequiereVerificacion(resp.requiere_verificacion);
       setError(null);
     } catch (e) {
@@ -59,11 +92,38 @@ export default function SolicitudesDisponibles({ token }: Props) {
     void cargar();
   }, [cargar]);
 
+  const realtimeTables = useMemo<RealtimeTable[]>(() => {
+    const tables: RealtimeTable[] = [];
+
+    // Solo nos importan cambios en solicitudes/compromisos de nodos dentro de
+    // nuestro rango (issue #83); si no hay ninguno, no hace falta suscribirse.
+    for (const grupo of enGrupos(nodosEnRango, MAX_VALORES_FILTRO_IN)) {
+      const filtroNodos = `in.(${grupo.join(",")})`;
+      tables.push(
+        { table: "solicitudes", filter: `node_id_origen=${filtroNodos}` },
+        // compromisos_nodo tiene dos lados relevantes (quien surte, quien
+        // pidio); Realtime no soporta un OR entre columnas en un solo filtro,
+        // asi que se suscribe la misma tabla dos veces, una por cada lado.
+        { table: "compromisos_nodo", filter: `node_id_compromete=${filtroNodos}` },
+        { table: "compromisos_nodo", filter: `node_id_destino=${filtroNodos}` }
+      );
+    }
+
+    if (volunteerId) {
+      tables.push({
+        table: "compromisos_voluntario",
+        filter: `volunteer_id=eq.${volunteerId}`,
+      });
+    }
+
+    return tables;
+  }, [volunteerId, nodosEnRango]);
+
   useRealtimeRefresh(
     "solicitudes_disponibles_changes",
-    REALTIME_TABLES,
+    realtimeTables,
     () => void cargar(false),
-    Boolean(token)
+    Boolean(token) && Boolean(volunteerId)
   );
 
   const verificar = async () => {
@@ -73,7 +133,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
       await verificarUbicacionVoluntario(token);
       await cargar();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo verificar tu ubicacion.");
+      setError(e instanceof Error ? e.message : "No se pudo verificar tu ubicación.");
     } finally {
       setVerificando(false);
     }
@@ -88,11 +148,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
 
   const responder = async (s: SolicitudDisponible) => {
     setError(null);
-    const cant = Number(cantidad);
-    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (numero entero mayor a cero).");
+    const check = validarCantidad(cantidad);
+    if (!check.valida) {
+      setError(check.error ?? "Cantidad inválida.");
       return;
     }
+    const cant = check.cantidad;
     if (cant > s.cantidad_disponible) {
       setError(`Solo quedan ${s.cantidad_disponible} ${s.magnitud} disponibles para transportar.`);
       return;
@@ -103,7 +164,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
         s.solicitud_id,
         magnitud,
         cant,
-        240,
+        TIEMPO_ESTIMADO_DEFECTO_MINUTOS,
         token,
         s.compromiso_nodo_id
       );
@@ -140,34 +201,36 @@ export default function SolicitudesDisponibles({ token }: Props) {
   };
 
   const retiroTexto = (direccion?: string | null, nombre?: string | null) =>
-    direccion?.trim() || nombre?.trim() || "Direccion de retiro no disponible";
+    direccion?.trim() || nombre?.trim() || "Dirección de retiro no disponible";
 
   return (
     <section className="flex flex-col gap-3">
       <h3 className="text-lg font-bold">Traslados disponibles</h3>
 
-      {cargando && <p className="text-muted">Cargando traslados...</p>}
+      {cargando && <SkeletonLista />}
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
 
       {!cargando && requiereVerificacion && (
         <div className="rounded-xl border border-accent bg-bg p-4">
-          <p className="font-semibold text-accent">Verifica tu ubicacion para operar</p>
+          <p className="font-semibold text-accent">Verifica tu ubicación para operar</p>
           <p className="mt-1 text-sm text-muted">
-            Confirma donde estas una sola vez para poder tomar traslados cercanos. Tu ubicacion
-            no se guarda: solo se usa para saber tu municipio, y la verificacion vale 24 horas.
+            Confirma dónde estás una sola vez para poder tomar traslados cercanos. Tu ubicación
+            no se guarda: solo se usa para saber tu municipio, y la verificación vale{" "}
+            {VERIFICACION_UBICACION_HORAS} horas.
           </p>
           <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-fg">
-            Rango operativo: 650 km maximo si tienes vehiculo registrado; 300 km maximo sin vehiculo.
+            Rango operativo: {RANGO_VOLUNTARIO_KM.conVehiculo} km máximo si tienes vehículo
+            registrado; {RANGO_VOLUNTARIO_KM.sinVehiculo} km máximo sin vehículo.
           </div>
           <div className="mt-3 rounded-xl border border-danger bg-danger/15 p-3 text-sm font-bold text-danger">
-            Esta verificacion debe hacerse desde un celular con ubicacion activa.
+            Esta verificación debe hacerse desde un celular con ubicación activa.
           </div>
           <button
             onClick={verificar}
             disabled={verificando}
             className="btn-primary mt-3 w-full disabled:opacity-50"
           >
-            {verificando ? "Verificando..." : "Verificar mi ubicacion"}
+            {verificando ? "Verificando..." : "Verificar mi ubicación"}
           </button>
         </div>
       )}
@@ -205,12 +268,12 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   )}
                   {c.atrasado_4h && (
                     <p className="mt-1 text-xs font-semibold text-danger">
-                      Vencio el plazo de retiro de 4 horas.
+                      Venció el plazo de retiro de {RETIRO_HORAS} horas.
                     </p>
                   )}
                   {c.atrasado_24h && (
                     <p className="mt-1 text-xs font-semibold text-danger">
-                      El centro receptor aun no confirma luego de 24 horas.
+                      El centro receptor aún no confirma luego de {CONFIRMACION_HORAS} horas.
                     </p>
                   )}
                 </div>
@@ -234,7 +297,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
         <div className="rounded-xl bg-surface p-4 text-muted">
           <p>No hay traslados disponibles para ti ahora mismo.</p>
           <p className="mt-2 text-sm">
-            Aqui apareceran inventarios que otro centro ya ofrecio, pero que aun no tienen transporte.
+            Aquí aparecerán inventarios que otro centro ya ofreció, pero que aún no tienen transporte.
           </p>
         </div>
       )}
@@ -258,7 +321,7 @@ export default function SolicitudesDisponibles({ token }: Props) {
                 <p className="mt-1 text-xs text-muted">
                   Disponible para transportar: {s.cantidad_disponible} {s.magnitud}
                   {s.cantidad ? ` de ${s.cantidad}` : ""}
-                  {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
+                  {s.requiere_vehiculo ? " - requiere vehículo" : ""}
                 </p>
                 {s.nota && <p className="mt-1 text-xs text-fg">{s.nota}</p>}
               </div>
@@ -271,35 +334,23 @@ export default function SolicitudesDisponibles({ token }: Props) {
                   Tomar traslado
                 </button>
                 <p className="mt-2 text-center text-xs text-muted">
-                  Acercate mas para poder tomar este traslado.
+                  Acércate más para poder tomar este traslado.
                 </p>
               </div>
             ) : respondiendoId === s.id ? (
               <div className="flex flex-col gap-2 rounded-xl bg-bg p-3">
-                <label className="text-xs font-semibold text-muted">Cantidad que puedo llevar</label>
-                <div className="flex gap-2">
-                  <input
-                    className="field w-1/3"
-                    inputMode="numeric"
-                    placeholder={`Max ${s.cantidad_disponible}`}
-                    value={cantidad}
-                    onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-                  />
-                  <select
-                    className="field flex-1"
-                    value={magnitud}
-                    onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-                  >
-                    {MAGNITUD_ORDEN.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CantidadMagnitud
+                  cantidad={cantidad}
+                  onCantidad={setCantidad}
+                  magnitud={magnitud}
+                  onMagnitud={(m) => setMagnitud(m as Magnitud)}
+                  max={s.cantidad_disponible}
+                  label="Cantidad que puedo llevar"
+                />
                 <p className="text-xs text-muted">
-                  Al comprometerte, tienes 4 horas para retirar. Despues del retiro,
-                  el centro receptor tiene 24 horas para confirmar la recepcion.
+                  Al comprometerte, tienes {RETIRO_HORAS} horas para retirar. Después del
+                  retiro, el centro receptor tiene {CONFIRMACION_HORAS} horas para confirmar
+                  la recepción.
                 </p>
                 <div className="flex gap-2">
                   <button

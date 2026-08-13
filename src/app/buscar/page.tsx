@@ -5,17 +5,16 @@
 // demanda con dynamic import — sin ningún request de mapa hasta tocar "Ver en mapa".
 
 import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
 import BotonVolver from "@/components/BotonVolver";
 import FiltrosBuscar from "@/components/FiltrosBuscar";
 import ListaNodos from "@/components/ListaNodos";
+import SkeletonListaNodos from "@/components/SkeletonListaNodos";
+import MapaClusters from "@/components/MapaClustersDinamico";
 import type { NodoMapa } from "@/components/MapaClusters";
 import { useNodosPublicos } from "@/hooks/useNodosPublicos";
 import { getCategorias, getEstados } from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
 import { Category, Coords, EstadoVenezuela, statusVisible } from "@/lib/types";
-
-const MapaClusters = dynamic(() => import("@/components/MapaClusters"), { ssr: false });
 
 // Nodos por página en la lista: acota la altura para que no baje infinito.
 const POR_PAGINA = 8;
@@ -28,11 +27,14 @@ export default function Buscar() {
   const [verMapa, setVerMapa] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [centroUsuario, setCentroUsuario] = useState<Coords>(CARACAS);
-  const { nodos, cargando } = useNodosPublicos();
+  const { nodos, cargando, error, refrescar } = useNodosPublicos();
+  // Aviso discreto si fallan las cargas de los filtros (issue #55): sin esto,
+  // los selects quedaban vacíos en silencio.
+  const [filtrosError, setFiltrosError] = useState(false);
 
   useEffect(() => {
-    getCategorias().then(setCategorias).catch(() => {});
-    getEstados().then(setEstados).catch(() => {});
+    getCategorias().then(setCategorias).catch(() => setFiltrosError(true));
+    getEstados().then(setEstados).catch(() => setFiltrosError(true));
   }, []);
 
   // Filtra por estado (estado_id) y por macrocategoría disponible (slug).
@@ -95,14 +97,21 @@ export default function Buscar() {
   );
 
   const filtros = (
-    <FiltrosBuscar
-      estados={estados}
-      categorias={categorias}
-      estadoId={estadoId}
-      categoria={activa}
-      onEstado={setEstadoId}
-      onCategoria={setActiva}
-    />
+    <div className="flex flex-col gap-1">
+      {filtrosError && (
+        <p className="text-xs font-semibold text-warning">
+          No se pudieron cargar los filtros.
+        </p>
+      )}
+      <FiltrosBuscar
+        estados={estados}
+        categorias={categorias}
+        estadoId={estadoId}
+        categoria={activa}
+        onEstado={setEstadoId}
+        onCategoria={setActiva}
+      />
+    </div>
   );
 
   if (verMapa) {
@@ -144,9 +153,18 @@ export default function Buscar() {
         Ver en mapa
       </button>
 
-      {cargando && <p className="text-muted">Cargando...</p>}
+      {cargando && <SkeletonListaNodos />}
 
-      {!cargando && nodosFiltrados.length === 0 && (
+      {!cargando && error && (
+        <div className="card border-danger">
+          <p className="text-sm font-semibold text-danger">{error}</p>
+          <button onClick={refrescar} className="btn-ghost mt-2 w-full text-sm">
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {!cargando && !error && nodosFiltrados.length === 0 && (
         <p className="text-muted">No hay puntos de ayuda disponibles con este filtro.</p>
       )}
 

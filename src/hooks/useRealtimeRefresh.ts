@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
-interface RealtimeTable {
+export interface RealtimeTable {
   table: string;
   filter?: string;
 }
@@ -51,5 +51,6 @@ export function useRealtimeRefresh(
       if (debounce.current) clearTimeout(debounce.current);
       void supabase.removeChannel(canal);
     };
-  }, [channelName, enabled, tables]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channelName, enabled, JSON.stringify(tables)]);
 }

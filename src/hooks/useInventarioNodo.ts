@@ -3,7 +3,7 @@
 // Inventario de un nodo (issue #22) mantenido fresco vía Realtime. #24 (vista
 // pública) lo consumirá con token undefined (lectura pública, RLS filtra a nodos
 // visibles y verificados); el panel del nodo lo usa con token para ver el suyo en
-// cualquier estado. Mismo patrón de debounce que useItemsRealtime.
+// cualquier estado. El debounce evita recargar en cada evento suelto.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";

@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { fetchConTimeout } from "./fetchConTimeout";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -13,7 +14,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 export const supabase: SupabaseClient = createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false }, global: { fetch: fetchConTimeout } }
 );
 
 const TOKEN_KEY = "panas_volunteer_token";
@@ -63,11 +64,54 @@ export function clearCachedRole(): void {
   window.sessionStorage.removeItem(SESSION_ROLE_KEY);
 }
 
+// Manejador centralizado de token_invalido (issue #48): si el servidor rechaza
+// el token (voluntario desactivado/bloqueado), limpia la sesión y redirige.
+// Vive en la capa fetch para cubrir las ~42 llamadas RPC de api.ts sin tocarlas.
+let manejandoTokenInvalido = false;
+
+function manejarTokenInvalido() {
+  if (typeof window === "undefined" || manejandoTokenInvalido) return;
+  manejandoTokenInvalido = true;
+  try {
+    clearVolunteerToken();
+    clearCachedRole();
+  } catch {
+    // storage bloqueado (Safari privado): igual redirigimos
+  }
+  window.location.replace("/voluntarios?sesion=invalida");
+}
+
+async function fetchConDeteccionDeToken(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  const res = await fetchConTimeout(input, init);
+  if (!res.ok) {
+    // clone(): no consumir el body que supabase-js va a leer después.
+    const body: unknown = await res.clone().json().catch(() => null);
+    const message =
+      body && typeof body === "object" && "message" in body ? body.message : null;
+    if (typeof message === "string" && message.includes("token_invalido")) {
+      manejarTokenInvalido();
+    }
+  }
+  return res;
+}
+
 // Cliente autenticado por token: envía el header 'volunteer-token' en cada request.
 // Las policies RLS y las RPC con token lo leen desde request.headers.
+// Memoizado por token (issue #85): evita instanciar un SupabaseClient nuevo en
+// cada llamada cuando el token no cambió.
+const clientsPorToken = new Map<string, SupabaseClient>();
+
 export function supabaseWithToken(token: string): SupabaseClient {
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  const existente = clientsPorToken.get(token);
+  if (existente) return existente;
+
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
-    global: { headers: { "volunteer-token": token } },
+    global: { headers: { "volunteer-token": token }, fetch: fetchConDeteccionDeToken },
   });
+  clientsPorToken.set(token, client);
+  return client;
 }

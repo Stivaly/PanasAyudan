@@ -4,23 +4,34 @@
 // permanente de un nodo, que es exclusivo de superadmin (un admin del nodo solo
 // puede pausarlo). El panel de aprobación/gestión completo llega en otro issue.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AvisoCarga from "@/components/AvisoCarga";
+import AvisoError from "@/components/AvisoError";
 import BotonVolver from "@/components/BotonVolver";
-import { cerrarNodo, crearAdmin, getEstados, getCentrosAcopioPorEstado } from "@/lib/api";
+import { cerrarNodo, crearAdmin, getEstados } from "@/lib/api";
 import { clearVolunteerToken, clearCachedRole } from "@/lib/supabase";
-import { normalizarTelefonoVe, errorTelegram, normalizarTelegram } from "@/lib/telefono";
+import {
+  normalizarTelefonoVe,
+  errorTelegram,
+  normalizarTelegram,
+  sanitizarTelegram,
+} from "@/lib/telefono";
 import EstadoCombobox from "@/components/EstadoCombobox";
+import SelectorCentro from "@/components/SelectorCentro";
 import SolicitudesRegistroNodo from "@/components/SolicitudesRegistroNodo";
-import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
-import { CentroAcopio, EstadoVenezuela } from "@/lib/types";
+import { EstadoVenezuela } from "@/lib/types";
 
 export default function SuperadminPanel() {
   const router = useRouter();
   const guard = useRoleGuard(["superadmin"]);
   const token = guard.token;
-  const [nodeId, setNodeId] = useState("");
+  // Cierre de punto: se elige estado y luego el punto de ese estado, en vez de
+  // pegar un UUID. La lista viene de centros con activo = true, que son
+  // exactamente los cerrables (cerrar_nodo pone activo = false).
+  const [cerrarEstadoId, setCerrarEstadoId] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -33,56 +44,36 @@ export default function SuperadminPanel() {
   const [adminTelegram, setAdminTelegram] = useState("");
   const [adminTelegramError, setAdminTelegramError] = useState("");
   const [adminEstadoId, setAdminEstadoId] = useState<string | null>(null);
-  const [adminCentroId, setAdminCentroId] = useState("");
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
-  const [centros, setCentros] = useState<CentroAcopio[]>([]);
-  const [cargandoCentros, setCargandoCentros] = useState(false);
+  const [estadosError, setEstadosError] = useState(false);
+  const {
+    centros: centrosCerrar,
+    centroId: nodeId,
+    setCentroId: setNodeId,
+    cargando: cargandoCentrosCerrar,
+    error: centrosCerrarError,
+  } = useCentrosPorEstado(cerrarEstadoId, "superadmin_centros_cerrar_changes");
+
+  const {
+    centros,
+    centroId: adminCentroId,
+    setCentroId: setAdminCentroId,
+    cargando: cargandoCentros,
+    error: centrosError,
+  } = useCentrosPorEstado(adminEstadoId, "superadmin_centros_estado_changes");
   const [adminError, setAdminError] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState<string | null>(null);
+  const [mostrarAdminToken, setMostrarAdminToken] = useState(false);
   const [creandoAdmin, setCreandoAdmin] = useState(false);
 
   useEffect(() => {
-    getEstados().then(setEstados).catch(() => setEstados([]));
+    getEstados()
+      .then((lista) => {
+        setEstados(lista);
+        setEstadosError(false);
+      })
+      .catch(() => setEstadosError(true));
   }, []);
-
-  const cargarCentros = useCallback((estadoId: string, mostrarCarga = true) => {
-    if (mostrarCarga) setCargandoCentros(true);
-    return getCentrosAcopioPorEstado(estadoId)
-      .then(setCentros)
-      .catch(() => setCentros([]))
-      .finally(() => setCargandoCentros(false));
-  }, []);
-
-  const realtimeCentros = useMemo(
-    () =>
-      adminEstadoId
-        ? [{ table: "centros_acopio", filter: `estado_id=eq.${adminEstadoId}` }]
-        : [],
-    [adminEstadoId]
-  );
-
-  // Los centros se cargan solo al elegir un estado, filtrados por ese estado
-  // (mismo patrón que el registro de voluntario).
-  useEffect(() => {
-    // Reset de selects dependientes al cambiar de estado + fetch (intencional).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAdminCentroId("");
-    setCentros([]);
-    if (!adminEstadoId) {
-      setCargandoCentros(false);
-      return;
-    }
-    void cargarCentros(adminEstadoId);
-  }, [adminEstadoId, cargarCentros]);
-
-  useRealtimeRefresh(
-    "superadmin_centros_estado_changes",
-    realtimeCentros,
-    () => {
-      if (adminEstadoId) void cargarCentros(adminEstadoId, false);
-    },
-    Boolean(adminEstadoId)
-  );
 
   // Cierra la sesión: limpia el token persistente y el cache de rol, y vuelve a
   // /voluntarios para poder ingresar con otra cuenta. Sin esto el superadmin
@@ -97,17 +88,22 @@ export default function SuperadminPanel() {
     if (!token) return;
     setMensaje(null);
     setError(null);
-    if (!nodeId.trim()) {
-      setError("Ingresa el ID del punto a cerrar.");
+    if (!nodeId) {
+      setError("Elige el punto que vas a cerrar.");
       return;
     }
-    if (!window.confirm("El cierre es permanente y no tiene reapertura. Confirmas cerrar este punto?")) {
+    const elegido = centrosCerrar.find((c) => c.id === nodeId);
+    if (
+      !window.confirm(
+        `El cierre es permanente y no tiene reapertura. Confirmas cerrar "${elegido?.nombre ?? "este punto"}"?`
+      )
+    ) {
       return;
     }
     setEnviando(true);
     try {
-      await cerrarNodo(nodeId.trim(), token);
-      setMensaje("Punto cerrado permanentemente.");
+      await cerrarNodo(nodeId, token);
+      setMensaje(`Punto cerrado permanentemente: ${elegido?.nombre ?? ""}`.trim());
       setNodeId("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo cerrar el punto.");
@@ -200,16 +196,33 @@ export default function SuperadminPanel() {
 
       <div className="card border-accent flex flex-col gap-3">
         <p className="text-sm font-semibold text-accent">Cerrar punto (permanente)</p>
-        <input
-          className="field"
-          placeholder="ID del punto"
-          value={nodeId}
-          onChange={(e) => setNodeId(e.target.value)}
+        <EstadoCombobox
+          estados={estados}
+          estadoId={cerrarEstadoId}
+          onChange={setCerrarEstadoId}
+          label="Estado del punto"
+          placeholder="Elige un estado"
         />
+        {estadosError && (
+          <AvisoCarga>
+            No se pudieron cargar los estados. Recarga la página para intentar de nuevo.
+          </AvisoCarga>
+        )}
+        {cerrarEstadoId && (
+          <SelectorCentro
+            centros={centrosCerrar}
+            valor={nodeId}
+            onChange={setNodeId}
+            cargando={cargandoCentrosCerrar}
+            error={centrosCerrarError}
+            label="Punto a cerrar"
+            placeholder="Elige el punto"
+          />
+        )}
         <p className="text-xs text-muted">
           El cierre es permanente y deja de aparecer en público. No tiene reapertura.
         </p>
-        {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+        <AvisoError mensaje={error} />
         {mensaje && <p className="text-sm font-semibold text-accent">{mensaje}</p>}
         <button onClick={cerrar} disabled={enviando} className="btn-primary w-full disabled:opacity-50">
           {enviando ? "Cerrando…" : "Cerrar punto"}
@@ -225,7 +238,22 @@ export default function SuperadminPanel() {
               Guarda este token y entrégaselo al admin. No se vuelve a mostrar y no se
               puede recuperar.
             </p>
-            <input className="field font-mono text-sm" type="text" value={adminToken} readOnly />
+            <div className="flex gap-2">
+              <input
+                className="field flex-1 font-mono text-sm"
+                type={mostrarAdminToken ? "text" : "password"}
+                value={adminToken}
+                readOnly
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarAdminToken((v) => !v)}
+                aria-label={mostrarAdminToken ? "Ocultar token" : "Mostrar token"}
+                className="btn-ghost px-3 text-sm"
+              >
+                {mostrarAdminToken ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => navigator.clipboard?.writeText(adminToken)}
@@ -233,28 +261,44 @@ export default function SuperadminPanel() {
             >
               Copiar token
             </button>
-            <button type="button" onClick={() => setAdminToken(null)} className="btn-primary w-full">
+            <button
+              type="button"
+              onClick={() => {
+                setAdminToken(null);
+                setMostrarAdminToken(false);
+              }}
+              className="btn-primary w-full"
+            >
               Crear otro admin
             </button>
           </>
         ) : (
           <>
-            <label className="text-sm font-semibold text-muted">Nombre</label>
+            <label htmlFor="admin-nombre" className="text-sm font-semibold text-muted">
+              Nombre
+            </label>
             <input
+              id="admin-nombre"
               className="field"
               placeholder="Nombre"
               value={adminNombre}
               onChange={(e) => setAdminNombre(e.target.value)}
             />
-            <label className="text-sm font-semibold text-muted">Apellido</label>
+            <label htmlFor="admin-apellido" className="text-sm font-semibold text-muted">
+              Apellido
+            </label>
             <input
+              id="admin-apellido"
               className="field"
               placeholder="Apellido"
               value={adminApellido}
               onChange={(e) => setAdminApellido(e.target.value)}
             />
-            <label className="text-sm font-semibold text-muted">Teléfono (opcional)</label>
+            <label htmlFor="admin-telefono" className="text-sm font-semibold text-muted">
+              Teléfono (opcional)
+            </label>
             <input
+              id="admin-telefono"
               className="field"
               type="tel"
               inputMode="tel"
@@ -262,24 +306,21 @@ export default function SuperadminPanel() {
               value={adminTelefono}
               onChange={(e) => setAdminTelefono(e.target.value.replace(/[a-zA-Z]/g, ""))}
             />
-            <label className="text-sm font-semibold text-muted">Telegram (opcional)</label>
+            <label htmlFor="admin-telegram" className="text-sm font-semibold text-muted">
+              Telegram (opcional)
+            </label>
             <input
+              id="admin-telegram"
               className="field"
               placeholder="Telegram (ej: @usuario)"
               value={adminTelegram}
               onChange={(e) => {
-                // Solo letras, números, guion bajo y un único @ al inicio.
-                const limpio = e.target.value
-                  .replace(/[^a-zA-Z0-9_@]/g, "")
-                  .replace(/(?!^)@/g, "");
-                setAdminTelegram(limpio);
+                setAdminTelegram(sanitizarTelegram(e.target.value));
                 if (adminTelegramError) setAdminTelegramError("");
               }}
               onBlur={() => setAdminTelegramError(errorTelegram(adminTelegram) ?? "")}
             />
-            {adminTelegramError && (
-              <p className="text-sm font-semibold text-danger">{adminTelegramError}</p>
-            )}
+            <AvisoError mensaje={adminTelegramError || null} enfocar={false} />
             <EstadoCombobox
               estados={estados}
               estadoId={adminEstadoId}
@@ -287,32 +328,21 @@ export default function SuperadminPanel() {
               label="Estado del centro de acopio"
               placeholder="Elige un estado"
             />
-            {adminEstadoId && (
-              <>
-                <label className="text-sm font-semibold text-muted">Centro de acopio</label>
-                {cargandoCentros ? (
-                  <p className="text-muted text-sm">Cargando centros…</p>
-                ) : centros.length === 0 ? (
-                  <p className="text-muted text-sm">
-                    No hay centros de acopio registrados en este estado todavía.
-                  </p>
-                ) : (
-                  <select
-                    className="field"
-                    value={adminCentroId}
-                    onChange={(e) => setAdminCentroId(e.target.value)}
-                  >
-                    <option value="">Seleccionar centro</option>
-                    {centros.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </>
+            {estadosError && (
+              <AvisoCarga>
+                No se pudieron cargar los estados. Recarga la página para intentar de nuevo.
+              </AvisoCarga>
             )}
-            {adminError && <p className="text-sm font-semibold text-danger">{adminError}</p>}
+            {adminEstadoId && (
+              <SelectorCentro
+                centros={centros}
+                valor={adminCentroId}
+                onChange={setAdminCentroId}
+                cargando={cargandoCentros}
+                error={centrosError}
+              />
+            )}
+            <AvisoError mensaje={adminError} />
             <button
               onClick={crear}
               disabled={creandoAdmin}

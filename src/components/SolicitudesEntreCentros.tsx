@@ -5,8 +5,12 @@ import {
   listarSolicitudesParaNodo,
   responderSolicitudNodo,
 } from "@/lib/api";
-import { MAGNITUD_ORDEN, Magnitud, SolicitudParaNodo } from "@/lib/types";
+import { Magnitud, SolicitudParaNodo } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import { RANGO_ENTRE_NODOS_KM } from "@/lib/constantes";
+import { validarCantidad } from "@/lib/validaciones";
+import CantidadMagnitud from "./CantidadMagnitud";
+import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   nodeId: string;
@@ -71,11 +75,12 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
 
   const responder = async (solicitudId: string) => {
     setError(null);
-    const cant = Number(cantidad);
-    if (!cantidad.trim() || !Number.isInteger(cant) || cant <= 0) {
-      setError("Indica la cantidad (numero entero mayor a cero).");
+    const check = validarCantidad(cantidad);
+    if (!check.valida) {
+      setError(check.error ?? "Cantidad inválida.");
       return;
     }
+    const cant = check.cantidad;
     setEnviando(true);
     try {
       await responderSolicitudNodo(solicitudId, magnitud, cant, tieneTransporte, token, nodeId);
@@ -93,13 +98,13 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
       <div>
         <p className="text-sm font-semibold text-accent">Solicitudes de otros puntos</p>
         <p className="mt-1 text-xs text-muted">
-          Pedidos de centros dentro del rango operativo de 650 km maximo.
+          Pedidos de centros dentro del rango operativo de {RANGO_ENTRE_NODOS_KM} km máximo.
         </p>
       </div>
 
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
       {cargando ? (
-        <p className="text-sm text-muted">Cargando solicitudes cercanas...</p>
+        <SkeletonLista />
       ) : solicitudes.length === 0 ? (
         <p className="text-sm text-muted">No hay solicitudes de otros puntos en rango ahora mismo.</p>
       ) : (
@@ -114,7 +119,7 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
                 <p className="text-xs text-muted">Pide: {s.nodo_nombre}</p>
                 <p className="mt-1 text-xs text-muted">
                   Pedido: {s.cantidad ? `${s.cantidad} ` : ""}{s.magnitud}
-                  {s.requiere_vehiculo ? " - requiere vehiculo" : ""}
+                  {s.requiere_vehiculo ? " - requiere vehículo" : ""}
                   {s.distancia_km !== null ? ` - aprox. ${s.distancia_km} km` : ""}
                 </p>
                 {s.nota && <p className="mt-1 text-xs text-fg">💬 {s.nota}</p>}
@@ -124,27 +129,14 @@ export default function SolicitudesEntreCentros({ nodeId, token }: Props) {
 
             {respondiendoId === s.id ? (
               <div className="mt-3 flex flex-col gap-2 rounded-xl bg-surface p-3">
-                <label className="text-xs font-semibold text-muted">Cantidad y magnitud que puede aportar este punto</label>
-                <div className="flex gap-2">
-                  <input
-                    className="field w-1/3"
-                    inputMode="numeric"
-                    placeholder={s.sobrante > 0 ? `Max ${s.sobrante}` : "Cantidad"}
-                    value={cantidad}
-                    onChange={(e) => setCantidad(e.target.value.replace(/[^0-9]/g, ""))}
-                  />
-                  <select
-                    className="field flex-1"
-                    value={magnitud}
-                    onChange={(e) => setMagnitud(e.target.value as Magnitud)}
-                  >
-                    {MAGNITUD_ORDEN.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CantidadMagnitud
+                  cantidad={cantidad}
+                  onCantidad={setCantidad}
+                  magnitud={magnitud}
+                  onMagnitud={(m) => setMagnitud(m as Magnitud)}
+                  max={s.sobrante}
+                  label="Cantidad y magnitud que puede aportar este punto"
+                />
                 <label className="flex items-center gap-2 text-xs">
                   <input
                     type="checkbox"

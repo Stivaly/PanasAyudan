@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { MovimientoNodoEntrante, MovimientoNodoSaliente } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
+import SkeletonLista from "./SkeletonLista";
 
 interface Props {
   nodeId: string;
@@ -67,7 +68,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
       await accion();
       await cargar(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo completar la accion.");
+      setError(e instanceof Error ? e.message : "No se pudo completar la acción.");
     } finally {
       setAccionId(null);
     }
@@ -77,7 +78,11 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
     `${mov.category_name}${mov.subcategoria ? " - " + mov.subcategoria : ""}`;
 
   if (cargando) {
-    return <p className="text-sm text-muted">Cargando movimientos...</p>;
+    return (
+      <div className="flex flex-col gap-3 border-t border-border pt-3">
+        <SkeletonLista filas={2} />
+      </div>
+    );
   }
 
   return (
@@ -85,7 +90,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
       <div>
         <p className="text-sm font-semibold text-accent">Movimientos</p>
         <p className="mt-1 text-xs text-muted">
-          Envios comprometidos por este punto y ayudas que vienen hacia aqui.
+          Envíos comprometidos por este punto y ayudas que vienen hacia aquí.
         </p>
       </div>
 
@@ -94,7 +99,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase text-muted">Salientes</p>
         {salientes.length === 0 ? (
-          <p className="rounded-xl bg-bg p-3 text-sm text-muted">Este punto aun no tiene envios comprometidos.</p>
+          <p className="rounded-xl bg-bg p-3 text-sm text-muted">Este punto aún no tiene envíos comprometidos.</p>
         ) : (
           salientes.map((mov) => (
             <div key={mov.id} className="rounded-xl bg-bg p-3 text-sm">

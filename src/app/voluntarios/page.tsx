@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AvisoError from "@/components/AvisoError";
 import BotonVolver from "@/components/BotonVolver";
 import {
   registrarVoluntario,
-  getCentrosAcopioPorEstado,
   getEstados,
   validarTokenVoluntario,
   obtenerRol,
@@ -18,11 +18,18 @@ import {
   setCachedRole,
   clearCachedRole,
 } from "@/lib/supabase";
-import { normalizarTelegram, errorTelegram } from "@/lib/telefono";
+import {
+  normalizarTelefonoVe,
+  normalizarTelegram,
+  errorTelegram,
+  sanitizarTelegram,
+} from "@/lib/telefono";
 import { validarCedula, formatearCedula, limpiarCedula } from "@/lib/validaciones";
 import PanelVoluntario from "@/components/PanelVoluntario";
 import EstadoCombobox from "@/components/EstadoCombobox";
-import { CentroAcopio, EstadoVenezuela, VolunteerRole } from "@/lib/types";
+import SelectorCentro from "@/components/SelectorCentro";
+import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
+import { EstadoVenezuela, VolunteerRole } from "@/lib/types";
 
 type Vista = "menu" | "registro" | "acceso" | "panel";
 
@@ -43,10 +50,17 @@ export default function Voluntarios() {
   const [capacidadPeso, setCapacidadPeso] = useState("");
   const [capacidadVolumen, setCapacidadVolumen] = useState("");
   const [estadoId, setEstadoId] = useState<string | null>(null);
-  const [centroAcopioId, setCentroAcopioId] = useState("");
-  const [centros, setCentros] = useState<CentroAcopio[]>([]);
-  const [cargandoCentros, setCargandoCentros] = useState(false);
+  const {
+    centros,
+    centroId: centroAcopioId,
+    setCentroId: setCentroAcopioId,
+    cargando: cargandoCentros,
+    error: centrosError,
+  } = useCentrosPorEstado(estadoId, "voluntarios_centros_estado_changes");
   const [estados, setEstados] = useState<EstadoVenezuela[]>([]);
+  // Aviso discreto si falla la carga de estados (issue #55): sin esto, el
+  // combobox quedaba vacío en silencio.
+  const [estadosError, setEstadosError] = useState(false);
   const [tokenNuevo, setTokenNuevo] = useState<string | null>(null);
   // Bug #12: feedback visual al copiar el codigo de acceso.
   const [copiado, setCopiado] = useState(false);
@@ -110,42 +124,22 @@ export default function Voluntarios() {
       // Aviso derivado del parámetro de URL al montar (intencional).
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVista("acceso");
-      setError("Codigo invalido. Ingresa tu codigo de acceso nuevamente.");
+      setError("Código inválido. Ingresa tu código de acceso nuevamente.");
       router.replace("/voluntarios");
     }
   }, [router]);
 
   // Al abrir el formulario de registro, cargar la lista de estados (no los centros).
+  // Si falla, el guard estados.length hace que reentrar a la vista reintente solo.
   useEffect(() => {
     if (vista !== "registro" || estados.length > 0) return;
-    getEstados().then(setEstados).catch(() => setEstados([]));
+    getEstados()
+      .then((lista) => {
+        setEstados(lista);
+        setEstadosError(false);
+      })
+      .catch(() => setEstadosError(true));
   }, [vista, estados.length]);
-
-  // Los centros se cargan solo al elegir un estado, filtrados por ese estado.
-  useEffect(() => {
-    // Reset de selects dependientes al cambiar de estado + fetch (intencional).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCentroAcopioId("");
-    setCentros([]);
-    if (!estadoId) {
-      setCargandoCentros(false);
-      return;
-    }
-    setCargandoCentros(true);
-    getCentrosAcopioPorEstado(estadoId)
-      .then(setCentros)
-      .catch(() => setCentros([]))
-      .finally(() => setCargandoCentros(false));
-  }, [estadoId]);
-
-  const normalizarTelefonoVe = (valor: string): string | null => {
-    let digits = valor.replace(/\D/g, "");
-    if (digits.startsWith("00")) digits = digits.slice(2);
-    if (digits.length === 11 && digits.startsWith("0")) {
-      digits = "58" + digits.slice(1);
-    }
-    return /^58(412|414|416|424|426)\d{7}$/.test(digits) ? digits : null;
-  };
 
   const registrar = async () => {
     setError(null);
@@ -218,14 +212,21 @@ export default function Voluntarios() {
   const entrar = async () => {
     const t = tokenInput.trim();
     if (!t) {
-      setError("Ingresa tu codigo de acceso.");
+      setError("Ingresa tu código de acceso.");
       return;
     }
     setError(null);
     setVerificando(true);
     // Validar el token contra la base de datos ANTES de guardarlo o navegar.
     // Un token falso o inválido no debe escribir nada en localStorage.
-    const valido = await validarTokenVoluntario(t);
+    let valido: boolean;
+    try {
+      valido = await validarTokenVoluntario(t);
+    } catch {
+      setVerificando(false);
+      setError("No se pudo verificar tu código. Revisa tu conexión e intenta de nuevo.");
+      return;
+    }
     if (!valido) {
       setVerificando(false);
       setError("Codigo no reconocido. Verifica que lo copiaste correctamente.");
@@ -352,6 +353,9 @@ export default function Voluntarios() {
             </p>
           </div>
           <input type="hidden" name="username" autoComplete="username" value="voluntario-panasayudan" readOnly />
+          <label htmlFor="volunteer-token" className="text-sm font-semibold text-muted">
+            Código de acceso
+          </label>
           <input
             id="volunteer-token"
             name="password"
@@ -362,7 +366,7 @@ export default function Voluntarios() {
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
           />
-          {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+          <AvisoError mensaje={error} />
           <button type="submit" disabled={verificando} className="btn-primary w-full disabled:opacity-50">
             {verificando ? "Verificando..." : "Entrar"}
           </button>
@@ -378,9 +382,31 @@ export default function Voluntarios() {
             <p className="font-semibold text-accent">Tu zona puede ser el puente.</p>
             <p className="mt-1 text-muted">Deja tu WhatsApp venezolano y el área donde puedes apoyar traslados.</p>
           </div>
-          <input className="field" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          <input className="field" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} />
+          <label htmlFor="reg-nombre" className="text-sm font-semibold text-muted">
+            Nombre
+          </label>
           <input
+            id="reg-nombre"
+            className="field"
+            placeholder="Nombre"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+          <label htmlFor="reg-apellido" className="text-sm font-semibold text-muted">
+            Apellido
+          </label>
+          <input
+            id="reg-apellido"
+            className="field"
+            placeholder="Apellido"
+            value={apellido}
+            onChange={(e) => setApellido(e.target.value)}
+          />
+          <label htmlFor="reg-cedula" className="text-sm font-semibold text-muted">
+            Cédula
+          </label>
+          <input
+            id="reg-cedula"
             className="field"
             inputMode="numeric"
             placeholder="Cédula (ej: 12.345.678)"
@@ -391,7 +417,11 @@ export default function Voluntarios() {
             Tu cédula no se muestra públicamente. Se usa solo para el registro y queda
             bloqueada si no cumples un compromiso aceptado.
           </p>
+          <label htmlFor="reg-whatsapp" className="text-sm font-semibold text-muted">
+            WhatsApp
+          </label>
           <input
+            id="reg-whatsapp"
             className="field"
             type="tel"
             inputMode="tel"
@@ -400,25 +430,25 @@ export default function Voluntarios() {
             onChange={(e) => setTelefono(e.target.value.replace(/[a-zA-Z]/g, ""))}
           />
           <p className="text-xs text-muted">
-            Este numero se usara para coordinar los compromisos que aceptes.
+            Este número se usará para coordinar los compromisos que aceptes.
           </p>
+          <label htmlFor="reg-telegram" className="text-sm font-semibold text-muted">
+            Telegram
+          </label>
           <input
+            id="reg-telegram"
             className="field"
             placeholder="Telegram (ej: @usuario)"
             value={telegram}
             onChange={(e) => {
-              // Solo letras, números, guion bajo y un único @ al inicio.
-              const limpio = e.target.value
-                .replace(/[^a-zA-Z0-9_@]/g, "")
-                .replace(/(?!^)@/g, "");
-              setTelegram(limpio);
+              setTelegram(sanitizarTelegram(e.target.value));
               if (telegramError) setTelegramError("");
             }}
             onBlur={() => {
               setTelegramError(errorTelegram(telegram) ?? "");
             }}
           />
-          {telegramError && <p className="text-sm font-semibold text-danger">{telegramError}</p>}
+          <AvisoError mensaje={telegramError || null} enfocar={false} />
           <label className="flex items-center gap-2 rounded-xl border border-border bg-bg p-3 text-sm">
             <input
               type="checkbox"
@@ -429,20 +459,32 @@ export default function Voluntarios() {
           </label>
           {tieneVehiculo && (
             <div className="flex gap-2">
-              <input
-                className="field"
-                inputMode="decimal"
-                placeholder="Peso aprox. (kg)"
-                value={capacidadPeso}
-                onChange={(e) => setCapacidadPeso(e.target.value.replace(/[^0-9.]/g, ""))}
-              />
-              <input
-                className="field"
-                inputMode="decimal"
-                placeholder="Volumen aprox. (m³)"
-                value={capacidadVolumen}
-                onChange={(e) => setCapacidadVolumen(e.target.value.replace(/[^0-9.]/g, ""))}
-              />
+              <div className="flex flex-1 flex-col gap-2">
+                <label htmlFor="reg-peso" className="text-sm font-semibold text-muted">
+                  Peso (kg)
+                </label>
+                <input
+                  id="reg-peso"
+                  className="field"
+                  inputMode="decimal"
+                  placeholder="Peso aprox. (kg)"
+                  value={capacidadPeso}
+                  onChange={(e) => setCapacidadPeso(e.target.value.replace(/[^0-9.]/g, ""))}
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-2">
+                <label htmlFor="reg-volumen" className="text-sm font-semibold text-muted">
+                  Volumen (m³)
+                </label>
+                <input
+                  id="reg-volumen"
+                  className="field"
+                  inputMode="decimal"
+                  placeholder="Volumen aprox. (m³)"
+                  value={capacidadVolumen}
+                  onChange={(e) => setCapacidadVolumen(e.target.value.replace(/[^0-9.]/g, ""))}
+                />
+              </div>
             </div>
           )}
           <EstadoCombobox
@@ -452,35 +494,25 @@ export default function Voluntarios() {
             label="Estado del centro de acopio"
             placeholder="Elige un estado (opcional)"
           />
+          {estadosError && (
+            <p className="text-xs font-semibold text-warning">
+              No se pudieron cargar los estados. El campo es opcional; puedes continuar.
+            </p>
+          )}
           {estadoId && (
-            <>
-              <label className="text-sm font-semibold text-muted">Centro de acopio</label>
-              {cargandoCentros ? (
-                <p className="text-muted text-sm">Cargando centros…</p>
-              ) : centros.length === 0 ? (
-                <p className="text-muted text-sm">
-                  No hay centros de acopio registrados en este estado todavía.
-                </p>
-              ) : (
-                <select
-                  className="field"
-                  value={centroAcopioId}
-                  onChange={(e) => setCentroAcopioId(e.target.value)}
-                >
-                  <option value="">Seleccionar centro (opcional)</option>
-                  {centros.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </>
+            <SelectorCentro
+              centros={centros}
+              valor={centroAcopioId}
+              onChange={setCentroAcopioId}
+              cargando={cargandoCentros}
+              error={centrosError}
+              placeholder="Seleccionar centro (opcional)"
+            />
           )}
           <p className="text-xs text-muted">
             Puedes ser el centro o solo un voluntario que ayuda desde ahí.
           </p>
-          {error && <p className="text-sm font-semibold text-danger">{error}</p>}
+          <AvisoError mensaje={error} />
           <button onClick={registrar} disabled={enviando} className="btn-primary w-full disabled:opacity-50">
             {enviando ? "Registrando..." : "Registrarme"}
           </button>
@@ -504,7 +536,7 @@ export default function Voluntarios() {
               Es tu forma de volver a entrar a tu panel. No se muestra de nuevo y no se puede recuperar.
             </p>
             <p className="mt-3 rounded-xl border border-border bg-bg p-3 text-sm text-muted">
-              Tu navegador puede ofrecer guardarlo. Acepta esa opcion para usarlo rapido en este dispositivo.
+              Tu navegador puede ofrecer guardarlo. Acepta esa opción para usarlo rápido en este dispositivo.
             </p>
             <input type="hidden" name="username" autoComplete="username" value="voluntario-panasayudan" readOnly />
             <input
@@ -524,11 +556,11 @@ export default function Voluntarios() {
               }}
               className={copiado ? "btn-ghost mt-3 w-full border-accent text-accent" : "btn-ghost mt-3 w-full"}
             >
-              {copiado ? "¡Copiado! ✓" : "Copiar codigo"}
+              {copiado ? "¡Copiado! ✓" : "Copiar código"}
             </button>
           </div>
           <button type="submit" className="btn-primary w-full">
-            Ya lo guarde, usar codigo
+            Ya lo guardé, usar código
           </button>
         </form>
       )}
