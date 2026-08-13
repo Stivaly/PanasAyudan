@@ -50,6 +50,13 @@ export default function TarjetaItem({
   // Anti doble submit (issue #53): flag de la RPC de reposición en vuelo.
   const [solicitando, setSolicitando] = useState(false);
 
+  // El colaborador puede quedarse sin acciones: cuando el item ya está en "no
+  // hay" y el formulario de reposición está abierto no hay nada que ofrecer, y
+  // la barra con su línea divisoria sobraría.
+  const hayAcciones = soloColaborador
+    ? item.disponible || !solicitarAbierto
+    : true;
+
   const solicitar = async () => {
     if (solicitando) return;
     const check = validarCantidad(solCantidad);
@@ -76,26 +83,35 @@ export default function TarjetaItem({
 
   return (
     <div className="rounded-xl bg-bg p-3 text-sm">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold">
-            {item.category?.name ?? "—"}
-            {item.subcategory ? " · " + item.subcategory.name : ""}
-          </p>
-          <p className="text-xs text-muted">
-            {publicaMagnitud && item.magnitud
-              ? (item.cantidad ? item.cantidad + " " : "") + item.magnitud + " · "
-              : ""}
-            {item.disponible ? "Disponible" : "No hay"}
-          </p>
-          {item.nota && <p className="mt-1 text-xs text-fg">💬 {item.nota}</p>}
-          {item.condicion && <p className="mt-1 text-xs text-muted">⚠ {item.condicion}</p>}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          {/* Reparto por rol: el admin edita el item completo (y agota/repone
-              con la casilla "Disponible"); el colaborador solo marca "no hay". */}
-          {soloColaborador
-            ? item.disponible && (
+      <div>
+        <p className="font-semibold">
+          {item.category?.name ?? "—"}
+          {item.subcategory ? " · " + item.subcategory.name : ""}
+        </p>
+        <p className="text-xs text-muted">
+          {publicaMagnitud && item.magnitud
+            ? (item.cantidad ? item.cantidad + " " : "") + item.magnitud + " · "
+            : ""}
+          {item.disponible ? "Disponible" : "No hay"}
+        </p>
+        {item.nota && <p className="mt-1 text-xs text-fg">💬 {item.nota}</p>}
+        {item.condicion && <p className="mt-1 text-xs text-muted">⚠ {item.condicion}</p>}
+      </div>
+
+      {/* Las acciones van debajo, no al costado. Al costado eran una columna
+          rígida que le robaba casi la mitad del ancho al texto del insumo: con
+          "Marcar “no hay”" el título partía en dos líneas y la condición caía
+          en una tira de ~55% del ancho (issue #157). Mismo patrón que usa la
+          tarjeta de solicitud para Editar/Eliminar.
+
+          Reparto por rol: el admin edita el item completo (y agota/repone con
+          la casilla "Disponible"); el colaborador solo marca "no hay" y, si ya
+          no hay, pide reposición. */}
+      {hayAcciones && (
+        <div className="mt-2 flex flex-wrap gap-3 border-t border-border pt-2">
+          {soloColaborador ? (
+            <>
+              {item.disponible && (
                 <button
                   onClick={onAgotar}
                   disabled={agotando}
@@ -103,26 +119,26 @@ export default function TarjetaItem({
                 >
                   {agotando ? "Marcando…" : "Marcar “no hay”"}
                 </button>
-              )
-            : (
-                <>
-                  <button onClick={onEditar} className="text-xs font-semibold text-accent">
-                    Editar
-                  </button>
-                  <button onClick={onBorrar} className="text-xs font-semibold text-danger">
-                    Eliminar
-                  </button>
-                </>
               )}
+              {/* Reposición atada al item: exclusiva del colaborador. El admin
+                  pide a la red con "Crear solicitud" (arriba). */}
+              {!item.disponible && !solicitarAbierto && (
+                <button onClick={onAbrirSolicitar} className="text-xs font-semibold text-accent">
+                  ¿Solicitar más?
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button onClick={onEditar} className="text-xs font-semibold text-accent">
+                Editar
+              </button>
+              <button onClick={onBorrar} className="text-xs font-semibold text-danger">
+                Eliminar
+              </button>
+            </>
+          )}
         </div>
-      </div>
-
-      {/* Reposición atada al item: exclusiva del colaborador. El admin pide a
-          la red con "Crear solicitud" (arriba), que cubre este caso. */}
-      {soloColaborador && !item.disponible && !solicitarAbierto && (
-        <button onClick={onAbrirSolicitar} className="mt-2 text-xs font-semibold text-accent">
-          ¿Solicitar más?
-        </button>
       )}
       {soloColaborador && solicitarAbierto && (
         <div className="mt-2 flex flex-col gap-2 rounded-lg bg-surface p-2">
