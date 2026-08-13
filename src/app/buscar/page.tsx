@@ -15,6 +15,8 @@ import { useNodosPublicos } from "@/hooks/useNodosPublicos";
 import { getCategorias, getEstados } from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
 import { Category, Coords, EstadoVenezuela, statusVisible } from "@/lib/types";
+import CabeceraPagina from "@/components/CabeceraPagina";
+import TemaToggle from "@/components/TemaToggle";
 
 // Nodos por página en la lista: acota la altura para que no baje infinito.
 const POR_PAGINA = 8;
@@ -133,9 +135,12 @@ export default function Buscar() {
             >
               ← Lista
             </button>
-            <span className="text-sm font-semibold text-muted">
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-muted">
               Mapa · {marcadores.length} punto{marcadores.length === 1 ? "" : "s"}
             </span>
+            {/* La vista mapa tampoco tiene cabecera con título: el toggle va en
+                esta barra flotante, no encima de ella (issue #153). */}
+            <TemaToggle />
           </div>
           <div className="px-3">{filtros}</div>
         </div>
@@ -145,10 +150,7 @@ export default function Buscar() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <BotonVolver />
-        <h1 className="text-lg font-bold">Puntos de ayuda</h1>
-      </div>
+      <CabeceraPagina volver={<BotonVolver />} titulo="Puntos de ayuda" />
 
       {filtros}
 

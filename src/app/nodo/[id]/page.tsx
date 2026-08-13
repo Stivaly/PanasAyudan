@@ -19,6 +19,7 @@ import {
 } from "@/lib/types";
 import CompartirNodo from "@/components/CompartirNodo";
 import SkeletonNodoDetalle from "@/components/SkeletonNodoDetalle";
+import CabeceraPagina from "@/components/CabeceraPagina";
 
 const TIPO_LABEL: Record<string, string> = {
   acopio: "Centro de acopio",
@@ -134,10 +135,7 @@ export default function NodoDetalle() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <BotonVolver fallback="/buscar" />
-        <h1 className="text-lg font-bold">{nodo.nombre}</h1>
-      </div>
+      <CabeceraPagina volver={<BotonVolver fallback="/buscar" />} titulo={nodo.nombre} />
 
       <div className="-mt-2 flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted">

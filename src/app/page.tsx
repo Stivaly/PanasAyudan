@@ -9,6 +9,7 @@ import { getCachedRole, setCachedRole } from "@/lib/supabase";
 import { VolunteerRole } from "@/lib/types";
 import SeccionImpacto from "@/components/SeccionImpacto";
 import Skeleton from "@/components/Skeleton";
+import TemaToggle from "@/components/TemaToggle";
 
 const ModalBienvenida = dynamic(() => import("@/components/ModalBienvenida"), {
   ssr: false,
@@ -74,25 +75,33 @@ export default function Home() {
   return (
     <main className="relative flex min-h-dvh w-full flex-col bg-bg px-4 py-8">
       <ModalBienvenida />
-      <button
-        type="button"
-        onClick={() => window.dispatchEvent(new Event("abrir-bienvenida"))}
-        aria-haspopup="dialog"
-        aria-expanded={modalAbierto}
-        className="absolute left-4 top-4 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-fg"
-      >
-        Cómo funciona
-      </button>
-      {tieneToken && cargandoRol ? (
-        <Skeleton className="absolute right-4 top-4 h-[38px] w-28" />
-      ) : (
-        <Link
-          href={tieneToken ? panel.href : "/voluntarios"}
-          className="absolute right-4 top-4 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-fg"
+      {/* La portada no tiene cabecera con título, así que sus controles viven
+          en esta fila. Antes eran dos píldoras `absolute` y el botón de tema
+          flotaba entre ellas, tapándolas: a 320 px se comía un cuarto de
+          "Entrar o registrarme" (issue #153). Ahora los tres están en flujo y
+          la fila envuelve cuando no caben. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event("abrir-bienvenida"))}
+          aria-haspopup="dialog"
+          aria-expanded={modalAbierto}
+          className="rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-fg"
         >
-          {tieneToken ? "Mi panel" : "Entrar o registrarme"}
-        </Link>
-      )}
+          Cómo funciona
+        </button>
+        <TemaToggle />
+        {tieneToken && cargandoRol ? (
+          <Skeleton className="h-[38px] w-28" />
+        ) : (
+          <Link
+            href={tieneToken ? panel.href : "/voluntarios"}
+            className="rounded-full border border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-fg"
+          >
+            {tieneToken ? "Mi panel" : "Entrar o registrarme"}
+          </Link>
+        )}
+      </div>
 
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-3">
         <header className="mb-5 text-center">

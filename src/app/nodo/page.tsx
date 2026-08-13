@@ -18,6 +18,7 @@ import VerificarNodo from "@/components/VerificarNodo";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { EstadoVenezuela, NodoAdmin, TipoPausa, pausadoRelevante, statusVisible } from "@/lib/types";
+import CabeceraPagina from "@/components/CabeceraPagina";
 
 const REALTIME_TABLES = [
   { table: "centros_acopio" },
@@ -137,15 +138,19 @@ export default function NodoAdminPanel() {
     // Sin pb hardcodeado para la tab bar: ahora la PilaInferior reserva su
     // propio alto en el body, y ese 5rem fijo se sumaría dos veces (#154).
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-          &larr;
-        </Link>
-        <h1 className="text-lg font-bold">Panel de punto</h1>
-        <button onClick={salir} className="ml-auto text-sm font-semibold text-muted">
-          Salir
-        </button>
-      </div>
+      <CabeceraPagina
+        volver={
+          <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
+            &larr;
+          </Link>
+        }
+        titulo="Panel de punto"
+        acciones={
+          <button onClick={salir} className="text-sm font-semibold text-muted">
+            Salir
+          </button>
+        }
+      />
 
       {error && (
         <div className="card border-danger">
