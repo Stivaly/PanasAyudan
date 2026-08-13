@@ -116,7 +116,10 @@ export default function Buscar() {
 
   if (verMapa) {
     return (
-      <main className="relative h-dvh w-full overflow-hidden">
+      // El mapa ocupa la pantalla menos lo que reserve la pila inferior: si
+      // usara 100dvh, el padding que la pila pone en el body volvería
+      // scrolleable una vista que no debe scrollear (#154).
+      <main className="relative h-[calc(100dvh-var(--pila-inferior,0px))] w-full overflow-hidden">
         <MapaClusters
           key={`${estadoId ?? "todos"}-${activa ?? "todas"}-${marcadores.map((m) => m.id).join("|")}`}
           centro={centro}
