@@ -77,10 +77,20 @@ export default function ModalBienvenida() {
 
   if (!visible) return null;
 
-  const laminas = laminasBienvenida(cerrar, () => {
-    cerrar();
-    router.push("/voluntarios");
-  });
+  // "Ver puntos de ayuda" lleva a la lista, no se limita a cerrar. Antes solo
+  // cerraba y dejaba a la persona en la portada, o sea prometía una cosa y
+  // hacía otra; ahora que la portada tiene un botón con ese mismo nombre que sí
+  // navega, la diferencia se notaba todavía más.
+  const laminas = laminasBienvenida(
+    () => {
+      cerrar();
+      router.push("/buscar");
+    },
+    () => {
+      cerrar();
+      router.push("/voluntarios");
+    }
+  );
   const actual = laminas[slide];
   const ultima = slide === laminas.length - 1;
 
