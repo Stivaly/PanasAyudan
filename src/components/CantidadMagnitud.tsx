@@ -40,7 +40,12 @@ export default function CantidadMagnitud({
   opcionVacia,
   label,
   labelClassName = "text-xs font-semibold text-muted",
-  className = "flex gap-2",
+  // La fila envuelve y cada campo reclama un ancho mínimo propio. Antes el
+  // número era `w-1/3`: dentro de una tarjeta a 320px eso son ~46px de texto
+  // útil descontando el padding, así que el campo recortaba su propio
+  // marcador y se leía "Cantid" (issue #159). Con base mínima, si los dos no
+  // caen lado a lado se apilan enteros en vez de estrangularse.
+  className = "flex flex-wrap gap-2",
 }: Props) {
   const cantidadId = useId();
 
@@ -54,7 +59,7 @@ export default function CantidadMagnitud({
       <div className={className}>
         <input
           id={cantidadId}
-          className="field w-1/3"
+          className="field grow basis-28"
           inputMode="numeric"
           placeholder={max != null && max > 0 ? `Max ${max}` : "Cantidad"}
           value={cantidad}
@@ -62,7 +67,7 @@ export default function CantidadMagnitud({
         />
         <select
           aria-label="Magnitud"
-          className="field flex-1"
+          className="field grow basis-32"
           value={magnitud}
           onChange={(e) => onMagnitud(e.target.value as Magnitud | "")}
         >
