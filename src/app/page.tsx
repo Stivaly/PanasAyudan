@@ -79,10 +79,13 @@ export default function Home() {
       {/* La portada no tiene cabecera con título, así que sus controles viven
           en esta fila. Antes eran dos píldoras de texto con el botón de tema
           flotando entre ellas y tapándolas (issue #153); ahora son tres iconos
-          del mismo tamaño y peso, agrupados a la derecha, con el tema al final
-          que es donde se acostumbra buscarlo. Los tres son atajos: lo que de
-          verdad hay que hacer está en los botones grandes de abajo. */}
-      <div className="flex items-center justify-end gap-2">
+          del mismo tamaño y peso, con el tema al final que es donde se
+          acostumbra buscarlo. Los tres son atajos: lo que de verdad hay que
+          hacer está en los botones grandes de abajo.
+
+          Van centrados: la portada no tiene flecha de volver ni título que
+          alinear a la izquierda, así que arrinconarlos deja la fila coja. */}
+      <div className="flex items-center justify-center gap-2">
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event("abrir-bienvenida"))}
