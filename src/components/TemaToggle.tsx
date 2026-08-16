@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CLASE_BOTON_ICONO, IconoLuna, IconoSol } from "@/components/Iconos";
 import { useTema } from "@/hooks/useTema";
 import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
@@ -36,11 +37,11 @@ export default function TemaToggle() {
       <button
         type="button"
         onClick={cambiar}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-xl"
+        className={CLASE_BOTON_ICONO}
         aria-label={claro ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
         title={claro ? "Modo oscuro" : "Modo claro"}
       >
-        <span aria-hidden="true">{claro ? "☾" : "☀"}</span>
+        {claro ? <IconoLuna /> : <IconoSol />}
       </button>
 
       {mostrarAviso && (
