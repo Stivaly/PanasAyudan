@@ -32,6 +32,7 @@ import SelectorCentro from "@/components/SelectorCentro";
 import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
 import { EstadoVenezuela, VolunteerRole } from "@/lib/types";
 import CabeceraPagina from "@/components/CabeceraPagina";
+import { ACCION_CABECERA } from "@/lib/estilos";
 
 type Vista = "menu" | "registro" | "acceso" | "panel";
 
@@ -296,7 +297,7 @@ export default function Voluntarios() {
         subtitulo={vista === "panel" ? "Código de acceso activo" : undefined}
         acciones={
           vista === "panel" && token ? (
-            <button onClick={salirDelPanel} className="text-sm font-semibold text-muted">
+            <button onClick={salirDelPanel} className={`${ACCION_CABECERA} text-muted`}>
               Salir
             </button>
           ) : undefined
