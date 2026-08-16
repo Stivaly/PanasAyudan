@@ -15,6 +15,8 @@ import { useNodosPublicos } from "@/hooks/useNodosPublicos";
 import { getCategorias, getEstados } from "@/lib/api";
 import { resolverCentro, CARACAS } from "@/lib/geo";
 import { Category, Coords, EstadoVenezuela, statusVisible } from "@/lib/types";
+import CabeceraPagina from "@/components/CabeceraPagina";
+import TemaToggle from "@/components/TemaToggle";
 
 // Nodos por página en la lista: acota la altura para que no baje infinito.
 const POR_PAGINA = 8;
@@ -116,7 +118,10 @@ export default function Buscar() {
 
   if (verMapa) {
     return (
-      <main className="relative h-dvh w-full overflow-hidden">
+      // El mapa ocupa la pantalla menos lo que reserve la pila inferior: si
+      // usara 100dvh, el padding que la pila pone en el body volvería
+      // scrolleable una vista que no debe scrollear (#154).
+      <main className="relative h-[calc(100dvh-var(--pila-inferior,0px))] w-full overflow-hidden">
         <MapaClusters
           key={`${estadoId ?? "todos"}-${activa ?? "todas"}-${marcadores.map((m) => m.id).join("|")}`}
           centro={centro}
@@ -130,9 +135,12 @@ export default function Buscar() {
             >
               ← Lista
             </button>
-            <span className="text-sm font-semibold text-muted">
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-muted">
               Mapa · {marcadores.length} punto{marcadores.length === 1 ? "" : "s"}
             </span>
+            {/* La vista mapa tampoco tiene cabecera con título: el toggle va en
+                esta barra flotante, no encima de ella (issue #153). */}
+            <TemaToggle />
           </div>
           <div className="px-3">{filtros}</div>
         </div>
@@ -142,10 +150,7 @@ export default function Buscar() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <BotonVolver />
-        <h1 className="text-lg font-bold">Puntos de ayuda</h1>
-      </div>
+      <CabeceraPagina volver={<BotonVolver />} titulo="Puntos de ayuda" />
 
       {filtros}
 
@@ -172,25 +177,32 @@ export default function Buscar() {
         <>
           <ListaNodos nodos={visibles} />
 
+          {/* El contador va debajo, no entre los botones. Los tres en una fila
+              sumaban 311px contra los 288 disponibles a 320px, así que cada
+              botón partía su texto en dos líneas y la flecha quedaba suelta
+              abajo (#158). Con el contador aparte los botones caben enteros en
+              cualquier ancho y de paso quedan más separados entre sí. */}
           {totalPaginas > 1 && (
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <button
-                onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                disabled={paginaActual === 1}
-                className="btn-ghost text-sm disabled:opacity-40"
-              >
-                ← Anterior
-              </button>
+            <div className="flex flex-col items-center gap-2 pt-1">
+              <div className="flex w-full items-center justify-between gap-2">
+                <button
+                  onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                  disabled={paginaActual === 1}
+                  className="btn-ghost whitespace-nowrap px-4 text-sm disabled:opacity-40"
+                >
+                  ← Anterior
+                </button>
+                <button
+                  onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                  disabled={paginaActual === totalPaginas}
+                  className="btn-ghost whitespace-nowrap px-4 text-sm disabled:opacity-40"
+                >
+                  Siguiente →
+                </button>
+              </div>
               <span className="text-xs font-semibold text-muted">
                 Página {paginaActual} de {totalPaginas}
               </span>
-              <button
-                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-                disabled={paginaActual === totalPaginas}
-                className="btn-ghost text-sm disabled:opacity-40"
-              >
-                Siguiente →
-              </button>
             </div>
           )}
         </>

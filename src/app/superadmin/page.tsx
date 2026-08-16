@@ -23,6 +23,8 @@ import SolicitudesRegistroNodo from "@/components/SolicitudesRegistroNodo";
 import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { EstadoVenezuela } from "@/lib/types";
+import CabeceraPagina from "@/components/CabeceraPagina";
+import { ACCION_CABECERA } from "@/lib/estilos";
 
 export default function SuperadminPanel() {
   const router = useRouter();
@@ -183,13 +185,15 @@ export default function SuperadminPanel() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <BotonVolver />
-        <h1 className="text-lg font-bold">Panel superadmin</h1>
-        <button onClick={salir} className="ml-auto text-sm font-semibold text-muted">
-          Salir
-        </button>
-      </div>
+      <CabeceraPagina
+        volver={<BotonVolver />}
+        titulo="Panel superadmin"
+        acciones={
+          <button onClick={salir} className={`${ACCION_CABECERA} text-muted`}>
+            Salir
+          </button>
+        }
+      />
 
       {/* Cola de solicitudes de registro de nodo (issue #21) */}
       {token && <SolicitudesRegistroNodo token={token} />}

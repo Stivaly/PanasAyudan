@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { BOTON_VOLVER } from "@/lib/estilos";
 
 // Flecha "atrás" del encabezado. Replica el botón de retroceso del navegador:
 // vuelve a la pantalla anterior del historial en lugar de ir a un destino fijo.
@@ -12,7 +13,7 @@ import { useRouter } from "next/navigation";
 export default function BotonVolver({
   destinoFijo,
   fallback = "/",
-  className = "rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold",
+  className = BOTON_VOLVER,
   children = "←",
   ariaLabel = "Volver",
 }: {

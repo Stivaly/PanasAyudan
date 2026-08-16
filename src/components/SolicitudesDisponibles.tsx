@@ -238,8 +238,13 @@ export default function SolicitudesDisponibles({ token }: Props) {
       {!cargando && !requiereVerificacion && compromisos.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase text-muted">Mis traslados activos</p>
+          {/* `card` y no `rounded-xl bg-bg`: este bloque cuelga directo del
+              panel del voluntario, cuyo fondo ya es bg-bg, así que la tarjeta
+              quedaba del mismo color que la página y desaparecía (#162). Los
+              recuadros bg-bg de más abajo sí contrastan porque van anidados
+              dentro de una `card`. */}
           {compromisos.map((c) => (
-            <div key={c.id} className="rounded-xl bg-bg p-3 text-sm">
+            <div key={c.id} className="card text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold">

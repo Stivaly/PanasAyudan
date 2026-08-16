@@ -4,6 +4,8 @@
 // Presentacional: cabecera, chips Pedido/Comprometido/Falta, compromisos y el
 // strip inline de confirmación de borrado. Los estados vienen de lib/solicitudes.
 
+import FilaCompromiso from "@/components/FilaCompromiso";
+import { ACCION_TEXTO } from "@/lib/estilos";
 import {
   comprometido,
   estadoNodo,
@@ -65,14 +67,16 @@ export default function TarjetaSolicitud({
             <div className="flex flex-col gap-1">
               <p className="text-xs font-semibold text-muted">Voluntarios</p>
               {s.compromisos_voluntario.map((c) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface p-2">
-                  <span className="min-w-0">
-                    {c.nombre || "Voluntario"} - {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud}
-                  </span>
-                  <span className="shrink-0 text-right text-xs font-semibold text-muted">
-                    {estadoVoluntario(c)}
-                  </span>
-                </div>
+                <FilaCompromiso
+                  key={c.id}
+                  derecha={
+                    <span className="shrink-0 text-xs font-semibold text-muted">
+                      {estadoVoluntario(c)}
+                    </span>
+                  }
+                >
+                  {c.nombre || "Voluntario"} - {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud}
+                </FilaCompromiso>
               ))}
             </div>
           )}
@@ -81,15 +85,17 @@ export default function TarjetaSolicitud({
             <div className="flex flex-col gap-1">
               <p className="text-xs font-semibold text-muted">Centros</p>
               {s.compromisos_nodo.map((c) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg bg-surface p-2">
-                  <span className="min-w-0">
-                    {c.nodo_nombre || "Otro centro"} - {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} -{" "}
-                    {c.tiene_transporte ? "transporte propio" : "sin transporte propio"}
-                  </span>
-                  <span className="shrink-0 text-right text-xs font-semibold text-muted">
-                    {estadoNodo(c)}
-                  </span>
-                </div>
+                <FilaCompromiso
+                  key={c.id}
+                  derecha={
+                    <span className="shrink-0 text-xs font-semibold text-muted">
+                      {estadoNodo(c)}
+                    </span>
+                  }
+                >
+                  {c.nodo_nombre || "Otro centro"} - {c.cantidad ? `${c.cantidad} ` : ""}{c.magnitud} -{" "}
+                  {c.tiene_transporte ? "transporte propio" : "sin transporte propio"}
+                </FilaCompromiso>
               ))}
             </div>
           )}
@@ -103,24 +109,24 @@ export default function TarjetaSolicitud({
             <button
               onClick={onConfirmarEliminar}
               disabled={borrando}
-              className="text-xs font-semibold text-danger disabled:opacity-50"
+              className={`${ACCION_TEXTO} text-danger disabled:opacity-50`}
             >
               {borrando ? "Eliminando…" : "Si, eliminar"}
             </button>
             <button
               onClick={onCancelarEliminar}
               disabled={borrando}
-              className="text-xs font-semibold text-muted disabled:opacity-50"
+              className={`${ACCION_TEXTO} text-muted disabled:opacity-50`}
             >
               Cancelar
             </button>
           </div>
         ) : (
           <div className="mt-2 flex gap-3 border-t border-border pt-2">
-            <button onClick={onEditar} className="text-xs font-semibold text-accent">
+            <button onClick={onEditar} className={`${ACCION_TEXTO} text-accent`}>
               Editar
             </button>
-            <button onClick={onPedirEliminar} className="text-xs font-semibold text-danger">
+            <button onClick={onPedirEliminar} className={`${ACCION_TEXTO} text-danger`}>
               Eliminar
             </button>
           </div>

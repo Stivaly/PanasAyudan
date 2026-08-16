@@ -17,6 +17,7 @@ import {
   getCachedRole,
   setCachedRole,
   clearCachedRole,
+  clearVolunteerToken,
 } from "@/lib/supabase";
 import {
   normalizarTelefonoVe,
@@ -30,6 +31,8 @@ import EstadoCombobox from "@/components/EstadoCombobox";
 import SelectorCentro from "@/components/SelectorCentro";
 import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
 import { EstadoVenezuela, VolunteerRole } from "@/lib/types";
+import CabeceraPagina from "@/components/CabeceraPagina";
+import { ACCION_CABECERA } from "@/lib/estilos";
 
 type Vista = "menu" | "registro" | "acceso" | "panel";
 
@@ -271,25 +274,37 @@ export default function Voluntarios() {
     setVista("panel");
   };
 
+  // Cerrar sesión del panel de voluntario. Vivía dentro de PanelVoluntario
+  // junto a su cabecera propia; al unificar cabeceras se muda aquí, que es
+  // donde ya se maneja el token y la vista.
+  const salirDelPanel = () => {
+    clearVolunteerToken();
+    clearCachedRole();
+    setToken(null);
+    setVista("menu");
+  };
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <BotonVolver destinoFijo="/" />
-        <div>
-          <h1 className="text-lg font-bold">🇻🇪 Apoyo en traslados</h1>
-          {vista === "panel" && <p className="text-xs text-muted">Estas en solicitudes para ayudar</p>}
-        </div>
-      </div>
+      {/* Una sola cabecera. Antes esta fila y la de PanelVoluntario se
+          apilaban: dos títulos seguidos que decían casi lo mismo, y un "Salir"
+          suelto a media altura entre ambos. Ahora el "Salir" vive donde vive en
+          el resto de paneles —misma fila que la flecha y el título— y el estado
+          de sesión baja a subtítulo (#161). */}
+      <CabeceraPagina
+        volver={<BotonVolver destinoFijo="/" />}
+        titulo="🇻🇪 Apoyo en traslados"
+        subtitulo={vista === "panel" ? "Código de acceso activo" : undefined}
+        acciones={
+          vista === "panel" && token ? (
+            <button onClick={salirDelPanel} className={`${ACCION_CABECERA} text-muted`}>
+              Salir
+            </button>
+          ) : undefined
+        }
+      />
 
-      {vista === "panel" && token && (
-        <PanelVoluntario
-          token={token}
-          onSalir={() => {
-            setToken(null);
-            setVista("menu");
-          }}
-        />
-      )}
+      {vista === "panel" && token && <PanelVoluntario token={token} />}
 
       {vista === "menu" && (
         <div className="flex flex-col gap-3">

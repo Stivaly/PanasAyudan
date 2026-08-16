@@ -4,7 +4,6 @@ import KeepAlive from "@/components/KeepAlive";
 import RegistrarSW from "@/components/RegistrarSW";
 import InstalarApp from "@/components/InstalarApp";
 import RecargarEnChunkError from "@/components/RecargarEnChunkError";
-import TemaToggle from "@/components/TemaToggle";
 import AvisoBateria from "@/components/AvisoBateria";
 import AvisoConexion from "@/components/AvisoConexion";
 
@@ -25,6 +24,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#0a0a0a",
+  // Sin viewport-fit=cover el navegador no expone las safe areas y todos los
+  // env(safe-area-inset-*) del proyecto resuelven a 0px. Es obligatorio aquí
+  // porque appleWebApp.statusBarStyle es "black-translucent": en iOS instalado
+  // el contenido pasa por debajo de la barra de estado y del notch, y son esos
+  // insets los que lo compensan (cabeceras, banners y NodoTabBar).
+  viewportFit: "cover",
 };
 
 const themeScript = `
@@ -65,7 +70,10 @@ export default function RootLayout({
         <RegistrarSW />
         <InstalarApp />
         <RecargarEnChunkError />
-        <TemaToggle />
+        {/* TemaToggle ya no vive aquí: flotaba centrado arriba y tapaba el
+            título de cada pantalla. Ahora lo monta CabeceraPagina dentro de la
+            fila del título, y la portada y la vista mapa lo ponen en su propia
+            fila de controles (issue #153). */}
         <AvisoBateria />
         <AvisoConexion />
         {children}

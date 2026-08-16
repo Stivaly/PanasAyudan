@@ -15,6 +15,7 @@ import { normalizarTelefonoVe } from "@/lib/telefono";
 import EstadoCombobox from "@/components/EstadoCombobox";
 import UbicacionPicker, { UbicacionSeleccion } from "@/components/UbicacionPicker";
 import { Category, EstadoVenezuela, NodeTipo } from "@/lib/types";
+import CabeceraPagina from "@/components/CabeceraPagina";
 
 export default function RegistrarNodo() {
   const [categorias, setCategorias] = useState<Category[]>([]);
@@ -125,10 +126,7 @@ export default function RegistrarNodo() {
   if (enviado) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-          <BotonVolver />
-          <h1 className="text-lg font-bold">Solicitud enviada</h1>
-        </div>
+        <CabeceraPagina volver={<BotonVolver />} titulo="Solicitud enviada" />
         <div className="card border-accent">
           <p className="font-semibold text-accent">Tu solicitud fue enviada</p>
           <p className="mt-2 text-sm text-muted">
@@ -144,10 +142,7 @@ export default function RegistrarNodo() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <BotonVolver />
-        <h1 className="text-lg font-bold">Registrar un punto</h1>
-      </div>
+      <CabeceraPagina volver={<BotonVolver />} titulo="Registrar un punto" />
 
       <div className="rounded-xl border border-accent bg-bg p-3 text-sm">
         <p className="font-semibold text-accent">Propón un centro de acopio o entrega</p>
@@ -221,10 +216,11 @@ export default function RegistrarNodo() {
           {categorias.map((c) => (
             <label
               key={c.id}
-              className="flex items-center gap-2 rounded-xl border border-border bg-bg p-2 text-sm"
+              className="flex min-h-[44px] items-center gap-2 rounded-xl border border-border bg-bg p-2 text-sm"
             >
               <input
                 type="checkbox"
+                className="h-5 w-5 shrink-0"
                 checked={categoriasSel.includes(c.id)}
                 onChange={() => toggleCategoria(c.id)}
               />

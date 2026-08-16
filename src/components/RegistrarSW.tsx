@@ -5,6 +5,7 @@
 // waiting: se aplica al cerrar las pestañas o en la próxima sesión.
 
 import { useEffect, useRef, useState } from "react";
+import PilaInferior, { ORDEN_AVISO } from "@/components/PilaInferior";
 
 export default function RegistrarSW() {
   const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
@@ -55,24 +56,28 @@ export default function RegistrarSW() {
   if (!waiting) return null;
 
   return (
-    <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-md rounded-xl border border-border bg-surface p-3 text-sm text-fg shadow-lg">
-      <p className="font-semibold">Nueva versión disponible</p>
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => waiting.postMessage({ type: "SKIP_WAITING" })}
-          className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white dark:text-black"
-        >
-          Actualizar
-        </button>
-        <button
-          type="button"
-          onClick={() => setWaiting(null)}
-          className="rounded-lg border border-border px-3 py-2 text-sm font-semibold"
-        >
-          Después
-        </button>
+    <PilaInferior orden={ORDEN_AVISO}>
+      <div className="p-3">
+        <div className="mx-auto max-w-md rounded-xl border border-border bg-surface p-3 text-sm text-fg shadow-lg">
+          <p className="font-semibold">Nueva versión disponible</p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => waiting.postMessage({ type: "SKIP_WAITING" })}
+              className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white dark:text-black"
+            >
+              Actualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => setWaiting(null)}
+              className="rounded-lg border border-border px-3 py-2 text-sm font-semibold"
+            >
+              Después
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </PilaInferior>
   );
 }
