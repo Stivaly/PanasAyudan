@@ -126,13 +126,15 @@ export default function Home() {
           </p>
         </header>
 
-        {/* Una sola acción principal. Antes la portada explicaba lo mismo tres
-            veces —subtítulo, tarjeta verde y recuadro gris— y recién después
-            ofrecía algo que hacer; encima "Necesito buscar algo", que es lo que
-            busca quien llega en emergencia, era el más apagado y el último. La
-            explicación larga sigue a un toque, en el icono de ayuda. */}
+        {/* Las dos acciones se llaman igual que en el modal de bienvenida, que
+            es el texto escrito para el modelo actual. La portada se había
+            quedado con la formulación de junio ("Necesito buscar algo",
+            "Entrar o registrarme"), anterior a la reescritura del modal: quien
+            cerraba el modal se encontraba dos nombres distintos para la misma
+            puerta, con un toque de diferencia. El verde también viene de ahí:
+            en el modal esta misma acción es el botón lleno. */}
         <Link href="/buscar" className="btn-primary w-full shadow-lg">
-          Necesito buscar algo
+          Ver puntos de ayuda
         </Link>
 
         {tieneToken && cargandoRol ? (
@@ -142,7 +144,7 @@ export default function Home() {
             href={tieneToken ? panel.href : "/voluntarios"}
             className="btn-ghost w-full shadow-lg"
           >
-            {tieneToken ? panel.label : "Entrar o registrarme"}
+            {tieneToken ? panel.label : "Sumarme al apoyo"}
           </Link>
         )}
 
