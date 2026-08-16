@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CLASE_BOTON_ICONO, IconoLuna, IconoSol } from "@/components/Iconos";
 import { useTema } from "@/hooks/useTema";
 import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
@@ -30,14 +31,17 @@ export default function TemaToggle() {
 
   return (
     <>
+      {/* Va en flujo dentro de la cabecera, no flotando. Antes era un botón
+          fijo centrado arriba, o sea exactamente encima del <h1> de cada
+          pantalla: tapaba el título en nueve de ellas (issue #153). */}
       <button
         type="button"
         onClick={cambiar}
-        className="fixed left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-40 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-surface/95 text-xl shadow-lg backdrop-blur"
+        className={CLASE_BOTON_ICONO}
         aria-label={claro ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
         title={claro ? "Modo oscuro" : "Modo claro"}
       >
-        <span aria-hidden="true">{claro ? "☾" : "☀"}</span>
+        {claro ? <IconoLuna /> : <IconoSol />}
       </button>
 
       {mostrarAviso && (

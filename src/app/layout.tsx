@@ -4,7 +4,6 @@ import KeepAlive from "@/components/KeepAlive";
 import RegistrarSW from "@/components/RegistrarSW";
 import InstalarApp from "@/components/InstalarApp";
 import RecargarEnChunkError from "@/components/RecargarEnChunkError";
-import TemaToggle from "@/components/TemaToggle";
 import AvisoBateria from "@/components/AvisoBateria";
 import AvisoConexion from "@/components/AvisoConexion";
 
@@ -71,7 +70,10 @@ export default function RootLayout({
         <RegistrarSW />
         <InstalarApp />
         <RecargarEnChunkError />
-        <TemaToggle />
+        {/* TemaToggle ya no vive aquí: flotaba centrado arriba y tapaba el
+            título de cada pantalla. Ahora lo monta CabeceraPagina dentro de la
+            fila del título, y la portada y la vista mapa lo ponen en su propia
+            fila de controles (issue #153). */}
         <AvisoBateria />
         <AvisoConexion />
         {children}

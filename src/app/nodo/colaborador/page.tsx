@@ -10,6 +10,7 @@ import Skeleton from "@/components/Skeleton";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { NodoMiembro } from "@/lib/types";
+import CabeceraPagina from "@/components/CabeceraPagina";
 
 const REALTIME_TABLES = [
   { table: "centros_acopio" },
@@ -80,15 +81,19 @@ export default function ColaboradorPanel() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
-          &larr;
-        </Link>
-        <h1 className="text-lg font-bold">Panel de colaborador</h1>
-        <button onClick={salir} className="ml-auto text-sm font-semibold text-muted">
-          Salir
-        </button>
-      </div>
+      <CabeceraPagina
+        volver={
+          <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
+            &larr;
+          </Link>
+        }
+        titulo="Panel de colaborador"
+        acciones={
+          <button onClick={salir} className="text-sm font-semibold text-muted">
+            Salir
+          </button>
+        }
+      />
 
       {error && (
         <div className="card border-danger">
