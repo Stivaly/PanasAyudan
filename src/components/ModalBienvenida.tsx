@@ -1,7 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+// Carrusel de bienvenida. Solo la mecánica: visibilidad, navegación y
+// accesibilidad. El contenido de las láminas vive en BienvenidaSlides.
+//
+// Tres arreglos sobre la versión anterior:
+//
+// 1. Estaba anclado abajo. El `sm:items-center` nunca entraba porque `sm` son
+//    640px y ningún teléfono los alcanza, así que en móvil siempre era una hoja
+//    pegada al borde inferior con la portada asomando arriba. Ahora va centrado.
+//
+// 2. No había salida. Sin ✕ ni "saltar", para entrar a la app había que pasar
+//    por las cuatro láminas. En una app de emergencia no se puede encerrar a
+//    nadie en el onboarding: el ✕ está desde la primera y Escape también cierra.
+//
+// 3. La barra de navegación scrolleaba junto al contenido, así que en pantallas
+//    cortas los puntos y "Siguiente" quedaban fuera de vista justo en la lámina
+//    más larga. Ahora la tarjeta es una columna con cabecera y navegación fijas
+//    y solo el cuerpo scrollea.
+
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
+import { laminasBienvenida } from "@/components/BienvenidaSlides";
 
 const STORAGE_KEY = "panas_bienvenida_vista";
 
@@ -9,6 +28,7 @@ export default function ModalBienvenida() {
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [slide, setSlide] = useState(0);
+  const tituloId = useId();
 
   useEffect(() => {
     try {
@@ -45,228 +65,54 @@ export default function ModalBienvenida() {
     setVisible(false);
   }
 
+  // Escape cierra, como cualquier diálogo.
+  useEffect(() => {
+    if (!visible) return;
+    const onTecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cerrar();
+    };
+    window.addEventListener("keydown", onTecla);
+    return () => window.removeEventListener("keydown", onTecla);
+  }, [visible]);
+
   if (!visible) return null;
 
+  const laminas = laminasBienvenida(cerrar, () => {
+    cerrar();
+    router.push("/voluntarios");
+  });
+  const actual = laminas[slide];
+  const ultima = slide === laminas.length - 1;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 sm:items-center">
-      <div className="mx-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-surface p-6 sm:rounded-2xl">
-        {/* Slide 1 — Qué es esto */}
-        {slide === 0 ? (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Panas Ayudan
-            </p>
-            <div className="mt-4 text-accent">
-              <svg
-                width="72"
-                height="72"
-                viewBox="0 0 72 72"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="20" y1="20" x2="52" y2="52" />
-                <line x1="52" y1="20" x2="20" y2="52" />
-                <line x1="36" y1="12" x2="36" y2="60" />
-                <circle cx="36" cy="12" r="6" fill="currentColor" stroke="none" />
-                <circle cx="18" cy="54" r="6" fill="currentColor" stroke="none" />
-                <circle cx="54" cy="54" r="6" fill="currentColor" stroke="none" />
-              </svg>
-            </div>
-            <h2 className="mt-4 text-2xl font-bold text-fg">
-              Coordinamos insumos de emergencia en Venezuela
-            </h2>
-            <p className="mt-3 text-base text-muted">
-              Los puntos de ayuda aprobados y verificados publican lo que
-              tienen y solicitan lo que les falta. La app los conecta entre sí
-              — y con voluntarios cuando un envío necesita transporte.
-              Cualquier persona puede consultar los puntos sin registrarse.
-            </p>
-            <p className="mt-3 border-l-2 border-accent pl-3 text-sm text-muted">
-              No es entrega a domicilio: acércate al punto en su horario y retira.
-            </p>
-          </div>
-        ) : null}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={tituloId}
+        className="flex max-h-[85dvh] w-full max-w-md flex-col rounded-2xl bg-surface"
+      >
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-6 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Panas Ayudan</p>
+          <button
+            type="button"
+            onClick={cerrar}
+            aria-label="Cerrar"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl text-muted"
+          >
+            ✕
+          </button>
+        </div>
 
-        {/* Slide 2 — Para quién es */}
-        {slide === 1 ? (
-          <div>
-            <h2 className="text-2xl font-bold text-fg">
-              ¿Para quién es esta app?
-            </h2>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <div className="card flex-1 border-green-700">
-                <p className="font-semibold text-fg">✓ Es para ti si...</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-                  <li>Buscas insumos: entra sin registro y encuentra el punto más cercano</li>
-                  <li>Administras o colaboras en un centro de acopio o punto de entrega</li>
-                  <li>Puedes transportar ayuda entre puntos, con o sin vehículo</li>
-                </ul>
-              </div>
-              <div className="card flex-1">
-                <p className="font-semibold text-fg">Esta app no es para...</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-                  <li>Recibir insumos en tu casa o negocio</li>
-                  <li>Donaciones sin coordinar con un centro</li>
-                  <li>Publicar sin ser un punto aprobado y verificado</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <h2 id={tituloId} className="text-2xl font-bold text-fg">
+            {actual.titulo}
+          </h2>
+          <div className="mt-4">{actual.cuerpo}</div>
+        </div>
 
-        {/* Slide 3 — Cómo funciona */}
-        {slide === 2 ? (
-          <div>
-            <h2 className="text-2xl font-bold text-fg">
-              Cómo funciona en 4 pasos
-            </h2>
-            <div className="mt-4 flex flex-col gap-4 border-l-2 border-accent pl-4">
-              <div className="flex gap-3">
-                <span className="text-2xl font-bold text-muted">01</span>
-                <div>
-                  <p className="font-bold text-fg">Busca un punto de ayuda</p>
-                  <p className="text-sm text-muted">
-                    Sin registro: abre la app y ve la lista de puntos
-                    verificados, con lo que tienen disponible, su horario y su
-                    dirección. Acércate y retira.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-2xl font-bold text-muted">02</span>
-                <div>
-                  <p className="font-bold text-fg">Los centros se coordinan entre sí</p>
-                  <p className="text-sm text-muted">
-                    Cada centro aprobado administra su inventario y solicita lo
-                    que le falta. Otro centro puede comprometer su stock — y si
-                    ya tiene quién lo lleve (alguien de su confianza, sin
-                    registro), el envío queda en camino.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-2xl font-bold text-muted">03</span>
-                <div>
-                  <p className="font-bold text-fg">Voluntarios solo donde faltan</p>
-                  <p className="text-sm text-muted">
-                    Solo los envíos que necesitan transporte aparecen a los
-                    voluntarios — y únicamente a quienes están cerca y tienen la
-                    capacidad necesaria. Responden &quot;yo lo llevo&quot; con
-                    hora estimada y cantidad.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-2xl font-bold text-muted">04</span>
-                <div>
-                  <p className="font-bold text-fg">Emergencia y seguridad</p>
-                  <p className="text-sm text-muted">
-                    Si ya abriste la app una vez, funciona sin internet y puedes
-                    compartir puntos por SMS. Coordina con desconocidos solo lo
-                    necesario: tu ubicación es privada, el centro confirma cada
-                    llegada y quien no cumple queda bloqueado por su cédula de
-                    forma permanente.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Slide 4 — Llamado a la acción */}
-        {slide === 3 ? (
-          <div>
-            <h2 className="text-2xl font-bold text-fg">
-              Construido sobre el compromiso
-            </h2>
-            <p className="mt-3 text-base text-muted">
-              En una emergencia hay quien actúa de buena fe y quien no. Cada
-              compromiso de transporte se confirma al llegar: si el centro
-              marca que no llegó, esa cédula queda bloqueada de forma
-              permanente — protegiendo el tiempo y los recursos de quienes sí
-              están ayudando.
-            </p>
-            <div className="mt-5 flex flex-col gap-4 min-[360px]:flex-row">
-              <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
-                </svg>
-                <span className="mt-1">Cédula al registrarte de voluntario</span>
-              </div>
-              <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 12V6M12 12h5" />
-                </svg>
-                <span className="mt-1">Llegadas confirmadas por el centro</span>
-              </div>
-              <div className="flex flex-1 flex-col items-center text-center text-xs text-muted">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="5" y="11" width="14" height="9" rx="1.5" />
-                  <path d="M8 11V7a4 4 0 018 0v4" />
-                </svg>
-                <span className="mt-1">Contactos solo entre coordinadores</span>
-              </div>
-            </div>
-            <div className="mt-5 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={cerrar}
-                className="btn-primary min-h-[44px] w-full"
-              >
-                Ver puntos de ayuda
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  cerrar();
-                  router.push("/voluntarios");
-                }}
-                className="btn-ghost min-h-[44px] w-full"
-              >
-                Sumarme al apoyo
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Navegación inferior */}
-        <div className="mt-6 flex items-center justify-between">
-          <div className="min-h-[44px] flex items-center">
+        <div className="flex shrink-0 items-center justify-between border-t border-border px-6 py-2">
+          <div className="flex min-h-[44px] items-center">
             {slide > 0 ? (
               <button
                 type="button"
@@ -278,40 +124,29 @@ export default function ModalBienvenida() {
             ) : null}
           </div>
 
-          {slide < 3 ? (
-            <div className="flex items-center gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <button
-                  key={i}
-                  type="button"
-                  aria-label={`Ir a la diapositiva ${i + 1}`}
-                  onClick={() => setSlide(i)}
-                  className={`h-2 w-2 rounded-full ${
-                    i === slide ? "bg-accent" : "bg-muted"
-                  }`}
-                />
-              ))}
-            </div>
-          ) : (
-            <span className="text-sm text-muted">4 de 4</span>
-          )}
+          <div className="flex items-center gap-2">
+            {laminas.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Ir a la diapositiva ${i + 1}`}
+                aria-current={i === slide ? "true" : undefined}
+                onClick={() => setSlide(i)}
+                className={`h-2 w-2 rounded-full ${i === slide ? "bg-accent" : "bg-muted"}`}
+              />
+            ))}
+          </div>
 
-          <div className="min-h-[44px] flex items-center">
-            {slide < 3 ? (
+          <div className="flex min-h-[44px] items-center">
+            {/* En la última la acción está en los botones grandes del cuerpo:
+                un "Entrar" aquí sería un tercer control que hace lo mismo. */}
+            {ultima ? null : (
               <button
                 type="button"
                 onClick={() => setSlide(slide + 1)}
                 className="text-sm font-semibold text-accent"
               >
                 Siguiente →
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={cerrar}
-                className="text-sm font-semibold text-accent"
-              >
-                Entrar
               </button>
             )}
           </div>
