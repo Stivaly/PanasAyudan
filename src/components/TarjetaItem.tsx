@@ -7,6 +7,7 @@
 
 import { useId, useState } from "react";
 import CantidadMagnitud from "@/components/CantidadMagnitud";
+import { ACCION_TEXTO } from "@/lib/estilos";
 import { solicitarReposicion } from "@/lib/api";
 import { validarCantidad } from "@/lib/validaciones";
 import { InventarioItem, Magnitud } from "@/lib/types";
@@ -115,7 +116,7 @@ export default function TarjetaItem({
                 <button
                   onClick={onAgotar}
                   disabled={agotando}
-                  className="text-xs font-semibold text-danger disabled:opacity-50"
+                  className={`${ACCION_TEXTO} text-danger disabled:opacity-50`}
                 >
                   {agotando ? "Marcando…" : "Marcar “no hay”"}
                 </button>
@@ -123,17 +124,17 @@ export default function TarjetaItem({
               {/* Reposición atada al item: exclusiva del colaborador. El admin
                   pide a la red con "Crear solicitud" (arriba). */}
               {!item.disponible && !solicitarAbierto && (
-                <button onClick={onAbrirSolicitar} className="text-xs font-semibold text-accent">
+                <button onClick={onAbrirSolicitar} className={`${ACCION_TEXTO} text-accent`}>
                   ¿Solicitar más?
                 </button>
               )}
             </>
           ) : (
             <>
-              <button onClick={onEditar} className="text-xs font-semibold text-accent">
+              <button onClick={onEditar} className={`${ACCION_TEXTO} text-accent`}>
                 Editar
               </button>
-              <button onClick={onBorrar} className="text-xs font-semibold text-danger">
+              <button onClick={onBorrar} className={`${ACCION_TEXTO} text-danger`}>
                 Eliminar
               </button>
             </>

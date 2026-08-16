@@ -216,10 +216,11 @@ export default function RegistrarNodo() {
           {categorias.map((c) => (
             <label
               key={c.id}
-              className="flex items-center gap-2 rounded-xl border border-border bg-bg p-2 text-sm"
+              className="flex min-h-[44px] items-center gap-2 rounded-xl border border-border bg-bg p-2 text-sm"
             >
               <input
                 type="checkbox"
+                className="h-5 w-5 shrink-0"
                 checked={categoriasSel.includes(c.id)}
                 onChange={() => toggleCategoria(c.id)}
               />

@@ -18,6 +18,7 @@ import VerificarNodo from "@/components/VerificarNodo";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { EstadoVenezuela, NodoAdmin, TipoPausa, pausadoRelevante, statusVisible } from "@/lib/types";
+import { ACCION_CABECERA, BOTON_VOLVER } from "@/lib/estilos";
 import CabeceraPagina from "@/components/CabeceraPagina";
 
 const REALTIME_TABLES = [
@@ -140,13 +141,13 @@ export default function NodoAdminPanel() {
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 p-4">
       <CabeceraPagina
         volver={
-          <Link href="/" className="rounded-full border border-border bg-surface px-3 py-2 text-sm font-semibold">
+          <Link href="/" className={BOTON_VOLVER} aria-label="Volver">
             &larr;
           </Link>
         }
         titulo="Panel de punto"
         acciones={
-          <button onClick={salir} className="text-sm font-semibold text-muted">
+          <button onClick={salir} className={`${ACCION_CABECERA} text-muted`}>
             Salir
           </button>
         }
