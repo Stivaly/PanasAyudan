@@ -111,8 +111,12 @@ export default function ModalBienvenida() {
           <div className="mt-4">{actual.cuerpo}</div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between border-t border-border px-6 py-2">
-          <div className="flex min-h-[44px] items-center">
+        {/* Los laterales reparten el sobrante en partes iguales (flex-1 con
+            basis-0), no `justify-between`: así los puntos quedan centrados en
+            la tarjeta aunque un lado esté vacío, como en la última lámina, que
+            ya no lleva "Siguiente". */}
+        <div className="flex shrink-0 items-center border-t border-border px-6 py-2">
+          <div className="flex min-h-[44px] flex-1 basis-0 items-center">
             {slide > 0 ? (
               <button
                 type="button"
@@ -124,7 +128,7 @@ export default function ModalBienvenida() {
             ) : null}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {laminas.map((_, i) => (
               <button
                 key={i}
@@ -137,7 +141,7 @@ export default function ModalBienvenida() {
             ))}
           </div>
 
-          <div className="flex min-h-[44px] items-center">
+          <div className="flex min-h-[44px] flex-1 basis-0 items-center justify-end">
             {/* En la última la acción está en los botones grandes del cuerpo:
                 un "Entrar" aquí sería un tercer control que hace lo mismo. */}
             {ultima ? null : (
