@@ -28,7 +28,9 @@ interface Props {
 
 export default function CabeceraPagina({ volver, titulo, subtitulo, acciones }: Props) {
   return (
-    <div className="sticky top-0 z-30 -mx-4 -mt-4 flex items-center gap-2 border-b border-border bg-bg px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+    // Se pega por debajo de la pila superior, no detrás: con un aviso abierto,
+    // `top-0` dejaba la cabecera oculta tras él al hacer scroll (#163).
+    <div className="sticky top-[var(--pila-superior,0px)] z-30 -mx-4 -mt-4 flex items-center gap-2 border-b border-border bg-bg px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
       {volver}
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg font-bold">{titulo}</h1>

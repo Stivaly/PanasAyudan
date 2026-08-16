@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CLASE_BOTON_ICONO, IconoLuna, IconoSol } from "@/components/Iconos";
+import PilaSuperior, { ORDEN_AVISO } from "@/components/PilaSuperior";
 import { useTema } from "@/hooks/useTema";
 import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
@@ -44,18 +45,26 @@ export default function TemaToggle() {
         {claro ? <IconoLuna /> : <IconoSol />}
       </button>
 
+      {/* En la pila superior, no suelto: compartía coordenada exacta con el
+          aviso de sin conexión, así que si coincidían se pisaban. Además su
+          posición seguía calculada respecto al botón de tema flotante, que ya
+          no existe (#163). */}
       {mostrarAviso && (
-        <div className="fixed inset-x-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.25rem)] z-40 mx-auto max-w-sm rounded-xl border border-border bg-surface p-3 text-sm shadow-lg">
-          <p className="font-semibold text-fg">El modo claro consume más batería</p>
-          <p className="mt-1 text-muted">Especialmente en pantallas OLED.</p>
-          <button
-            type="button"
-            onClick={descartarAviso}
-            className="mt-3 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-fg"
-          >
-            Entendido
-          </button>
-        </div>
+        <PilaSuperior orden={ORDEN_AVISO}>
+          <div className="px-3 pt-3">
+            <div className="mx-auto max-w-sm rounded-xl border border-border bg-surface p-3 text-sm shadow-lg">
+              <p className="font-semibold text-fg">El modo claro consume más batería</p>
+              <p className="mt-1 text-muted">Especialmente en pantallas OLED.</p>
+              <button
+                type="button"
+                onClick={descartarAviso}
+                className="mt-3 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-fg"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </PilaSuperior>
       )}
     </>
   );
