@@ -211,14 +211,21 @@ export default function FormularioItem({
       <label htmlFor={`${idAlta}-comentario`} className="text-sm font-semibold text-muted">
         Comentario
       </label>
+      {/* La advertencia sobre teléfonos sale del placeholder y pasa a texto
+          fijo debajo (#164). En el placeholder se cortaba a media frase en
+          móvil, y encima desaparecía al escribir la primera letra: justo cuando
+          hace falta. Ahora se lee siempre, mientras la persona escribe. */}
       <textarea
         id={`${idAlta}-comentario`}
         className="field min-h-[70px]"
         maxLength={280}
-        placeholder="Comentario: qué hay exactamente (ej. acetaminofén 500mg, botellas de 1L). No incluyas telefonos."
+        placeholder="Ej: acetaminofén 500mg, botellas de 1L"
         value={fNota}
         onChange={(e) => setFNota(e.target.value)}
       />
+      <p className="-mt-1 text-xs text-muted">
+        Describe qué hay exactamente. No incluyas teléfonos.
+      </p>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={fDisponible} onChange={(e) => setFDisponible(e.target.checked)} />
         <span>Disponible</span>

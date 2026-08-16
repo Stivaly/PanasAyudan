@@ -190,14 +190,19 @@ export default function FormularioSolicitud({
         <label htmlFor={`${idForm}-comentario`} className="text-sm font-semibold text-muted">
           Comentario
         </label>
+        {/* Ver FormularioItem: la advertencia sobre teléfonos va fija debajo,
+            no en el placeholder que se corta y luego desaparece al escribir. */}
         <textarea
           id={`${idForm}-comentario`}
           className="field min-h-[70px]"
           maxLength={280}
-          placeholder="Comentario: que se necesita exactamente. No incluyas telefonos."
+          placeholder="Ej: insulina NPH 100UI"
           value={nota}
           onChange={(e) => setNota(e.target.value)}
         />
+        <p className="-mt-1 text-xs text-muted">
+          Describe qué se necesita exactamente. No incluyas teléfonos.
+        </p>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
