@@ -5,6 +5,7 @@
 // strip inline de confirmación de borrado. Los estados vienen de lib/solicitudes.
 
 import FilaCompromiso from "@/components/FilaCompromiso";
+import { ACCION_TEXTO } from "@/lib/estilos";
 import {
   comprometido,
   estadoNodo,
@@ -108,24 +109,24 @@ export default function TarjetaSolicitud({
             <button
               onClick={onConfirmarEliminar}
               disabled={borrando}
-              className="text-xs font-semibold text-danger disabled:opacity-50"
+              className={`${ACCION_TEXTO} text-danger disabled:opacity-50`}
             >
               {borrando ? "Eliminando…" : "Si, eliminar"}
             </button>
             <button
               onClick={onCancelarEliminar}
               disabled={borrando}
-              className="text-xs font-semibold text-muted disabled:opacity-50"
+              className={`${ACCION_TEXTO} text-muted disabled:opacity-50`}
             >
               Cancelar
             </button>
           </div>
         ) : (
           <div className="mt-2 flex gap-3 border-t border-border pt-2">
-            <button onClick={onEditar} className="text-xs font-semibold text-accent">
+            <button onClick={onEditar} className={`${ACCION_TEXTO} text-accent`}>
               Editar
             </button>
-            <button onClick={onPedirEliminar} className="text-xs font-semibold text-danger">
+            <button onClick={onPedirEliminar} className={`${ACCION_TEXTO} text-danger`}>
               Eliminar
             </button>
           </div>

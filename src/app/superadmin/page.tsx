@@ -24,6 +24,7 @@ import { useCentrosPorEstado } from "@/hooks/useCentrosPorEstado";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { EstadoVenezuela } from "@/lib/types";
 import CabeceraPagina from "@/components/CabeceraPagina";
+import { ACCION_CABECERA } from "@/lib/estilos";
 
 export default function SuperadminPanel() {
   const router = useRouter();
@@ -188,7 +189,7 @@ export default function SuperadminPanel() {
         volver={<BotonVolver />}
         titulo="Panel superadmin"
         acciones={
-          <button onClick={salir} className="text-sm font-semibold text-muted">
+          <button onClick={salir} className={`${ACCION_CABECERA} text-muted`}>
             Salir
           </button>
         }

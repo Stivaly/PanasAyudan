@@ -10,6 +10,7 @@ import {
 import { MovimientoNodoEntrante, MovimientoNodoSaliente } from "@/lib/types";
 import { useRealtimeRefresh } from "@/hooks/useRealtimeRefresh";
 import FilaCompromiso from "./FilaCompromiso";
+import { ACCION_TEXTO } from "@/lib/estilos";
 import SkeletonLista from "./SkeletonLista";
 
 interface Props {
@@ -178,7 +179,7 @@ export default function EstadoMovimientosNodo({ nodeId, token }: Props) {
                           <button
                             onClick={() => ejecutar(vol.id, () => confirmarEntregaCompromiso(vol.id, token))}
                             disabled={accionId === vol.id}
-                            className="shrink-0 text-xs font-semibold text-accent disabled:opacity-50"
+                            className={`${ACCION_TEXTO} shrink-0 text-accent disabled:opacity-50`}
                           >
                             Recibido
                           </button>
