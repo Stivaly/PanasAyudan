@@ -152,14 +152,17 @@ export default function TarjetaItem({
           <label htmlFor={`${idReposicion}-comentario`} className="text-xs font-semibold text-muted">
             Comentario
           </label>
+          {/* Ver FormularioItem: la advertencia sobre teléfonos va fija debajo,
+              no en el placeholder que se corta y luego desaparece al escribir. */}
           <textarea
             id={`${idReposicion}-comentario`}
             className="field min-h-[60px]"
             maxLength={280}
-            placeholder="Comentario del pedido (opcional). No incluyas telefonos."
+            placeholder="Ej: 20 cajas para el ambulatorio"
             value={solNota}
             onChange={(e) => setSolNota(e.target.value)}
           />
+          <p className="-mt-1 text-xs text-muted">Opcional. No incluyas teléfonos.</p>
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={solVehiculo} onChange={(e) => setSolVehiculo(e.target.checked)} />
             <span>Requiere vehículo</span>
