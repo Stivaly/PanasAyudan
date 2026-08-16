@@ -1,32 +1,20 @@
 "use client";
 
-import { clearCachedRole, clearVolunteerToken } from "@/lib/supabase";
+// Panel del voluntario. Ya no trae cabecera propia: la tenía y quedaba apilada
+// bajo la de la página, con dos títulos casi iguales y un "Salir" suelto a
+// media altura entre las dos (#161). El título, el estado de sesión y el botón
+// de salir viven ahora en la cabecera de /voluntarios, igual que en el resto
+// de paneles.
+
 import SolicitudesDisponibles from "@/components/SolicitudesDisponibles";
 
 interface Props {
   token: string;
-  onSalir: () => void;
 }
 
-export default function PanelVoluntario({ token, onSalir }: Props) {
-  const salir = () => {
-    clearVolunteerToken();
-    clearCachedRole();
-    onSalir();
-  };
-
+export default function PanelVoluntario({ token }: Props) {
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-accent">Codigo de acceso activo</p>
-          <h2 className="text-lg font-bold">Traslados para ayudar</h2>
-        </div>
-        <button onClick={salir} className="text-sm font-semibold text-muted">
-          Salir
-        </button>
-      </div>
-
       <div className="rounded-xl border border-border bg-bg p-3 text-sm text-muted">
         Aquí verás inventario que otro centro ya ofreció, pero que necesita transporte voluntario.
       </div>
